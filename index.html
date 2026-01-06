@@ -6,11 +6,12 @@
   <title>リペア進捗管理（MVP）</title>
   <style>
     body { font-family: -apple-system, system-ui, sans-serif; margin: 0; background:#f6f7f9; }
-    header { position: sticky; top: 0; background: white; padding: 12px; border-bottom: 1px solid #e6e6e6; }
+    header { position: sticky; top: 0; background: white; padding: 12px; border-bottom: 1px solid #e6e6e6; z-index: 10; }
     h1 { font-size: 16px; margin: 0 0 8px; }
     .row { display:flex; gap:8px; flex-wrap: wrap; align-items: center; }
-    select, input, button { font-size: 14px; padding: 8px; }
+    select, input, button, textarea { font-size: 14px; padding: 8px; }
     input { flex: 1; min-width: 180px; }
+    textarea { width: 100%; box-sizing: border-box; border: 1px solid #ddd; border-radius: 10px; background:#fff; }
     button { border: 1px solid #ddd; background:#fff; border-radius: 8px; }
     button.primary { background: #111827; color: white; border-color: #111827; }
     button.danger { border-color: #ef4444; color: #ef4444; }
@@ -18,8 +19,20 @@
     main { padding: 12px; }
     .stats { display:flex; gap:8px; flex-wrap: wrap; margin-bottom: 10px; }
     .pill { background:white; border:1px solid #e6e6e6; border-radius: 999px; padding: 6px 10px; font-size: 13px; }
+
+    .panel { background:white; border:1px solid #e6e6e6; border-radius: 12px; padding: 12px; margin-bottom: 12px; }
+    .panel h2 { font-size: 14px; margin:0 0 8px; }
+    .help { font-size: 12px; color:#6b7280; line-height: 1.5; }
+
+    .split { display:flex; gap:8px; flex-wrap: wrap; }
+    .split > * { flex: 1; min-width: 220px; }
+
+    .small { font-size: 12px; padding: 6px 8px; }
+    input.small { font-size: 12px; padding: 6px 8px; }
+
     .grid { display:grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap:8px; }
     @media (max-width: 480px) { .grid { grid-template-columns: repeat(4, minmax(0,1fr)); } }
+
     .room {
       background:white; border:1px solid #e6e6e6; border-radius: 10px;
       padding: 10px 8px; text-align:center; user-select:none; cursor:pointer;
@@ -27,25 +40,88 @@
     }
     .room .num { font-weight: 700; font-size: 14px; }
     .room .st { font-size: 12px; padding: 2px 6px; border-radius: 999px; display:inline-block; margin: 0 auto; }
+    .room .sub { font-size: 11px; color:#6b7280; line-height: 1.2; }
     .todo .st { background:#f3f4f6; color:#111827; }
     .doing .st { background:#fffbeb; color:#92400e; }
     .done .st { background:#ecfdf5; color:#065f46; }
-    .panel { background:white; border:1px solid #e6e6e6; border-radius: 12px; padding: 12px; margin-bottom: 12px; }
-    .panel h2 { font-size: 14px; margin:0 0 8px; }
-    .help { font-size: 12px; color:#6b7280; line-height: 1.5; }
-    .split { display:flex; gap:8px; flex-wrap: wrap; }
-    .split > * { flex: 1; min-width: 220px; }
-    .small { font-size: 12px; padding: 6px 8px; }
- .floorHeader {
-  grid-column: 1 / -1;
-  background: #ffffff;
-  border: 1px solid #e6e6e6;
-  border-radius: 10px;
-  padding: 8px 10px;
-  font-weight: 700;
-}
-    input.small { font-size: 12px; padding: 6px 8px; }
-.room.highlight { outline: 3px solid #111827; outline-offset: 2px; }
+
+    .floorHeader {
+      grid-column: 1 / -1;
+      background: #ffffff;
+      border: 1px solid #e6e6e6;
+      border-radius: 10px;
+      padding: 8px 10px;
+      font-weight: 700;
+    }
+
+    .room.highlight { outline: 3px solid #111827; outline-offset: 2px; }
+
+    /* collapsible schedule box */
+    details.panelInner {
+      margin-top: 10px;
+      border: 1px solid #e6e6e6;
+      border-radius: 12px;
+      padding: 10px;
+      background: #fff;
+    }
+    details.panelInner > summary { cursor: pointer; font-weight: 700; font-size: 13px; }
+    details > summary { list-style: none; }
+    details > summary::-webkit-details-marker { display: none; }
+
+    .fieldLabel { font-size: 12px; color:#6b7280; margin: 2px 0 6px; }
+    .dateRow { display:flex; gap:8px; align-items: center; flex-wrap: wrap; }
+    .dateRow input { flex: 1; min-width: 160px; }
+    .iconBtn { padding: 6px 10px; font-size: 14px; border-radius: 10px; }
+
+    /* Date picker modal */
+    .modalBackdrop {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.35);
+      display:none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      padding: 14px;
+    }
+    .modal {
+      width: min(420px, 100%);
+      background: #fff;
+      border-radius: 14px;
+      border: 1px solid #e6e6e6;
+      overflow: hidden;
+    }
+    .modalHeader {
+      display:flex; align-items:center; justify-content: space-between;
+      padding: 10px 12px;
+      border-bottom: 1px solid #eee;
+      user-select:none;
+    }
+    .modalHeader .title { font-weight: 700; }
+    .modalHeader .nav { display:flex; gap:8px; }
+    .modalHeader button { padding: 6px 10px; border-radius: 10px; }
+    .modalBody { padding: 10px 12px 12px; }
+
+    .dow { display:grid; grid-template-columns: repeat(7, 1fr); gap:6px; font-size: 12px; color:#6b7280; margin-bottom: 6px; }
+    .calGrid { display:grid; grid-template-columns: repeat(7, 1fr); gap:6px; touch-action: pan-y; }
+    .dayBtn {
+      border: 1px solid #e6e6e6;
+      background: #fff;
+      border-radius: 10px;
+      padding: 10px 0;
+      font-size: 14px;
+    }
+    .dayBtn.muted { color:#9ca3af; background:#fafafa; }
+    .dayBtn.today { border-color:#111827; }
+    .dayBtn.selected { background:#111827; color:#fff; border-color:#111827; }
+    .modalFooter {
+      display:flex; justify-content: space-between; align-items:center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-top: 1px solid #eee;
+      font-size: 12px;
+      color:#6b7280;
+    }
+    .modalFooter .actions { display:flex; gap:8px; }
   </style>
 </head>
 <body>
@@ -82,9 +158,67 @@
           </div>
         </div>
       </div>
+
+      <!-- schedule (collapsed by default) -->
+      <details class="panelInner" id="scheduleDetails">
+        <summary>検査・内覧スケジュール（タップで開閉）</summary>
+
+        <div class="split" style="margin-top:10px;">
+          <div>
+            <div class="fieldLabel"><b>社内検査日</b></div>
+            <div class="dateRow">
+              <input id="internalInspectDate" placeholder="YYYY-MM-DD（手入力OK）" inputmode="numeric" />
+              <button class="iconBtn" type="button" data-datebtn="internalInspectDate">📅</button>
+            </div>
+            <div class="fieldLabel"><b>社内検査是正期間</b></div>
+            <div class="row"><input id="internalFixPeriod" placeholder="例：1/10-1/15（自由記述）" /></div>
+          </div>
+
+          <div>
+            <div class="fieldLabel"><b>施主検査日</b></div>
+            <div class="dateRow">
+              <input id="clientInspectDate" placeholder="YYYY-MM-DD（手入力OK）" inputmode="numeric" />
+              <button class="iconBtn" type="button" data-datebtn="clientInspectDate">📅</button>
+            </div>
+            <div class="fieldLabel"><b>施主検査是正期間</b></div>
+            <div class="row"><input id="clientFixPeriod" placeholder="例：1/20-1/25（自由記述）" /></div>
+          </div>
+
+          <div>
+            <div class="fieldLabel"><b>内覧日</b></div>
+            <div class="dateRow">
+              <input id="viewingDate" placeholder="YYYY-MM-DD（手入力OK）" inputmode="numeric" />
+              <button class="iconBtn" type="button" data-datebtn="viewingDate">📅</button>
+            </div>
+            <div class="fieldLabel"><b>内覧是正期間</b></div>
+            <div class="row"><input id="viewingFixPeriod" placeholder="例：2/1-2/5（自由記述）" /></div>
+          </div>
+
+          <div>
+            <div class="fieldLabel"><b>再内覧日</b></div>
+            <div class="dateRow">
+              <input id="reViewingDate" placeholder="YYYY-MM-DD（手入力OK）" inputmode="numeric" />
+              <button class="iconBtn" type="button" data-datebtn="reViewingDate">📅</button>
+            </div>
+            <div class="fieldLabel"><b>再内覧是正期間</b></div>
+            <div class="row"><input id="reViewingFixPeriod" placeholder="例：2/10-2/12（自由記述）" /></div>
+          </div>
+        </div>
+        <div class="help" style="margin-top:10px;">
+          📅ボタンでカレンダーを開きます（当日月が初期表示）。左右スワイプで月移動できます。<br/>
+          手入力もOK：YYYY-MM-DD（例：2026-01-06）
+        </div>
+      </details>
+
+      <!-- notes (B: below schedule) -->
+      <div style="margin-top:10px;">
+        <div class="fieldLabel"><b>備考（現場メモ）</b></div>
+        <textarea id="siteNotes" rows="4" placeholder="自由メモ（段取り、注意事項、共通の指示など）"></textarea>
+      </div>
+
       <div class="row" style="margin-top:10px;">
         <button id="saveSiteBtn" class="primary">設定を保存</button>
-        <button id="regenRoomsBtn">部屋を再生成（注意：状態が初期化）</button>
+        <button id="regenRoomsBtn">部屋を再生成（注意：状態・作業日・担当者が初期化）</button>
       </div>
     </div>
 
@@ -97,66 +231,149 @@
         <button class="small" data-filter="doing">途中</button>
         <button class="small" data-filter="done">完了</button>
         <button class="small" id="resetAllBtn">全て未着手に戻す</button>
+        <button class="small" id="modeBtn">入力モード: OFF</button>
+      </div>
+
+      <div class="row" style="margin-top:8px;">
+        <input id="jumpInput" class="small" placeholder="部屋番号でジャンプ（例 703）" />
+        <button class="small" id="jumpBtn">移動</button>
+        <button class="small" id="clearJumpBtn">解除</button>
+      </div>
+
+      <div class="help" style="margin-top:8px;">
+        入力モードON：部屋をタップすると <b>作業日→担当者</b> を入力（進捗は変わりません）
       </div>
     </div>
-    <div class="row" style="margin-top:8px;">
-  <input id="jumpInput" class="small" placeholder="部屋番号でジャンプ（例 703）" />
-  <button class="small" id="jumpBtn">移動</button>
-  <button class="small" id="clearJumpBtn">解除</button>
-</div>
 
     <div class="grid" id="roomGrid"></div>
+
     <div class="help" style="padding: 10px 2px;">
-      部屋をタップすると：未着手 → 途中 → 完了 → 未着手
+      通常モード：部屋タップで 未着手 → 途中 → 完了 → 未着手
     </div>
   </main>
 
+  <!-- Date Picker Modal -->
+  <div class="modalBackdrop" id="dpBackdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true">
+      <div class="modalHeader" id="dpHeader">
+        <div class="nav">
+          <button type="button" id="dpPrev">‹</button>
+          <button type="button" id="dpToday">今日</button>
+        </div>
+        <div class="title" id="dpTitle">YYYY-MM</div>
+        <div class="nav">
+          <button type="button" id="dpNext">›</button>
+          <button type="button" id="dpClose">閉じる</button>
+        </div>
+      </div>
+      <div class="modalBody">
+        <div class="dow">
+          <div>日</div><div>月</div><div>火</div><div>水</div><div>木</div><div>金</div><div>土</div>
+        </div>
+        <div class="calGrid" id="dpGrid"></div>
+      </div>
+      <div class="modalFooter">
+        <div id="dpHint">日付をタップして入力欄に反映</div>
+        <div class="actions">
+          <button type="button" id="dpClear">クリア</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
 <script>
 (() => {
-  const STORAGE_KEY = "repair_progress_mvp_v1";
+  const STORAGE_KEY = "repair_progress_mvp_v2"; // 既存データをできるだけ引き継ぐ
 
   /** @typedef {"todo"|"doing"|"done"} Status */
-  /** @typedef {{ id:string, label:string, floor:number, idx:number, status:Status }} Room */
-  /** @typedef {{ id:string, name:string, building:string, floorSpec:string, rooms:Room[], createdAt:number, updatedAt:number }} Site */
-  /** @typedef {{ sites:Site[], currentSiteId:string|null, ui:{filter:"all"|Status} }} AppState */
+  /** @typedef {{ id:string, label:string, floor:number, idx:number, status:Status, assignee?:string, workedDate?:string }} Room */
+  /** @typedef {{
+    id:string, name:string, building:string, floorSpec:string, rooms:Room[], createdAt:number, updatedAt:number,
+    internalInspectDate?:string, internalFixPeriod?:string,
+    clientInspectDate?:string, clientFixPeriod?:string,
+    viewingDate?:string, viewingFixPeriod?:string,
+    reViewingDate?:string, reViewingFixPeriod?:string,
+    notes?:string
+  }} Site */
+  /** @typedef {{ sites:Site[], currentSiteId:string|null, ui:{filter:"all"|Status, editMode:boolean, highlightedRoomId:string|null} }} AppState */
 
-  /** Utils */
   const uid = () => Math.random().toString(36).slice(2, 10) + "-" + Date.now().toString(36);
   const now = () => Date.now();
-
   const $ = (id) => document.getElementById(id);
+
+  // Elements
   const siteSelect = $("siteSelect");
   const newSiteBtn = $("newSiteBtn");
   const deleteSiteBtn = $("deleteSiteBtn");
   const saveSiteBtn = $("saveSiteBtn");
   const regenRoomsBtn = $("regenRoomsBtn");
   const resetAllBtn = $("resetAllBtn");
-const jumpInput = document.getElementById("jumpInput");
-const jumpBtn = document.getElementById("jumpBtn");
-const clearJumpBtn = document.getElementById("clearJumpBtn");
+  const modeBtn = $("modeBtn");
 
-let highlightedRoomId = null;
+  const jumpInput = $("jumpInput");
+  const jumpBtn = $("jumpBtn");
+  const clearJumpBtn = $("clearJumpBtn");
+
   const siteName = $("siteName");
   const buildingName = $("buildingName");
   const floorSpec = $("floorSpec");
+  const siteNotes = $("siteNotes");
+
+  // schedule inputs
+  const internalInspectDate = $("internalInspectDate");
+  const internalFixPeriod   = $("internalFixPeriod");
+  const clientInspectDate   = $("clientInspectDate");
+  const clientFixPeriod     = $("clientFixPeriod");
+  const viewingDate         = $("viewingDate");
+  const viewingFixPeriod    = $("viewingFixPeriod");
+  const reViewingDate       = $("reViewingDate");
+  const reViewingFixPeriod  = $("reViewingFixPeriod");
 
   const siteMeta = $("siteMeta");
   const statsEl = $("stats");
   const roomGrid = $("roomGrid");
 
-  /** Load/Save */
+  // Date Picker modal elements
+  const dpBackdrop = $("dpBackdrop");
+  const dpGrid = $("dpGrid");
+  const dpTitle = $("dpTitle");
+  const dpPrev = $("dpPrev");
+  const dpNext = $("dpNext");
+  const dpClose = $("dpClose");
+  const dpToday = $("dpToday");
+  const dpClear = $("dpClear");
+
+  function defaultState() {
+    /** @type {AppState} */
+    return { sites: [], currentSiteId: null, ui: { filter: "all", editMode: false, highlightedRoomId: null } };
+  }
+
+  /** @returns {AppState} */
   function loadState() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return /** @type {AppState} */ ({ sites: [], currentSiteId: null, ui: { filter: "all" } });
+      if (!raw) return defaultState();
       const parsed = JSON.parse(raw);
-      // minimal validation
-      if (!parsed || !Array.isArray(parsed.sites)) throw new Error("invalid");
-      if (!parsed.ui) parsed.ui = { filter: "all" };
+      if (!parsed || !Array.isArray(parsed.sites)) return defaultState();
+      if (!parsed.ui) parsed.ui = { filter: "all", editMode: false, highlightedRoomId: null };
       if (!parsed.ui.filter) parsed.ui.filter = "all";
+      if (typeof parsed.ui.editMode !== "boolean") parsed.ui.editMode = false;
+      if (!("highlightedRoomId" in parsed.ui)) parsed.ui.highlightedRoomId = null;
+      // Backfill new optional fields
+      for (const s of parsed.sites) {
+        if (!("notes" in s)) s.notes = "";
+        if (!("internalInspectDate" in s)) s.internalInspectDate = "";
+        if (!("internalFixPeriod" in s)) s.internalFixPeriod = "";
+        if (!("clientInspectDate" in s)) s.clientInspectDate = "";
+        if (!("clientFixPeriod" in s)) s.clientFixPeriod = "";
+        if (!("viewingDate" in s)) s.viewingDate = "";
+        if (!("viewingFixPeriod" in s)) s.viewingFixPeriod = "";
+        if (!("reViewingDate" in s)) s.reViewingDate = "";
+        if (!("reViewingFixPeriod" in s)) s.reViewingFixPeriod = "";
+      }
       return parsed;
     } catch {
-      return /** @type {AppState} */ ({ sites: [], currentSiteId: null, ui: { filter: "all" } });
+      return defaultState();
     }
   }
 
@@ -164,7 +381,7 @@ let highlightedRoomId = null;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   }
 
-  /** Parsing "1:4,2-11:5" -> [{from,to,roomsPerFloor}] */
+  // Parsing "1:4,2-11:5" -> [{from,to,roomsPerFloor}]
   function parseFloorSpec(spec) {
     const s = (spec || "").trim();
     if (!s) return [];
@@ -188,7 +405,7 @@ let highlightedRoomId = null;
         out.push({ from: f, to: f, roomsPerFloor });
       }
     }
-    // detect overlaps (simple)
+    // Overlap check
     const used = new Set();
     for (const r of out) {
       for (let f = r.from; f <= r.to; f++) {
@@ -196,12 +413,10 @@ let highlightedRoomId = null;
         used.add(f);
       }
     }
-    // sort by floor
     out.sort((a,b) => a.from - b.from);
     return out;
   }
 
-  /** Generate rooms for a site */
   function generateRoomsFromSpec(spec) {
     const ranges = parseFloorSpec(spec);
     /** @type {Room[]} */
@@ -209,17 +424,15 @@ let highlightedRoomId = null;
     for (const r of ranges) {
       for (let f = r.from; f <= r.to; f++) {
         for (let i = 1; i <= r.roomsPerFloor; i++) {
-          const label = String(f * 100 + i); // 101方式
-          rooms.push({ id: uid(), label, floor: f, idx: i, status: "todo" });
+          const label = String(f * 100 + i);
+          rooms.push({ id: uid(), label, floor: f, idx: i, status: "todo", assignee: "", workedDate: "" });
         }
       }
     }
-    // Sort by floor then idx
     rooms.sort((a,b) => a.floor - b.floor || a.idx - b.idx);
     return rooms;
   }
 
-  /** State */
   /** @type {AppState} */
   let state = loadState();
 
@@ -238,6 +451,15 @@ let highlightedRoomId = null;
         rooms: [],
         createdAt: now(),
         updatedAt: now(),
+        internalInspectDate: "",
+        internalFixPeriod: "",
+        clientInspectDate: "",
+        clientFixPeriod: "",
+        viewingDate: "",
+        viewingFixPeriod: "",
+        reViewingDate: "",
+        reViewingFixPeriod: "",
+        notes: ""
       });
       s.rooms = generateRoomsFromSpec(s.floorSpec);
       state.sites.push(s);
@@ -249,7 +471,28 @@ let highlightedRoomId = null;
     }
   }
 
-  /** Rendering */
+  function computeStats(rooms) {
+    let todo = 0, doing = 0, done = 0;
+    for (const r of rooms) {
+      if (r.status === "todo") todo++;
+      else if (r.status === "doing") doing++;
+      else done++;
+    }
+    return { total: rooms.length, todo, doing, done };
+  }
+
+  function statusLabel(status) {
+    if (status === "todo") return "未着手";
+    if (status === "doing") return "途中";
+    return "完了";
+  }
+
+  function nextStatus(status) {
+    if (status === "todo") return "doing";
+    if (status === "doing") return "done";
+    return "todo";
+  }
+
   function renderSiteSelect() {
     siteSelect.innerHTML = "";
     for (const s of state.sites) {
@@ -264,21 +507,24 @@ let highlightedRoomId = null;
   function renderSiteForm() {
     const site = getCurrentSite();
     if (!site) return;
+
     siteName.value = site.name || "";
     buildingName.value = site.building || "";
     floorSpec.value = site.floorSpec || "";
+
+    internalInspectDate.value = site.internalInspectDate || "";
+    internalFixPeriod.value   = site.internalFixPeriod || "";
+    clientInspectDate.value   = site.clientInspectDate || "";
+    clientFixPeriod.value     = site.clientFixPeriod || "";
+    viewingDate.value         = site.viewingDate || "";
+    viewingFixPeriod.value    = site.viewingFixPeriod || "";
+    reViewingDate.value       = site.reViewingDate || "";
+    reViewingFixPeriod.value  = site.reViewingFixPeriod || "";
+
+    siteNotes.value = site.notes || "";
+
     const updated = new Date(site.updatedAt).toLocaleString("ja-JP");
     siteMeta.textContent = `部屋数: ${site.rooms.length} / 最終更新: ${updated}`;
-  }
-
-  function computeStats(rooms) {
-    let todo = 0, doing = 0, done = 0;
-    for (const r of rooms) {
-      if (r.status === "todo") todo++;
-      else if (r.status === "doing") doing++;
-      else done++;
-    }
-    return { total: rooms.length, todo, doing, done };
   }
 
   function renderStats() {
@@ -298,35 +544,33 @@ let highlightedRoomId = null;
     statsEl.appendChild(mk("完了", st.done));
   }
 
-  function statusLabel(status) {
-    if (status === "todo") return "未着手";
-    if (status === "doing") return "途中";
-    return "完了";
-  }
-
-  function nextStatus(status) {
-    if (status === "todo") return "doing";
-    if (status === "doing") return "done";
-    return "todo";
+  function renderModeButton() {
+    modeBtn.textContent = state.ui.editMode ? "入力モード: ON" : "入力モード: OFF";
   }
 
   function renderRooms() {
     const site = getCurrentSite();
     if (!site) return;
+
     const filter = state.ui.filter;
     const rooms = (filter === "all") ? site.rooms : site.rooms.filter(r => r.status === filter);
 
-    roomGrid.innerHTML = "";let lastFloor = null;
-    for (const r of rooms) {if (lastFloor !== r.floor) {
-  const header = document.createElement("div");
-  header.className = "floorHeader";
-  header.textContent = `${r.floor}階`;
-  roomGrid.appendChild(header);
-  lastFloor = r.floor;
-}
+    roomGrid.innerHTML = "";
+    let lastFloor = null;
+
+    for (const r of rooms) {
+      if (lastFloor !== r.floor) {
+        const header = document.createElement("div");
+        header.className = "floorHeader";
+        header.textContent = `${r.floor}階`;
+        roomGrid.appendChild(header);
+        lastFloor = r.floor;
+      }
+
       const card = document.createElement("div");
-      card.className = `room ${r.status}`;if (r.id === highlightedRoomId) card.classList.add("highlight");
+      card.className = `room ${r.status}`;
       card.dataset.roomId = r.id;
+      if (r.id === state.ui.highlightedRoomId) card.classList.add("highlight");
 
       const num = document.createElement("div");
       num.className = "num";
@@ -336,18 +580,37 @@ let highlightedRoomId = null;
       st.className = "st";
       st.textContent = statusLabel(r.status);
 
+      const sub = document.createElement("div");
+      sub.className = "sub";
+      const d = r.workedDate ? r.workedDate : "";
+      const a = r.assignee ? r.assignee : "";
+      sub.textContent = (d || a) ? `${d}${(d && a) ? " / " : ""}${a}` : "";
+
       card.appendChild(num);
       card.appendChild(st);
+      card.appendChild(sub);
 
       card.addEventListener("click", () => {
         const site2 = getCurrentSite();
         if (!site2) return;
         const room = site2.rooms.find(x => x.id === r.id);
         if (!room) return;
-        room.status = nextStatus(room.status);
+
+        if (state.ui.editMode) {
+          const today = new Date().toISOString().slice(0, 10);
+          const newDate = prompt("作業日（YYYY-MM-DD）", room.workedDate || today);
+          if (newDate === null) return;
+          const newAssignee = prompt("担当者（例：佐藤）", room.assignee || "");
+          if (newAssignee === null) return;
+
+          room.workedDate = (newDate || "").trim();
+          room.assignee = (newAssignee || "").trim();
+        } else {
+          room.status = nextStatus(room.status);
+        }
+
         site2.updatedAt = now();
         saveState();
-        // rerender quickly
         renderStats();
         renderRooms();
         renderSiteForm();
@@ -358,53 +621,179 @@ let highlightedRoomId = null;
   }
 
   function renderAll() {
-    function jumpToRoom(label) {
-  const site = getCurrentSite();
-  if (!site) return;
-
-  const target = site.rooms.find(r => r.label === String(label));
-  if (!target) {
-    alert(`部屋が見つかりません: ${label}`);
-    return;
-  }
-
-  state.ui.filter = "all";          // 見えるように全件へ
-  highlightedRoomId = target.id;    // ハイライト対象
-  saveState();
-
-  renderRooms();
-  requestAnimationFrame(() => {
-    const el = document.querySelector(`[data-room-id="${target.id}"]`);
-    if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
-  });
-}
-
-jumpBtn.addEventListener("click", () => {
-  const v = (jumpInput.value || "").trim();
-  if (!v) return;
-  jumpToRoom(v);
-});
-
-jumpInput.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") {
-    const v = (jumpInput.value || "").trim();
-    if (!v) return;
-    jumpToRoom(v);
-  }
-});
-
-clearJumpBtn.addEventListener("click", () => {
-  highlightedRoomId = null;
-  jumpInput.value = "";
-  renderRooms();
-});
     renderSiteSelect();
     renderSiteForm();
+    renderModeButton();
     renderStats();
     renderRooms();
   }
 
-  /** Actions */
+  // Jump
+  function jumpToRoom(label) {
+    const site = getCurrentSite();
+    if (!site) return;
+
+    const target = site.rooms.find(r => r.label === String(label));
+    if (!target) {
+      alert(`部屋が見つかりません: ${label}`);
+      return;
+    }
+
+    state.ui.filter = "all";
+    state.ui.highlightedRoomId = target.id;
+    saveState();
+
+    renderRooms();
+    requestAnimationFrame(() => {
+      const el = document.querySelector(`[data-room-id="${target.id}"]`);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+  }
+
+  // Date utils
+  function pad2(n) { return String(n).padStart(2, "0"); }
+  function fmtYMD(d) { return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; }
+  function parseYMD(s) {
+    const m = String(s || "").trim().match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+    if (!m) return null;
+    const y = Number(m[1]), mo = Number(m[2]), da = Number(m[3]);
+    if (y < 1900 || y > 2200 || mo < 1 || mo > 12 || da < 1 || da > 31) return null;
+    const d = new Date(y, mo-1, da);
+    // normalize check
+    if (d.getFullYear() !== y || d.getMonth() !== mo-1 || d.getDate() !== da) return null;
+    return d;
+  }
+
+  // Date Picker (custom)
+  let dpTargetInput = null;
+  let dpYear = 0;
+  let dpMonth = 0; // 0-11
+
+  function openDatePicker(inputEl) {
+    dpTargetInput = inputEl;
+    const current = parseYMD(inputEl.value) || new Date();
+    dpYear = current.getFullYear();
+    dpMonth = current.getMonth();
+    renderDatePicker();
+    dpBackdrop.style.display = "flex";
+    dpBackdrop.setAttribute("aria-hidden", "false");
+  }
+
+  function closeDatePicker() {
+    dpBackdrop.style.display = "none";
+    dpBackdrop.setAttribute("aria-hidden", "true");
+    dpTargetInput = null;
+  }
+
+  function renderDatePicker() {
+    dpTitle.textContent = `${dpYear}-${pad2(dpMonth+1)}`;
+
+    const first = new Date(dpYear, dpMonth, 1);
+    const firstDow = first.getDay(); // 0=Sun
+    const last = new Date(dpYear, dpMonth+1, 0).getDate();
+
+    // previous month
+    const prevLast = new Date(dpYear, dpMonth, 0).getDate();
+
+    dpGrid.innerHTML = "";
+
+    const today = new Date();
+    const todayYMD = fmtYMD(today);
+    const selectedYMD = dpTargetInput ? (dpTargetInput.value || "") : "";
+
+    // 6 weeks * 7 days = 42 cells
+    for (let i = 0; i < 42; i++) {
+      const cellIndex = i - firstDow + 1; // day number in current month
+      let y = dpYear, m = dpMonth, day = cellIndex;
+      let muted = false;
+
+      if (cellIndex <= 0) {
+        // previous month
+        muted = true;
+        m = dpMonth - 1;
+        if (m < 0) { m = 11; y = dpYear - 1; }
+        day = prevLast + cellIndex;
+      } else if (cellIndex > last) {
+        // next month
+        muted = true;
+        m = dpMonth + 1;
+        if (m > 11) { m = 0; y = dpYear + 1; }
+        day = cellIndex - last;
+      }
+
+      const d = new Date(y, m, day);
+      const ymd = fmtYMD(d);
+
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "dayBtn" + (muted ? " muted" : "") + (ymd === todayYMD ? " today" : "") + (ymd === selectedYMD ? " selected" : "");
+      btn.textContent = String(day);
+      btn.addEventListener("click", () => {
+        if (!dpTargetInput) return;
+        dpTargetInput.value = ymd;
+        // keep caret end for manual edits
+        dpTargetInput.focus();
+        dpTargetInput.setSelectionRange(dpTargetInput.value.length, dpTargetInput.value.length);
+        closeDatePicker();
+      });
+
+      dpGrid.appendChild(btn);
+    }
+  }
+
+  function shiftMonth(delta) {
+    dpMonth += delta;
+    if (dpMonth < 0) { dpMonth = 11; dpYear -= 1; }
+    if (dpMonth > 11) { dpMonth = 0; dpYear += 1; }
+    renderDatePicker();
+  }
+
+  // swipe support on calendar grid
+  let touchX0 = null;
+  dpGrid.addEventListener("touchstart", (e) => {
+    if (!e.touches || e.touches.length === 0) return;
+    touchX0 = e.touches[0].clientX;
+  }, { passive: true });
+
+  dpGrid.addEventListener("touchend", (e) => {
+    if (touchX0 === null) return;
+    const x1 = (e.changedTouches && e.changedTouches[0]) ? e.changedTouches[0].clientX : null;
+    if (x1 === null) { touchX0 = null; return; }
+    const dx = x1 - touchX0;
+    touchX0 = null;
+    if (Math.abs(dx) < 40) return;
+    if (dx < 0) shiftMonth(1);   // left swipe => next month
+    else shiftMonth(-1);         // right swipe => prev month
+  }, { passive: true });
+
+  dpPrev.addEventListener("click", () => shiftMonth(-1));
+  dpNext.addEventListener("click", () => shiftMonth(1));
+  dpClose.addEventListener("click", closeDatePicker);
+  dpBackdrop.addEventListener("click", (e) => {
+    if (e.target === dpBackdrop) closeDatePicker();
+  });
+  dpToday.addEventListener("click", () => {
+    const t = new Date();
+    dpYear = t.getFullYear();
+    dpMonth = t.getMonth();
+    renderDatePicker();
+  });
+  dpClear.addEventListener("click", () => {
+    if (!dpTargetInput) return;
+    dpTargetInput.value = "";
+    closeDatePicker();
+  });
+
+  // open picker buttons
+  document.querySelectorAll("[data-datebtn]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const id = btn.getAttribute("data-datebtn");
+      const inputEl = id ? $(id) : null;
+      if (inputEl) openDatePicker(inputEl);
+    });
+  });
+
+  // Actions
   siteSelect.addEventListener("change", () => {
     state.currentSiteId = siteSelect.value;
     saveState();
@@ -420,6 +809,15 @@ clearJumpBtn.addEventListener("click", () => {
       rooms: [],
       createdAt: now(),
       updatedAt: now(),
+      internalInspectDate: "",
+      internalFixPeriod: "",
+      clientInspectDate: "",
+      clientFixPeriod: "",
+      viewingDate: "",
+      viewingFixPeriod: "",
+      reViewingDate: "",
+      reViewingFixPeriod: "",
+      notes: ""
     });
     s.rooms = generateRoomsFromSpec(s.floorSpec);
     state.sites.push(s);
@@ -448,17 +846,44 @@ clearJumpBtn.addEventListener("click", () => {
     const bld = buildingName.value.trim();
     const spec = floorSpec.value.trim();
 
-    // validate spec without regenerating
     try {
       parseFloorSpec(spec);
     } catch (e) {
-      alert(e.message || String(e));
+      alert(e?.message || String(e));
       return;
+    }
+
+    // dates: accept empty or valid YYYY-MM-DD
+    const dateFields = [
+      ["社内検査日", internalInspectDate],
+      ["施主検査日", clientInspectDate],
+      ["内覧日", viewingDate],
+      ["再内覧日", reViewingDate],
+    ];
+    for (const [label, el] of dateFields) {
+      const v = (el.value || "").trim();
+      if (v && !parseYMD(v)) {
+        alert(`${label} の形式が違います。YYYY-MM-DD で入力してください。\n例：2026-01-06`);
+        el.focus();
+        return;
+      }
     }
 
     site.name = name;
     site.building = bld;
     site.floorSpec = spec;
+
+    site.internalInspectDate = (internalInspectDate.value || "").trim();
+    site.internalFixPeriod   = (internalFixPeriod.value || "").trim();
+    site.clientInspectDate   = (clientInspectDate.value || "").trim();
+    site.clientFixPeriod     = (clientFixPeriod.value || "").trim();
+    site.viewingDate         = (viewingDate.value || "").trim();
+    site.viewingFixPeriod    = (viewingFixPeriod.value || "").trim();
+    site.reViewingDate       = (reViewingDate.value || "").trim();
+    site.reViewingFixPeriod  = (reViewingFixPeriod.value || "").trim();
+
+    site.notes = (siteNotes.value || "");
+
     site.updatedAt = now();
     saveState();
     renderAll();
@@ -467,23 +892,24 @@ clearJumpBtn.addEventListener("click", () => {
   regenRoomsBtn.addEventListener("click", () => {
     const site = getCurrentSite();
     if (!site) return;
-    const ok = confirm("部屋を再生成します。現在の進捗（未/途/完）は初期化されます。よろしいですか？");
+    const ok = confirm("部屋を再生成します。進捗・作業日・担当者は初期化されます。よろしいですか？");
     if (!ok) return;
 
     try {
       site.rooms = generateRoomsFromSpec(site.floorSpec);
       site.updatedAt = now();
+      state.ui.highlightedRoomId = null;
       saveState();
       renderAll();
     } catch (e) {
-      alert(e.message || String(e));
+      alert(e?.message || String(e));
     }
   });
 
   resetAllBtn.addEventListener("click", () => {
     const site = getCurrentSite();
     if (!site) return;
-    const ok = confirm("全ての部屋を未着手に戻しますか？");
+    const ok = confirm("全ての部屋を未着手に戻しますか？（作業日・担当者は消えません）");
     if (!ok) return;
     for (const r of site.rooms) r.status = "todo";
     site.updatedAt = now();
@@ -491,7 +917,6 @@ clearJumpBtn.addEventListener("click", () => {
     renderAll();
   });
 
-  // filter buttons
   document.querySelectorAll("[data-filter]").forEach(btn => {
     btn.addEventListener("click", () => {
       const f = btn.getAttribute("data-filter");
@@ -503,7 +928,34 @@ clearJumpBtn.addEventListener("click", () => {
     });
   });
 
-  /** Boot */
+  modeBtn.addEventListener("click", () => {
+    state.ui.editMode = !state.ui.editMode;
+    saveState();
+    renderModeButton();
+  });
+
+  jumpBtn.addEventListener("click", () => {
+    const v = (jumpInput.value || "").trim();
+    if (!v) return;
+    jumpToRoom(v);
+  });
+
+  jumpInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      const v = (jumpInput.value || "").trim();
+      if (!v) return;
+      jumpToRoom(v);
+    }
+  });
+
+  clearJumpBtn.addEventListener("click", () => {
+    state.ui.highlightedRoomId = null;
+    jumpInput.value = "";
+    saveState();
+    renderRooms();
+  });
+
+  // Boot
   ensureInitialSite();
   renderAll();
 })();
