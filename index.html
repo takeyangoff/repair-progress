@@ -1,299 +1,988 @@
 <!doctype html>
 <html lang="ja">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>リペア進捗管理</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>リペア進捗管理（MVP）</title>
+  <style>
+    body { font-family: -apple-system, system-ui, sans-serif; margin: 0; background:#f6f7f9; }
+    header { position: sticky; top: 0; background: white; padding: 12px; border-bottom: 1px solid #e6e6e6; z-index: 20; }
+    h1 { font-size: 16px; margin: 0 0 8px; }
+    .row { display:flex; gap:8px; flex-wrap: wrap; align-items: center; }
+    select, input, button, textarea { font-size: 14px; padding: 8px; }
+    input { flex: 1; min-width: 150px; }
+    textarea { width: 100%; box-sizing: border-box; border: 1px solid #ddd; border-radius: 12px; background:#fff; }
+    button { border: 1px solid #ddd; background:#fff; border-radius: 10px; }
+    button.primary { background: #111827; color: white; border-color: #111827; }
+    button.danger { border-color: #ef4444; color: #ef4444; }
+    button.small { font-size: 12px; padding: 6px 10px; border-radius: 999px; }
+    input.small { font-size: 12px; padding: 6px 10px; border-radius: 999px; }
 
-<style>
-body{font-family:-apple-system,system-ui,sans-serif;margin:0;background:#f6f7f9}
-header{position:sticky;top:0;background:#fff;padding:12px;border-bottom:1px solid #e6e6e6;z-index:10}
-h1{font-size:16px;margin:0 0 8px}
-.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-select,input,button,textarea{font-size:14px;padding:8px}
-input{flex:1;min-width:160px}
-textarea{width:100%;box-sizing:border-box;border:1px solid #ddd;border-radius:12px}
-button{border:1px solid #ddd;background:#fff;border-radius:10px}
-button.primary{background:#111827;color:#fff;border-color:#111827}
-button.danger{border-color:#ef4444;color:#ef4444}
-button.small{font-size:12px;padding:6px 10px;border-radius:999px}
-input.small{font-size:12px;padding:6px 10px;border-radius:999px}
+    .meta { font-size: 12px; color: #6b7280; margin-top: 6px; }
+    main { padding: 12px; }
+    .stats { display:flex; gap:8px; flex-wrap: wrap; margin-bottom: 10px; }
+    .pill { background:white; border:1px solid #e6e6e6; border-radius: 999px; padding: 6px 10px; font-size: 13px; }
 
-.meta{font-size:12px;color:#6b7280;margin-top:6px}
-main{padding:12px}
-.panel{background:#fff;border:1px solid #e6e6e6;border-radius:12px;padding:12px;margin-bottom:12px}
-.panel h2{font-size:14px;margin:0 0 8px}
-.help{font-size:12px;color:#6b7280;line-height:1.5}
+    .panel { background:white; border:1px solid #e6e6e6; border-radius: 12px; padding: 12px; margin-bottom: 12px; }
+    .panel h2 { font-size: 14px; margin:0 0 8px; }
+    .help { font-size: 12px; color:#6b7280; line-height: 1.5; }
+    .split { display:flex; gap:8px; flex-wrap: wrap; }
+    .split > * { flex: 1; min-width: 220px; }
 
-.stats{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
-.pill{background:#fff;border:1px solid #e6e6e6;border-radius:999px;padding:6px 10px;font-size:13px}
+    .grid { display:grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap:8px; }
+    @media (max-width: 480px) { .grid { grid-template-columns: repeat(4, minmax(0,1fr)); } }
 
-.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
-@media(max-width:480px){.grid{grid-template-columns:repeat(4,1fr)}}
+    .room{
+      background:white; border:1px solid #e6e6e6; border-radius: 10px;
+      padding: 10px 8px; text-align:center; user-select:none; cursor:pointer;
+      display:flex; flex-direction: column; gap:6px;
+    }
+    .room .num { font-weight: 700; font-size: 14px; }
+    .room .st { font-size: 12px; padding: 2px 6px; border-radius: 999px; display:inline-block; margin: 0 auto; }
+    .room .sub { font-size: 11px; color:#6b7280; line-height: 1.2; }
 
-.room{background:#fff;border:1px solid #e6e6e6;border-radius:10px;padding:10px 6px;text-align:center;cursor:pointer}
-.room.todo{background:#f9fafb}
-.room.doing{background:#fffbeb;border-color:#f59e0b}
-.room.done{background:#ecfdf5;border-color:#10b981}
-.room .num{font-weight:700}
-.room .sub{font-size:11px;color:#6b7280}
+    .todo .st { background:#f3f4f6; color:#111827; }
+    .doing .st { background:#fffbeb; color:#92400e; }
+    .done .st { background:#ecfdf5; color:#065f46; }
 
-.floorHeader{grid-column:1/-1;font-weight:700;padding:6px}
+    /* カード全体も進捗で色分け */
+    .room.todo  { background:#f9fafb; border-color:#e5e7eb; }
+    .room.doing { background:#fffbeb; border-color:#f59e0b; }
+    .room.done  { background:#ecfdf5; border-color:#10b981; }
+    .room.doing .num, .room.doing .sub { color:#92400e; }
+    .room.done  .num, .room.done  .sub { color:#065f46; }
 
-details summary{cursor:pointer;font-weight:700}
-details{margin-top:8px}
+    .floorHeader {
+      grid-column: 1 / -1;
+      background: #ffffff;
+      border: 1px solid #e6e6e6;
+      border-radius: 10px;
+      padding: 8px 10px;
+      font-weight: 700;
+    }
+    .room.highlight { outline: 3px solid #111827; outline-offset: 2px; }
 
-.hidden{display:none}
+    /* 折りたたみ */
+    details.panelInner {
+      margin-top: 10px;
+      border: 1px solid #e6e6e6;
+      border-radius: 12px;
+      padding: 10px;
+      background: #fff;
+    }
+    details.panelInner > summary { cursor: pointer; font-weight: 700; font-size: 13px; }
+    details > summary { list-style: none; }
+    details > summary::-webkit-details-marker { display: none; }
 
-/* 管理画面 */
-.dangerPanel{
-  border:2px solid #ef4444;
-  background:#fff5f5;
-  margin-top:16px
-}
-.dangerPanel .help{color:#b91c1c}
-button.armed{
-  background:#ef4444;
-  color:#fff;
-  border-color:#ef4444
-}
-</style>
+    .divider { height:1px; background:#eee; margin: 10px 0; }
+    .sectionTitleRow { display:flex; justify-content: space-between; align-items:center; gap: 8px; margin-top: 8px; }
+    .sectionTitleRow .title { font-weight: 700; font-size: 13px; }
+
+    .schedTable { width:100%; border-collapse: collapse; }
+    .schedTable th, .schedTable td { border-top: 1px solid #eee; padding: 8px 6px; font-size: 12px; vertical-align: middle; }
+    .schedTable th { text-align:left; color:#6b7280; font-weight: 600; }
+    .schedRow input { min-width: 92px; }
+    .schedRow .mini { width: 70px; min-width: 70px; }
+    .schedRow .memo { min-width: 140px; }
+    .schedRow button { padding: 6px 10px; border-radius: 999px; font-size: 12px; }
+
+    /* 管理画面 */
+    .adminHeader { display:flex; justify-content: space-between; align-items: center; gap: 8px; }
+    .dangerPanel {
+      border: 2px solid #ef4444;
+      background: #fff5f5;
+    }
+    .dangerNote {
+      font-size: 12px;
+      color: #b91c1c;
+      line-height: 1.5;
+      margin-top: 6px;
+    }
+    .armedBtn {
+      background:#ef4444 !important;
+      color:#fff !important;
+      border-color:#ef4444 !important;
+      font-weight: 700;
+    }
+  </style>
 </head>
-
 <body>
-<header>
-<h1>リペア進捗管理</h1>
-<div class="row">
-  <select id="siteSelect"></select>
-  <button id="newSiteBtn" class="primary">現場追加</button>
-  <button id="manageBtn">⚙ 管理</button>
-</div>
-<div class="meta" id="siteMeta"></div>
-</header>
+  <header>
+    <h1>リペア進捗管理（MVP）</h1>
+    <div class="row">
+      <select id="siteSelect"></select>
+      <button id="newSiteBtn" class="primary">現場を追加</button>
+      <button id="manageBtn">⚙ 管理</button>
+    </div>
+    <div class="meta" id="siteMeta"></div>
+  </header>
 
-<main>
+  <main>
+    <!-- 通常画面 -->
+    <div id="mainView">
+      <div class="panel">
+        <h2>現場設定</h2>
+        <div class="split">
+          <div>
+            <div class="row">
+              <input id="siteName" placeholder="現場名（例：〇〇マンション）" />
+            </div>
+            <div class="row">
+              <input id="buildingName" placeholder="棟/建物名（任意）" />
+            </div>
+          </div>
+          <div>
+            <div class="row">
+              <input id="floorSpec" placeholder="階:部屋数（例 1:4,2-11:5）" />
+            </div>
+            <div class="help">
+              入力例：<b>1:4,2-11:5</b>（カンマ区切り）<br/>
+              形式：<b>階</b> または <b>開始階-終了階</b> : <b>部屋数</b><br/>
+              部屋番号は <b>101方式</b>（階×100 + 連番）で自動生成
+            </div>
+          </div>
+        </div>
 
-<!-- ===== 通常画面 ===== -->
-<div id="mainView">
+        <!-- 8項目スケジュール（折りたたみ・初期は閉） -->
+        <details class="panelInner" id="scheduleDetails">
+          <summary>検査・内覧スケジュール（タップで開閉）</summary>
+          <div class="help" style="margin-top:8px;">
+            8項目すべて：<b>階範囲</b>＋<b>期間（開始〜終了）</b>＋<b>メモ</b> を行追加できます。<br/>
+            日付はカレンダーで選択＆手入力OK（YYYY-MM-DD）。
+          </div>
+          <div class="divider"></div>
+          <div id="scheduleContainer"></div>
+        </details>
 
-<div class="panel">
-<h2>現場設定</h2>
-<div class="row">
-  <input id="siteName" placeholder="現場名"/>
-  <input id="buildingName" placeholder="棟名"/>
-</div>
-<div class="row">
-  <input id="floorSpec" placeholder="階:部屋数（例 1:4,2-11:5）"/>
-</div>
-<button id="saveSiteBtn" class="primary">設定を保存</button>
-</div>
+        <!-- 備考 -->
+        <div style="margin-top:10px;">
+          <div class="help"><b>備考（現場メモ）</b></div>
+          <textarea id="siteNotes" rows="4" placeholder="自由メモ（段取り、注意事項、共通の指示など）"></textarea>
+        </div>
 
-<div class="stats" id="stats"></div>
+        <div class="row" style="margin-top:10px;">
+          <button id="saveSiteBtn" class="primary">設定を保存</button>
+        </div>
+      </div>
 
-<div class="panel">
-<div class="row">
-  <button class="small" data-filter="all">全件</button>
-  <button class="small" data-filter="todo">未着手</button>
-  <button class="small" data-filter="doing">途中</button>
-  <button class="small" data-filter="done">完了</button>
-</div>
-<div class="row" style="margin-top:6px">
-  <input id="jumpInput" class="small" placeholder="部屋番号"/>
-  <button id="jumpBtn" class="small">移動</button>
-</div>
-</div>
+      <div class="stats" id="stats"></div>
 
-<div class="grid" id="roomGrid"></div>
-</div>
+      <div class="panel">
+        <div class="row">
+          <button class="small" data-filter="all">全件</button>
+          <button class="small" data-filter="todo">未着手</button>
+          <button class="small" data-filter="doing">途中</button>
+          <button class="small" data-filter="done">完了</button>
+          <button class="small" id="modeBtn">入力モード: OFF</button>
+        </div>
 
-<!-- ===== 管理画面 ===== -->
-<div id="adminView" class="hidden">
+        <div class="row" style="margin-top:8px;">
+          <input id="jumpInput" class="small" placeholder="部屋番号でジャンプ（例 703）" />
+          <button class="small" id="jumpBtn">移動</button>
+          <button class="small" id="clearJumpBtn">解除</button>
+        </div>
 
-<div class="panel">
-<div class="row" style="justify-content:space-between">
-<h2>管理（危険操作）</h2>
-<button id="backBtn">← 戻る</button>
-</div>
-<div class="help">誤操作防止のため、危険な操作はここにまとめています。</div>
-</div>
+        <div class="help" style="margin-top:8px;">
+          入力モードON：部屋カードをタップ → <b>作業日</b> → <b>担当者</b>（自由入力）
+        </div>
+      </div>
 
-<div class="panel">
-<h2>進捗の初期化</h2>
-<button id="resetAllBtn" class="danger">全て未着手に戻す</button>
-</div>
+      <div class="grid" id="roomGrid"></div>
 
-<div class="panel">
-<h2>現場削除</h2>
-<button id="deleteSiteBtn" class="danger">現場削除</button>
-</div>
+      <div class="help" style="padding: 10px 2px;">
+        通常モード：部屋カードをタップで 未着手 → 途中 → 完了 → 未着手
+      </div>
+    </div>
 
-<!-- 最下部・最重要 -->
-<div class="panel dangerPanel">
-<h2>⚠ 部屋を再生成（最終操作）</h2>
-<div class="help">
-・進捗／作業日／担当者がすべて消えます<br/>
-・この操作は元に戻せません
-</div>
-<button id="regenRoomsBtn" class="danger" style="margin-top:8px">
-部屋を再生成
-</button>
-</div>
+    <!-- 管理画面 -->
+    <div id="adminView" style="display:none;">
+      <div class="panel">
+        <div class="adminHeader">
+          <h2 style="margin:0;">管理（危険操作）</h2>
+          <button id="backBtn">← 戻る</button>
+        </div>
+        <div class="help" style="margin-top:6px;">
+          誤操作防止のため、初期化・削除などはここにまとめています。
+        </div>
+      </div>
 
-</div>
-</main>
+      <div class="panel">
+        <h2>現場の削除</h2>
+        <div class="help">現場ごとのデータが消えます（元に戻せません）。</div>
+        <button id="deleteSiteBtn" class="danger">現場削除</button>
+      </div>
+
+      <div class="panel">
+        <h2>進捗の初期化</h2>
+        <div class="help">すべての部屋を「未着手」に戻します（作業日・担当者は残します）。</div>
+        <button id="resetAllBtn" class="danger">全て未着手に戻す</button>
+      </div>
+
+      <!-- ★ここが要望どおり：最下部・赤枠・説明文・二段階タップ -->
+      <div class="panel dangerPanel">
+        <h2>部屋の再生成（最終・危険）</h2>
+        <div class="dangerNote">
+          ・階数設定（階:部屋数）から、部屋一覧を作り直します<br/>
+          ・<b>進捗（未/途/完）・作業日・担当者</b>が全て初期化されます<br/>
+          ・この操作は<b>元に戻せません</b><br/>
+          ※ 誤操作防止：<b>二段階タップ</b>になっています
+        </div>
+        <div style="margin-top:10px;">
+          <button id="regenRoomsBtn" class="danger">部屋を再生成</button>
+        </div>
+        <div class="help" style="margin-top:8px;">
+          1回目：確認状態にします / 2回目：confirm後に実行
+        </div>
+      </div>
+    </div>
+  </main>
 
 <script>
-const $=id=>document.getElementById(id);
-const STORAGE="repair_safe_v1";
-let state=JSON.parse(localStorage.getItem(STORAGE)||"{}");
+(() => {
+  const STORAGE_KEY = "repair_progress_full_safe_v1";
 
-if(!state.sites){
- state={sites:[],current:null,filter:"all"};
-}
+  /** @typedef {"todo"|"doing"|"done"} Status */
+  /** @typedef {{ id:string, label:string, floor:number, idx:number, status:Status, assignee?:string, workedDate?:string }} Room */
+  /** @typedef {{ id:string, floorFrom:number, floorTo:number, start:string, end:string, memo:string }} ScheduleRow */
+  /** @typedef {{
+      internal: ScheduleRow[],
+      internalFix: ScheduleRow[],
+      client: ScheduleRow[],
+      clientFix: ScheduleRow[],
+      viewing: ScheduleRow[],
+      viewingFix: ScheduleRow[],
+      reViewing: ScheduleRow[],
+      reViewingFix: ScheduleRow[]
+  }} Schedules */
+  /** @typedef {{
+    id:string, name:string, building:string, floorSpec:string, rooms:Room[],
+    createdAt:number, updatedAt:number,
+    notes?:string,
+    schedules?:Schedules
+  }} Site */
+  /** @typedef {{ sites:Site[], currentSiteId:string|null, ui:{filter:"all"|Status, editMode:boolean, highlightedRoomId:string|null} }} AppState */
 
-function save(){localStorage.setItem(STORAGE,JSON.stringify(state));}
+  const uid = () => Math.random().toString(36).slice(2, 10) + "-" + Date.now().toString(36);
+  const now = () => Date.now();
+  const $ = (id) => document.getElementById(id);
 
-function parseSpec(s){
- const out=[];
- s.split(",").forEach(p=>{
-  let[a,b]=p.split(":");
-  if(!b)return;
-  if(a.includes("-")){
-   let[x,y]=a.split("-").map(Number);
-   for(let f=x;f<=y;f++)out.push({f, n:+b});
-  }else out.push({f:+a,n:+b});
- });
- return out;
-}
+  // Elements
+  const siteSelect = $("siteSelect");
+  const newSiteBtn = $("newSiteBtn");
+  const manageBtn = $("manageBtn");
+  const backBtn = $("backBtn");
 
-function genRooms(spec){
- const r=[];
- parseSpec(spec).forEach(o=>{
-  for(let i=1;i<=o.n;i++){
-   r.push({id:Math.random(),label:o.f*100+i,status:"todo"});
+  const mainView = $("mainView");
+  const adminView = $("adminView");
+
+  const siteName = $("siteName");
+  const buildingName = $("buildingName");
+  const floorSpec = $("floorSpec");
+  const siteNotes = $("siteNotes");
+  const saveSiteBtn = $("saveSiteBtn");
+
+  const scheduleContainer = $("scheduleContainer");
+
+  const deleteSiteBtn = $("deleteSiteBtn");
+  const resetAllBtn = $("resetAllBtn");
+  const regenRoomsBtn = $("regenRoomsBtn");
+
+  const siteMeta = $("siteMeta");
+  const statsEl = $("stats");
+  const roomGrid = $("roomGrid");
+
+  const modeBtn = $("modeBtn");
+  const jumpInput = $("jumpInput");
+  const jumpBtn = $("jumpBtn");
+  const clearJumpBtn = $("clearJumpBtn");
+
+  // Safety arming flags
+  let deleteArmed = false;
+  let resetArmed = false;
+  let regenArmed = false;
+
+  function defaultSchedules() {
+    /** @type {Schedules} */
+    return {
+      internal: [],
+      internalFix: [],
+      client: [],
+      clientFix: [],
+      viewing: [],
+      viewingFix: [],
+      reViewing: [],
+      reViewingFix: []
+    };
   }
- });
- return r;
-}
 
-function cur(){return state.sites.find(s=>s.id===state.current);}
+  function defaultState() {
+    /** @type {AppState} */
+    return { sites: [], currentSiteId: null, ui: { filter: "all", editMode: false, highlightedRoomId: null } };
+  }
 
-function render(){
- const sel=$("siteSelect");
- sel.innerHTML="";
- state.sites.forEach(s=>{
-  let o=document.createElement("option");
-  o.value=s.id;o.textContent=s.name;
-  sel.appendChild(o);
- });
- if(state.current)sel.value=state.current;
+  /** @returns {AppState} */
+  function loadState() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return defaultState();
+      const parsed = JSON.parse(raw);
+      if (!parsed || !Array.isArray(parsed.sites)) return defaultState();
+      if (!parsed.ui) parsed.ui = { filter: "all", editMode: false, highlightedRoomId: null };
+      if (!parsed.ui.filter) parsed.ui.filter = "all";
+      if (typeof parsed.ui.editMode !== "boolean") parsed.ui.editMode = false;
+      if (!("highlightedRoomId" in parsed.ui)) parsed.ui.highlightedRoomId = null;
 
- const site=cur();
- if(!site)return;
+      // Backfill new fields
+      for (const s of parsed.sites) {
+        if (!("notes" in s)) s.notes = "";
+        if (!("schedules" in s) || !s.schedules) s.schedules = defaultSchedules();
+        const keys = Object.keys(defaultSchedules());
+        for (const k of keys) if (!Array.isArray(s.schedules[k])) s.schedules[k] = [];
+      }
+      return parsed;
+    } catch {
+      return defaultState();
+    }
+  }
 
- $("siteMeta").textContent=`部屋数:${site.rooms.length}`;
- $("siteName").value=site.name;
- $("buildingName").value=site.building;
- $("floorSpec").value=site.floorSpec;
+  function saveState() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
 
- const stats={todo:0,doing:0,done:0};
- site.rooms.forEach(r=>stats[r.status]++);
- $("stats").innerHTML=
-  `<div class="pill">未:${stats.todo}</div>
-   <div class="pill">途:${stats.doing}</div>
-   <div class="pill">完:${stats.done}</div>`;
+  // Parsing "1:4,2-11:5"
+  function parseFloorSpec(spec) {
+    const s = (spec || "").trim();
+    if (!s) return [];
+    const parts = s.split(",").map(x => x.trim()).filter(Boolean);
+    const out = [];
+    for (const p of parts) {
+      const [lhs, rhs] = p.split(":").map(x => (x || "").trim());
+      const roomsPerFloor = Number(rhs);
+      if (!lhs || !Number.isFinite(roomsPerFloor) || roomsPerFloor <= 0) {
+        throw new Error(`入力形式エラー: "${p}"`);
+      }
+      if (lhs.includes("-")) {
+        const [a, b] = lhs.split("-").map(x => Number(x.trim()));
+        if (!Number.isInteger(a) || !Number.isInteger(b) || a <= 0 || b <= 0 || a > b) {
+          throw new Error(`階範囲エラー: "${lhs}"`);
+        }
+        out.push({ from: a, to: b, roomsPerFloor });
+      } else {
+        const f = Number(lhs);
+        if (!Number.isInteger(f) || f <= 0) throw new Error(`階エラー: "${lhs}"`);
+        out.push({ from: f, to: f, roomsPerFloor });
+      }
+    }
+    // overlap check
+    const used = new Set();
+    for (const r of out) {
+      for (let f = r.from; f <= r.to; f++) {
+        if (used.has(f)) throw new Error(`同じ階の指定が重複しています: ${f}階`);
+        used.add(f);
+      }
+    }
+    out.sort((a,b) => a.from - b.from);
+    return out;
+  }
 
- const grid=$("roomGrid");grid.innerHTML="";
- let last=null;
- site.rooms
- .filter(r=>state.filter==="all"||r.status===state.filter)
- .forEach(r=>{
-  let card=document.createElement("div");
-  card.className=`room ${r.status}`;
-  card.innerHTML=`<div class=num>${r.label}</div>`;
-  card.onclick=()=>{
-    r.status=r.status==="todo"?"doing":r.status==="doing"?"done":"todo";
-    save();render();
-  };
-  grid.appendChild(card);
- });
-}
+  function generateRoomsFromSpec(spec) {
+    const ranges = parseFloorSpec(spec);
+    /** @type {Room[]} */
+    const rooms = [];
+    for (const r of ranges) {
+      for (let f = r.from; f <= r.to; f++) {
+        for (let i = 1; i <= r.roomsPerFloor; i++) {
+          const label = String(f * 100 + i);
+          rooms.push({ id: uid(), label, floor: f, idx: i, status: "todo", assignee: "", workedDate: "" });
+        }
+      }
+    }
+    rooms.sort((a,b) => a.floor - b.floor || a.idx - b.idx);
+    return rooms;
+  }
 
-$("newSiteBtn").onclick=()=>{
- const s={id:Date.now(),name:"新規現場",building:"",floorSpec:"1:4",rooms:[]};
- s.rooms=genRooms(s.floorSpec);
- state.sites.push(s);state.current=s.id;save();render();
-};
+  /** @type {AppState} */
+  let state = loadState();
 
-$("saveSiteBtn").onclick=()=>{
- const s=cur();
- s.name=$("siteName").value||"無題";
- s.building=$("buildingName").value;
- s.floorSpec=$("floorSpec").value;
- save();render();
-};
+  function getCurrentSite() {
+    if (!state.currentSiteId) return null;
+    return state.sites.find(s => s.id === state.currentSiteId) || null;
+  }
 
-$("siteSelect").onchange=e=>{
- state.current=+e.target.value;save();render();
-};
+  function ensureInitialSite() {
+    if (state.sites.length === 0) {
+      /** @type {Site} */
+      const s = {
+        id: uid(),
+        name: "サンプル現場",
+        building: "",
+        floorSpec: "1:4,2-3:5",
+        rooms: [],
+        createdAt: now(),
+        updatedAt: now(),
+        notes: "",
+        schedules: defaultSchedules()
+      };
+      s.rooms = generateRoomsFromSpec(s.floorSpec);
+      state.sites.push(s);
+      state.currentSiteId = s.id;
+      saveState();
+    } else if (!state.currentSiteId || !getCurrentSite()) {
+      state.currentSiteId = state.sites[0].id;
+      saveState();
+    }
+  }
 
-document.querySelectorAll("[data-filter]").forEach(b=>{
- b.onclick=()=>{state.filter=b.dataset.filter;render();};
-});
+  function computeStats(rooms) {
+    let todo = 0, doing = 0, done = 0;
+    for (const r of rooms) {
+      if (r.status === "todo") todo++;
+      else if (r.status === "doing") doing++;
+      else done++;
+    }
+    return { total: rooms.length, todo, doing, done };
+  }
 
-$("jumpBtn").onclick=()=>{
- const v=$("jumpInput").value;
- const el=[...document.querySelectorAll(".room")]
-   .find(e=>e.textContent.trim()==v);
- if(el)el.scrollIntoView({block:"center"});
-};
+  function renderSiteSelect() {
+    siteSelect.innerHTML = "";
+    for (const s of state.sites) {
+      const opt = document.createElement("option");
+      opt.value = s.id;
+      opt.textContent = s.building ? `${s.name}（${s.building}）` : s.name;
+      siteSelect.appendChild(opt);
+    }
+    if (state.currentSiteId) siteSelect.value = state.currentSiteId;
+  }
 
-/* 管理画面切替 */
-$("manageBtn").onclick=()=>{
- $("mainView").classList.add("hidden");
- $("adminView").classList.remove("hidden");
-};
-$("backBtn").onclick=()=>{
- $("adminView").classList.add("hidden");
- $("mainView").classList.remove("hidden");
-};
+  function renderSiteForm() {
+    const site = getCurrentSite();
+    if (!site) return;
 
-/* 危険操作 */
-$("resetAllBtn").onclick=()=>{
- if(confirm("全て未着手に戻しますか？")){
-  cur().rooms.forEach(r=>r.status="todo");
-  save();render();
- }
-};
+    siteName.value = site.name || "";
+    buildingName.value = site.building || "";
+    floorSpec.value = site.floorSpec || "";
+    siteNotes.value = site.notes || "";
 
-$("deleteSiteBtn").onclick=()=>{
- if(confirm("現場を削除しますか？")){
-  state.sites=state.sites.filter(s=>s.id!==state.current);
-  state.current=state.sites[0]?.id;
-  save();render();
- }
-};
+    renderSchedules();
 
-/* 二段階タップ */
-let armed=false;
-$("regenRoomsBtn").onclick=()=>{
- if(!armed){
-  armed=true;
-  $("regenRoomsBtn").classList.add("armed");
-  $("regenRoomsBtn").textContent="もう一度タップすると実行";
-  return;
- }
- if(confirm("本当に部屋を再生成しますか？")){
-  const s=cur();
-  s.rooms=genRooms(s.floorSpec);
-  armed=false;
-  $("regenRoomsBtn").classList.remove("armed");
-  $("regenRoomsBtn").textContent="部屋を再生成";
-  save();render();
- }
-};
+    const updated = new Date(site.updatedAt).toLocaleString("ja-JP");
+    siteMeta.textContent = `部屋数: ${site.rooms.length} / 最終更新: ${updated}`;
+  }
 
-render();
+  function renderStats() {
+    const site = getCurrentSite();
+    if (!site) return;
+    const st = computeStats(site.rooms);
+    statsEl.innerHTML = "";
+    const mk = (label, val) => {
+      const d = document.createElement("div");
+      d.className = "pill";
+      d.textContent = `${label}: ${val}`;
+      return d;
+    };
+    statsEl.appendChild(mk("合計", st.total));
+    statsEl.appendChild(mk("未着手", st.todo));
+    statsEl.appendChild(mk("途中", st.doing));
+    statsEl.appendChild(mk("完了", st.done));
+  }
+
+  function statusLabel(status) {
+    if (status === "todo") return "未着手";
+    if (status === "doing") return "途中";
+    return "完了";
+  }
+
+  function nextStatus(status) {
+    if (status === "todo") return "doing";
+    if (status === "doing") return "done";
+    return "todo";
+  }
+
+  function renderModeButton() {
+    modeBtn.textContent = state.ui.editMode ? "入力モード: ON" : "入力モード: OFF";
+  }
+
+  function renderRooms() {
+    const site = getCurrentSite();
+    if (!site) return;
+
+    const filter = state.ui.filter;
+    const rooms = (filter === "all") ? site.rooms : site.rooms.filter(r => r.status === filter);
+
+    roomGrid.innerHTML = "";
+    let lastFloor = null;
+
+    for (const r of rooms) {
+      if (lastFloor !== r.floor) {
+        const header = document.createElement("div");
+        header.className = "floorHeader";
+        header.textContent = `${r.floor}階`;
+        roomGrid.appendChild(header);
+        lastFloor = r.floor;
+      }
+
+      const card = document.createElement("div");
+      card.className = `room ${r.status}`;
+      card.dataset.roomId = r.id;
+      if (r.id === state.ui.highlightedRoomId) card.classList.add("highlight");
+
+      const num = document.createElement("div");
+      num.className = "num";
+      num.textContent = r.label;
+
+      const st = document.createElement("div");
+      st.className = "st";
+      st.textContent = statusLabel(r.status);
+
+      const sub = document.createElement("div");
+      sub.className = "sub";
+      const d = r.workedDate ? r.workedDate : "";
+      const a = r.assignee ? r.assignee : "";
+      sub.textContent = (d || a) ? `${d}${(d && a) ? " / " : ""}${a}` : "";
+
+      card.appendChild(num);
+      card.appendChild(st);
+      card.appendChild(sub);
+
+      card.addEventListener("click", () => {
+        const site2 = getCurrentSite();
+        if (!site2) return;
+        const room = site2.rooms.find(x => x.id === r.id);
+        if (!room) return;
+
+        if (state.ui.editMode) {
+          const today = new Date().toISOString().slice(0, 10);
+          const newDate = prompt("作業日（YYYY-MM-DD）", room.workedDate || today);
+          if (newDate === null) return;
+          const newAssignee = prompt("担当者（例：佐藤）", room.assignee || "");
+          if (newAssignee === null) return;
+
+          room.workedDate = (newDate || "").trim();
+          room.assignee = (newAssignee || "").trim();
+        } else {
+          room.status = nextStatus(room.status);
+        }
+
+        site2.updatedAt = now();
+        saveState();
+        renderStats();
+        renderRooms();
+        renderSiteForm();
+      });
+
+      roomGrid.appendChild(card);
+    }
+  }
+
+  function renderAll() {
+    renderSiteSelect();
+    renderSiteForm();
+    renderModeButton();
+    renderStats();
+    renderRooms();
+  }
+
+  // Jump
+  function jumpToRoom(label) {
+    const site = getCurrentSite();
+    if (!site) return;
+    const target = site.rooms.find(r => r.label === String(label));
+    if (!target) {
+      alert(`部屋が見つかりません: ${label}`);
+      return;
+    }
+    state.ui.filter = "all";
+    state.ui.highlightedRoomId = target.id;
+    saveState();
+
+    renderRooms();
+    requestAnimationFrame(() => {
+      const el = document.querySelector(`[data-room-id="${target.id}"]`);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+  }
+
+  // ---- Schedules (8 sections) ----
+  const SCHED_DEFS = [
+    { key: "internal",   label: "社内検査" },
+    { key: "internalFix",label: "社内検査 是正期間" },
+    { key: "client",     label: "施主検査" },
+    { key: "clientFix",  label: "施主検査 是正期間" },
+    { key: "viewing",    label: "内覧" },
+    { key: "viewingFix", label: "内覧 是正期間" },
+    { key: "reViewing",  label: "再内覧" },
+    { key: "reViewingFix",label:"再内覧 是正期間" },
+  ];
+
+  function ensureSchedules(site) {
+    if (!site.schedules) site.schedules = defaultSchedules();
+    const keys = Object.keys(defaultSchedules());
+    for (const k of keys) if (!Array.isArray(site.schedules[k])) site.schedules[k] = [];
+  }
+
+  function addScheduleRow(site, key) {
+    ensureSchedules(site);
+    /** @type {ScheduleRow} */
+    const row = { id: uid(), floorFrom: 1, floorTo: 1, start: "", end: "", memo: "" };
+    site.schedules[key].push(row);
+    site.updatedAt = now();
+    saveState();
+    renderSchedules();
+    renderSiteForm();
+  }
+
+  function deleteScheduleRow(site, key, rowId) {
+    ensureSchedules(site);
+    site.schedules[key] = site.schedules[key].filter(r => r.id !== rowId);
+    site.updatedAt = now();
+    saveState();
+    renderSchedules();
+    renderSiteForm();
+  }
+
+  function onScheduleChange(site, key, rowId, patch) {
+    ensureSchedules(site);
+    const row = site.schedules[key].find(r => r.id === rowId);
+    if (!row) return;
+    Object.assign(row, patch);
+    site.updatedAt = now();
+    saveState();
+    const updated = new Date(site.updatedAt).toLocaleString("ja-JP");
+    siteMeta.textContent = `部屋数: ${site.rooms.length} / 最終更新: ${updated}`;
+  }
+
+  function clampInt(v, def=1) {
+    const n = Number(v);
+    if (!Number.isFinite(n)) return def;
+    return Math.max(1, Math.floor(n));
+  }
+
+  function renderSchedules() {
+    const site = getCurrentSite();
+    if (!site) return;
+    ensureSchedules(site);
+
+    scheduleContainer.innerHTML = "";
+
+    for (const def of SCHED_DEFS) {
+      const section = document.createElement("div");
+
+      const titleRow = document.createElement("div");
+      titleRow.className = "sectionTitleRow";
+
+      const title = document.createElement("div");
+      title.className = "title";
+      title.textContent = def.label;
+
+      const addBtn = document.createElement("button");
+      addBtn.type = "button";
+      addBtn.className = "small";
+      addBtn.textContent = "＋ 行を追加";
+      addBtn.addEventListener("click", () => addScheduleRow(site, def.key));
+
+      titleRow.appendChild(title);
+      titleRow.appendChild(addBtn);
+
+      const table = document.createElement("table");
+      table.className = "schedTable";
+
+      const thead = document.createElement("thead");
+      const trh = document.createElement("tr");
+      ["階(開始)","階(終了)","開始日","終了日","メモ",""].forEach(t => {
+        const th = document.createElement("th");
+        th.textContent = t;
+        trh.appendChild(th);
+      });
+      thead.appendChild(trh);
+      table.appendChild(thead);
+
+      const tbody = document.createElement("tbody");
+
+      const rows = site.schedules[def.key] || [];
+      if (rows.length === 0) {
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.colSpan = 6;
+        td.style.color = "#6b7280";
+        td.style.fontSize = "12px";
+        td.style.padding = "10px 6px";
+        td.textContent = "（まだ行がありません）";
+        tr.appendChild(td);
+        tbody.appendChild(tr);
+      } else {
+        for (const r of rows) {
+          const tr = document.createElement("tr");
+          tr.className = "schedRow";
+
+          const f1 = document.createElement("input");
+          f1.type = "number"; f1.min = "1";
+          f1.className = "mini";
+          f1.value = String(r.floorFrom ?? 1);
+          f1.addEventListener("input", () => onScheduleChange(site, def.key, r.id, { floorFrom: clampInt(f1.value, 1) }));
+
+          const f2 = document.createElement("input");
+          f2.type = "number"; f2.min = "1";
+          f2.className = "mini";
+          f2.value = String(r.floorTo ?? 1);
+          f2.addEventListener("input", () => onScheduleChange(site, def.key, r.id, { floorTo: clampInt(f2.value, 1) }));
+
+          const d1 = document.createElement("input");
+          d1.type = "date";
+          d1.value = (r.start || "");
+          d1.addEventListener("change", () => onScheduleChange(site, def.key, r.id, { start: (d1.value || "") }));
+
+          const d2 = document.createElement("input");
+          d2.type = "date";
+          d2.value = (r.end || "");
+          d2.addEventListener("change", () => onScheduleChange(site, def.key, r.id, { end: (d2.value || "") }));
+
+          const memo = document.createElement("input");
+          memo.type = "text";
+          memo.className = "memo";
+          memo.placeholder = "任意（例：AM/PM、A班など）";
+          memo.value = (r.memo || "");
+          memo.addEventListener("input", () => onScheduleChange(site, def.key, r.id, { memo: (memo.value || "") }));
+
+          const delBtn = document.createElement("button");
+          delBtn.type = "button";
+          delBtn.className = "danger";
+          delBtn.textContent = "削除";
+          delBtn.addEventListener("click", () => {
+            const ok = confirm(`「${def.label}」のこの行を削除しますか？`);
+            if (!ok) return;
+            deleteScheduleRow(site, def.key, r.id);
+          });
+
+          const td1 = document.createElement("td"); td1.appendChild(f1);
+          const td2 = document.createElement("td"); td2.appendChild(f2);
+          const td3 = document.createElement("td"); td3.appendChild(d1);
+          const td4 = document.createElement("td"); td4.appendChild(d2);
+          const td5 = document.createElement("td"); td5.appendChild(memo);
+          const td6 = document.createElement("td"); td6.appendChild(delBtn);
+
+          tr.appendChild(td1); tr.appendChild(td2); tr.appendChild(td3);
+          tr.appendChild(td4); tr.appendChild(td5); tr.appendChild(td6);
+
+          tbody.appendChild(tr);
+        }
+      }
+
+      table.appendChild(tbody);
+      section.appendChild(titleRow);
+      section.appendChild(table);
+      section.appendChild(Object.assign(document.createElement("div"), { className: "divider" }));
+      scheduleContainer.appendChild(section);
+    }
+  }
+
+  // View switching
+  function showAdmin() {
+    mainView.style.display = "none";
+    adminView.style.display = "block";
+    disarmAll();
+    window.scrollTo(0, 0);
+  }
+  function showMain() {
+    adminView.style.display = "none";
+    mainView.style.display = "block";
+    disarmAll();
+    window.scrollTo(0, 0);
+  }
+
+  function disarmAll() {
+    deleteArmed = resetArmed = regenArmed = false;
+    deleteSiteBtn.textContent = "現場削除";
+    resetAllBtn.textContent = "全て未着手に戻す";
+    regenRoomsBtn.textContent = "部屋を再生成";
+    deleteSiteBtn.classList.remove("armedBtn");
+    resetAllBtn.classList.remove("armedBtn");
+    regenRoomsBtn.classList.remove("armedBtn");
+  }
+
+  // ---- Events ----
+  siteSelect.addEventListener("change", () => {
+    state.currentSiteId = siteSelect.value;
+    saveState();
+    renderAll();
+  });
+
+  newSiteBtn.addEventListener("click", () => {
+    /** @type {Site} */
+    const s = {
+      id: uid(),
+      name: `新規現場 ${state.sites.length + 1}`,
+      building: "",
+      floorSpec: "1:4,2-11:5",
+      rooms: [],
+      createdAt: now(),
+      updatedAt: now(),
+      notes: "",
+      schedules: defaultSchedules()
+    };
+    s.rooms = generateRoomsFromSpec(s.floorSpec);
+    state.sites.push(s);
+    state.currentSiteId = s.id;
+    saveState();
+    renderAll();
+  });
+
+  manageBtn.addEventListener("click", showAdmin);
+  backBtn.addEventListener("click", showMain);
+
+  saveSiteBtn.addEventListener("click", () => {
+    const site = getCurrentSite();
+    if (!site) return;
+
+    const name = siteName.value.trim() || "無題の現場";
+    const bld = buildingName.value.trim();
+    const spec = floorSpec.value.trim();
+
+    try { parseFloorSpec(spec); }
+    catch (e) { alert(e?.message || String(e)); return; }
+
+    site.name = name;
+    site.building = bld;
+    site.floorSpec = spec;
+    site.notes = (siteNotes.value || "");
+
+    site.updatedAt = now();
+    saveState();
+    renderAll();
+  });
+
+  // notes autosave
+  siteNotes.addEventListener("input", () => {
+    const site = getCurrentSite();
+    if (!site) return;
+    site.notes = (siteNotes.value || "");
+    site.updatedAt = now();
+    saveState();
+    const updated = new Date(site.updatedAt).toLocaleString("ja-JP");
+    siteMeta.textContent = `部屋数: ${site.rooms.length} / 最終更新: ${updated}`;
+  });
+
+  // filters
+  document.querySelectorAll("[data-filter]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const f = btn.getAttribute("data-filter");
+      if (f === "all" || f === "todo" || f === "doing" || f === "done") {
+        state.ui.filter = f;
+        saveState();
+        renderRooms();
+      }
+    });
+  });
+
+  modeBtn.addEventListener("click", () => {
+    state.ui.editMode = !state.ui.editMode;
+    saveState();
+    renderModeButton();
+  });
+
+  // Jump
+  jumpBtn.addEventListener("click", () => {
+    const v = (jumpInput.value || "").trim();
+    if (!v) return;
+    jumpToRoom(v);
+  });
+  jumpInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      const v = (jumpInput.value || "").trim();
+      if (!v) return;
+      jumpToRoom(v);
+    }
+  });
+  clearJumpBtn.addEventListener("click", () => {
+    state.ui.highlightedRoomId = null;
+    jumpInput.value = "";
+    saveState();
+    renderRooms();
+  });
+
+  // ---- Admin danger actions ----
+
+  // 現場削除（二段階＋confirm）
+  deleteSiteBtn.addEventListener("click", () => {
+    const site = getCurrentSite();
+    if (!site) return;
+
+    if (!deleteArmed) {
+      disarmAll();
+      deleteArmed = true;
+      deleteSiteBtn.textContent = "もう一度タップで削除（危険）";
+      deleteSiteBtn.classList.add("armedBtn");
+      return;
+    }
+
+    const ok = confirm(`現場「${site.name}」を削除しますか？（元に戻せません）`);
+    if (!ok) { disarmAll(); return; }
+
+    state.sites = state.sites.filter(s => s.id !== site.id);
+    state.currentSiteId = state.sites.length ? state.sites[0].id : null;
+    saveState();
+    ensureInitialSite();
+    disarmAll();
+    showMain();
+    renderAll();
+  });
+
+  // 全て未着手（二段階＋confirm）
+  resetAllBtn.addEventListener("click", () => {
+    const site = getCurrentSite();
+    if (!site) return;
+
+    if (!resetArmed) {
+      disarmAll();
+      resetArmed = true;
+      resetAllBtn.textContent = "もう一度タップで実行（危険）";
+      resetAllBtn.classList.add("armedBtn");
+      return;
+    }
+
+    const ok = confirm("全ての部屋を未着手に戻しますか？（作業日・担当者は残ります）");
+    if (!ok) { disarmAll(); return; }
+
+    for (const r of site.rooms) r.status = "todo";
+    site.updatedAt = now();
+    saveState();
+    disarmAll();
+    renderAll();
+  });
+
+  // 部屋を再生成（最下部・赤枠・二段階＋confirm）★要望どおり
+  regenRoomsBtn.addEventListener("click", () => {
+    const site = getCurrentSite();
+    if (!site) return;
+
+    if (!regenArmed) {
+      disarmAll();
+      regenArmed = true;
+      regenRoomsBtn.textContent = "もう一度タップで再生成（最終実行）";
+      regenRoomsBtn.classList.add("armedBtn");
+      return;
+    }
+
+    const ok = confirm("部屋を再生成します。進捗・作業日・担当者は初期化されます。よろしいですか？");
+    if (!ok) { disarmAll(); return; }
+
+    try {
+      site.rooms = generateRoomsFromSpec(site.floorSpec);
+      site.updatedAt = now();
+      state.ui.highlightedRoomId = null;
+      saveState();
+      disarmAll();
+      showMain();
+      renderAll();
+    } catch (e) {
+      alert(e?.message || String(e));
+      disarmAll();
+    }
+  });
+
+  // Boot
+  ensureInitialSite();
+  renderAll();
+})();
 </script>
 </body>
 </html>
