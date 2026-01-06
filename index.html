@@ -36,6 +36,16 @@
     .split { display:flex; gap:8px; flex-wrap: wrap; }
     .split > * { flex: 1; min-width: 220px; }
     .small { font-size: 12px; padding: 6px 8px; }
+ .floorHeader {
+  grid-column: 1 / -1;
+  background: #ffffff;
+  border: 1px solid #e6e6e6;
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-weight: 700;
+}
+    input.small { font-size: 12px; padding: 6px 8px; }
+.room.highlight { outline: 3px solid #111827; outline-offset: 2px; }
   </style>
 </head>
 <body>
@@ -89,6 +99,11 @@
         <button class="small" id="resetAllBtn">全て未着手に戻す</button>
       </div>
     </div>
+    <div class="row" style="margin-top:8px;">
+  <input id="jumpInput" class="small" placeholder="部屋番号でジャンプ（例 703）" />
+  <button class="small" id="jumpBtn">移動</button>
+  <button class="small" id="clearJumpBtn">解除</button>
+</div>
 
     <div class="grid" id="roomGrid"></div>
     <div class="help" style="padding: 10px 2px;">
@@ -116,7 +131,11 @@
   const saveSiteBtn = $("saveSiteBtn");
   const regenRoomsBtn = $("regenRoomsBtn");
   const resetAllBtn = $("resetAllBtn");
+const jumpInput = document.getElementById("jumpInput");
+const jumpBtn = document.getElementById("jumpBtn");
+const clearJumpBtn = document.getElementById("clearJumpBtn");
 
+let highlightedRoomId = null;
   const siteName = $("siteName");
   const buildingName = $("buildingName");
   const floorSpec = $("floorSpec");
@@ -297,10 +316,16 @@
     const filter = state.ui.filter;
     const rooms = (filter === "all") ? site.rooms : site.rooms.filter(r => r.status === filter);
 
-    roomGrid.innerHTML = "";
-    for (const r of rooms) {
+    roomGrid.innerHTML = "";let lastFloor = null;
+    for (const r of rooms) {if (lastFloor !== r.floor) {
+  const header = document.createElement("div");
+  header.className = "floorHeader";
+  header.textContent = `${r.floor}階`;
+  roomGrid.appendChild(header);
+  lastFloor = r.floor;
+}
       const card = document.createElement("div");
-      card.className = `room ${r.status}`;
+      card.className = `room ${r.status}`;if (r.id === highlightedRoomId) card.classList.add("highlight");
       card.dataset.roomId = r.id;
 
       const num = document.createElement("div");
@@ -333,6 +358,46 @@
   }
 
   function renderAll() {
+    function jumpToRoom(label) {
+  const site = getCurrentSite();
+  if (!site) return;
+
+  const target = site.rooms.find(r => r.label === String(label));
+  if (!target) {
+    alert(`部屋が見つかりません: ${label}`);
+    return;
+  }
+
+  state.ui.filter = "all";          // 見えるように全件へ
+  highlightedRoomId = target.id;    // ハイライト対象
+  saveState();
+
+  renderRooms();
+  requestAnimationFrame(() => {
+    const el = document.querySelector(`[data-room-id="${target.id}"]`);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+  });
+}
+
+jumpBtn.addEventListener("click", () => {
+  const v = (jumpInput.value || "").trim();
+  if (!v) return;
+  jumpToRoom(v);
+});
+
+jumpInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    const v = (jumpInput.value || "").trim();
+    if (!v) return;
+    jumpToRoom(v);
+  }
+});
+
+clearJumpBtn.addEventListener("click", () => {
+  highlightedRoomId = null;
+  jumpInput.value = "";
+  renderRooms();
+});
     renderSiteSelect();
     renderSiteForm();
     renderStats();
