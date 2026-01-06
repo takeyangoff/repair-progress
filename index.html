@@ -63,7 +63,7 @@
     }
     .room.highlight { outline: 3px solid #111827; outline-offset: 2px; }
 
-    /* 折りたたみカード：青系 */
+    /* 折りたたみカード：青系（スケジュール／アンケート） */
     details.panelInner {
       margin-top: 10px;
       border: 1px solid #93c5fd;
@@ -87,7 +87,7 @@
     .sectionTitleRow { display:flex; justify-content: space-between; align-items:center; gap: 8px; margin-top: 8px; }
     .sectionTitleRow .title { font-weight: 800; font-size: 13px; }
 
-    /* スケジュール表 */
+    /* スケジュール表（編集モード） */
     .schedTable { width:100%; border-collapse: collapse; }
     .schedTable th, .schedTable td { border-top: 1px solid #e5e7eb; padding: 8px 6px; font-size: 12px; vertical-align: middle; }
     .schedTable th { text-align:left; color:#6b7280; font-weight: 700; }
@@ -95,6 +95,18 @@
     .schedRow .mini { width: 70px; min-width: 70px; }
     .schedRow .memo { min-width: 140px; }
     .schedRow button { padding: 6px 10px; border-radius: 999px; font-size: 12px; }
+
+    /* スケジュール一覧（サマリー） */
+    .summaryBox {
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 10px;
+      background: #fff;
+      margin-bottom: 10px;
+    }
+    .summaryTitle { font-weight: 800; font-size: 13px; }
+    .summaryLine { font-size: 12px; color:#374151; margin-top: 6px; line-height: 1.45; }
+    .summaryEmpty { font-size: 12px; color:#6b7280; margin-top: 6px; }
 
     /* 管理画面 */
     .adminHeader { display:flex; justify-content: space-between; align-items: center; gap: 8px; }
@@ -106,7 +118,7 @@
     #modeBtn.isOn { background: #2563eb; color: #ffffff; border-color: #2563eb; font-weight: 800; }
     #modeBtn.isOn::after { content: "（作業日/担当者入力）"; font-size: 11px; margin-left: 6px; opacity: 0.9; font-weight: 600; }
 
-    /* ===== アンケート（現場基本情報） ===== */
+    /* ===== アンケート ===== */
     .qGrid { display:grid; grid-template-columns: 1fr; gap:10px; margin-top:10px; }
     .qItem { border:1px solid #e6e6e6; border-radius: 12px; padding: 10px; background:#fff; }
     .qTitle { font-weight:800; font-size:13px; margin-bottom:6px; }
@@ -115,6 +127,9 @@
     .qHelp { font-size:12px; color:#6b7280; line-height:1.5; margin-top:6px; }
     .chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
     .chips label { display:flex; gap:6px; align-items:center; font-size:12px; border:1px solid #e6e6e6; padding:6px 10px; border-radius:999px; background:#fff; }
+
+    /* 切り替えボタン（一覧/編集） */
+    .toggleBtn.on { background:#2563eb; color:#fff; border-color:#2563eb; font-weight: 800; }
   </style>
 </head>
 
@@ -163,10 +178,17 @@
         <!-- 検査・内覧スケジュール（初期は閉） -->
         <details class="panelInner" id="scheduleDetails">
           <summary>検査・内覧スケジュール（タップで開閉）</summary>
+
           <div class="help" style="margin-top:8px;">
             8項目すべて：<b>階範囲</b>＋<b>期間（開始〜終了）</b>＋<b>メモ</b> を行追加できます。<br/>
             日付はカレンダーで選択＆手入力OK（YYYY-MM-DD）。
           </div>
+
+          <div class="row" style="margin-top:8px;">
+            <button class="small toggleBtn" id="scheduleViewBtn">一覧</button>
+            <button class="small toggleBtn" id="scheduleEditBtn">編集</button>
+          </div>
+
           <div class="divider"></div>
           <div id="scheduleContainer"></div>
         </details>
@@ -174,9 +196,16 @@
         <!-- 現場基本情報（アンケート）（初期は閉） -->
         <details class="panelInner" id="surveyDetails">
           <summary>現場基本情報（アンケート）</summary>
+
           <div class="help" style="margin-top:8px;">
-            現場ごとに保存されます。時間は自由入力、場所は自由記入、必要に応じて行を追加できます。
+            現場ごとに保存されます。普段は<b>一覧（要点）</b>で確認 → 「編集」で入力フォームへ。
           </div>
+
+          <div class="row" style="margin-top:8px;">
+            <button class="small toggleBtn" id="surveyViewBtn">一覧</button>
+            <button class="small toggleBtn" id="surveyEditBtn">編集</button>
+          </div>
+
           <div class="divider"></div>
           <div id="surveyContainer"></div>
         </details>
@@ -265,7 +294,7 @@
 
 <script>
 (() => {
-  const STORAGE_KEY = "repair_progress_complete_v1";
+  const STORAGE_KEY = "repair_progress_complete_v2";
 
   /** @typedef {"todo"|"doing"|"done"} Status */
   /** @typedef {{ id:string, label:string, floor:number, idx:number, status:Status, assignee?:string, workedDate?:string }} Room */
@@ -287,7 +316,11 @@
     schedules?:Schedules,
     survey?:any
   }} Site */
-  /** @typedef {{ sites:Site[], currentSiteId:string|null, ui:{filter:"all"|Status, editMode:boolean, highlightedRoomId:string|null} }} AppState */
+  /** @typedef {{ sites:Site[], currentSiteId:string|null, ui:{
+    filter:"all"|Status, editMode:boolean, highlightedRoomId:string|null,
+    scheduleView:"summary"|"edit",
+    surveyView:"summary"|"edit"
+  } }} AppState */
 
   const uid = () => Math.random().toString(36).slice(2, 10) + "-" + Date.now().toString(36);
   const now = () => Date.now();
@@ -310,6 +343,11 @@
 
   const scheduleContainer = $("scheduleContainer");
   const surveyContainer = $("surveyContainer");
+
+  const scheduleViewBtn = $("scheduleViewBtn");
+  const scheduleEditBtn = $("scheduleEditBtn");
+  const surveyViewBtn = $("surveyViewBtn");
+  const surveyEditBtn = $("surveyEditBtn");
 
   const deleteSiteBtn = $("deleteSiteBtn");
   const resetAllBtn = $("resetAllBtn");
@@ -347,6 +385,7 @@
     const repairItems = ["木枠","建具","額縁","枕棚","家具","床","サッシ","キッチン家具","洗面家具","見切り"];
     return {
       repairSupervisors: [{ id: uid(), name: "", phone: "" }],
+
       chiefName: "", chiefPhone: "",
       foremanName: "", foremanPhone: "",
 
@@ -370,7 +409,7 @@
       otherVendorItems: repairItems.reduce((a,k)=> (a[k]=false,a), {}),
       otherVendorNotes: "",
 
-      damecho: "unknown",
+      damecho: "unknown", // yes | no | unknown
       damechoNotes: "",
 
       flow: "downToUp", // downToUp | upToDown
@@ -404,7 +443,17 @@
   }
 
   function defaultState() {
-    return { sites: [], currentSiteId: null, ui: { filter: "all", editMode: false, highlightedRoomId: null } };
+    return {
+      sites: [],
+      currentSiteId: null,
+      ui: {
+        filter: "all",
+        editMode: false,
+        highlightedRoomId: null,
+        scheduleView: "summary",
+        surveyView: "summary"
+      }
+    };
   }
 
   function loadState() {
@@ -413,10 +462,13 @@
       if (!raw) return defaultState();
       const parsed = JSON.parse(raw);
       if (!parsed || !Array.isArray(parsed.sites)) return defaultState();
-      if (!parsed.ui) parsed.ui = { filter: "all", editMode: false, highlightedRoomId: null };
+      if (!parsed.ui) parsed.ui = defaultState().ui;
+
       if (!parsed.ui.filter) parsed.ui.filter = "all";
       if (typeof parsed.ui.editMode !== "boolean") parsed.ui.editMode = false;
       if (!("highlightedRoomId" in parsed.ui)) parsed.ui.highlightedRoomId = null;
+      if (!parsed.ui.scheduleView) parsed.ui.scheduleView = "summary";
+      if (!parsed.ui.surveyView) parsed.ui.surveyView = "summary";
 
       for (const s of parsed.sites) {
         if (!("notes" in s)) s.notes = "";
@@ -582,6 +634,12 @@
     renderSiteMeta();
   }
 
+  function renderScheduleToggleButtons() {
+    const isSummary = state.ui.scheduleView === "summary";
+    scheduleViewBtn.classList.toggle("on", isSummary);
+    scheduleEditBtn.classList.toggle("on", !isSummary);
+  }
+
   function renderSchedules() {
     const site = getCurrentSite();
     if (!site) return;
@@ -589,6 +647,41 @@
 
     scheduleContainer.innerHTML = "";
 
+    // ===== 一覧（サマリー） =====
+    if (state.ui.scheduleView === "summary") {
+      for (const def of SCHED_DEFS) {
+        const rows = site.schedules[def.key] || [];
+
+        const box = document.createElement("div");
+        box.className = "summaryBox";
+
+        const title = document.createElement("div");
+        title.className = "summaryTitle";
+        title.textContent = def.label;
+        box.appendChild(title);
+
+        if (rows.length === 0) {
+          const empty = document.createElement("div");
+          empty.className = "summaryEmpty";
+          empty.textContent = "（未入力）";
+          box.appendChild(empty);
+        } else {
+          rows.forEach((r, i) => {
+            const line = document.createElement("div");
+            line.className = "summaryLine";
+            const floorTxt = `${r.floorFrom}〜${r.floorTo}階`;
+            const dateTxt = `${r.start || "未"} 〜 ${r.end || "未"}`;
+            const memoTxt = r.memo ? ` / ${r.memo}` : "";
+            line.textContent = `${i+1}. ${floorTxt} / ${dateTxt}${memoTxt}`;
+            box.appendChild(line);
+          });
+        }
+        scheduleContainer.appendChild(box);
+      }
+      return;
+    }
+
+    // ===== 編集（テーブル） =====
     for (const def of SCHED_DEFS) {
       const section = document.createElement("div");
 
@@ -703,10 +796,172 @@
     }
   }
 
-  // --- Survey UI ---
-  function renderSurvey() {
-    const site = getCurrentSite();
-    if (!site) return;
+  // --- Survey (アンケート) ---
+  function renderSurveyToggleButtons() {
+    const isSummary = state.ui.surveyView === "summary";
+    surveyViewBtn.classList.toggle("on", isSummary);
+    surveyEditBtn.classList.toggle("on", !isSummary);
+  }
+
+  function ynLabel(v, yes="あり", no="なし", unk="未設定") {
+    if (v === "yes") return yes;
+    if (v === "no") return no;
+    return unk;
+  }
+
+  function countTrue(obj) {
+    return Object.values(obj || {}).filter(Boolean).length;
+  }
+
+  function renderSurveySummary(site) {
+    ensureSurvey(site);
+    const sv = site.survey;
+    surveyContainer.innerHTML = "";
+
+    const wrap = document.createElement("div");
+    wrap.className = "qGrid";
+
+    const addSummaryBox = (title, lines) => {
+      const box = document.createElement("div");
+      box.className = "summaryBox";
+      const t = document.createElement("div");
+      t.className = "summaryTitle";
+      t.textContent = title;
+      box.appendChild(t);
+      if (!lines.length) {
+        const e = document.createElement("div");
+        e.className = "summaryEmpty";
+        e.textContent = "（未入力）";
+        box.appendChild(e);
+      } else {
+        for (const l of lines) {
+          const p = document.createElement("div");
+          p.className = "summaryLine";
+          p.textContent = l;
+          box.appendChild(p);
+        }
+      }
+      wrap.appendChild(box);
+    };
+
+    // 担当監督
+    {
+      const lines = (sv.repairSupervisors || [])
+        .filter(x => (x.name || "").trim() || (x.phone || "").trim())
+        .map((x,i)=> `${i+1}. ${x.name || "（名前未）"} / ${x.phone || "（電話未）"}`);
+      addSummaryBox("補修の担当監督", lines);
+    }
+
+    // 所長/監督
+    {
+      const lines = [];
+      if ((sv.chiefName||"").trim() || (sv.chiefPhone||"").trim()) lines.push(`所長：${sv.chiefName || "（名前未）"} / ${sv.chiefPhone || "（電話未）"}`);
+      if ((sv.foremanName||"").trim() || (sv.foremanPhone||"").trim()) lines.push(`監督：${sv.foremanName || "（名前未）"} / ${sv.foremanPhone || "（電話未）"}`);
+      addSummaryBox("連絡先（所長 / 監督）", lines);
+    }
+
+    // 朝礼
+    {
+      const lines = [];
+      if ((sv.morningMeetingTime||"").trim() || (sv.morningMeetingPlace||"").trim() || (sv.morningMeetingNotes||"").trim()) {
+        lines.push(`時間：${sv.morningMeetingTime || "未"} / 場所：${sv.morningMeetingPlace || "未"}`);
+        if ((sv.morningMeetingNotes||"").trim()) lines.push(`補足：${sv.morningMeetingNotes}`);
+      }
+      addSummaryBox("朝礼", lines);
+    }
+
+    // 昼礼
+    {
+      const lines = [];
+      const modeLabel = (sv.lunchMeetingMode === "leaders") ? "あり（職長のみ参加）" : "なし";
+      if ((sv.lunchMeetingTime||"").trim() || (sv.lunchMeetingPlace||"").trim() || (sv.lunchMeetingNotes||"").trim() || sv.lunchMeetingMode) {
+        lines.push(`時間：${sv.lunchMeetingTime || "未"} / ${modeLabel}`);
+        lines.push(`場所：${sv.lunchMeetingPlace || "未"}`);
+        if ((sv.lunchMeetingNotes||"").trim()) lines.push(`補足：${sv.lunchMeetingNotes}`);
+      }
+      addSummaryBox("昼礼", lines);
+    }
+
+    // KY
+    {
+      const lines = [];
+      lines.push(`新規用紙・KY用紙：${ynLabel(sv.kyPaper)}`);
+      if ((sv.kyPaperPlace||"").trim()) lines.push(`場所：${sv.kyPaperPlace}`);
+      addSummaryBox("新規用紙・KY用紙", lines.filter(l=>l.trim()));
+    }
+
+    // 新規入場説明
+    {
+      addSummaryBox("新規入場説明", [`${ynLabel(sv.induction)}`]);
+    }
+
+    // 担当補修箇所 / 他業者
+    {
+      const lines = [];
+      lines.push(`担当補修箇所：${countTrue(sv.responsibleItems)}項目チェック`);
+      if ((sv.responsibleNotes||"").trim()) lines.push(`メモ：${sv.responsibleNotes}`);
+      addSummaryBox("担当補修箇所", lines);
+    }
+    {
+      const lines = [];
+      lines.push(`他業者へ：${countTrue(sv.otherVendorItems)}項目チェック`);
+      if ((sv.otherVendorNotes||"").trim()) lines.push(`メモ：${sv.otherVendorNotes}`);
+      addSummaryBox("他業者に振り分ける箇所（業者違い）", lines);
+    }
+
+    // ダメ帳
+    {
+      const lines = [`ダメ帳：${ynLabel(sv.damecho)}`];
+      if ((sv.damechoNotes||"").trim()) lines.push(`メモ：${sv.damechoNotes}`);
+      addSummaryBox("ダメ帳", lines);
+    }
+
+    // 進行
+    {
+      const flowLabel = (sv.flow === "upToDown") ? "上階より下へ" : "下階より上へ";
+      const lines = [`方向：${flowLabel}`];
+      if ((sv.flowNotes||"").trim()) lines.push(`メモ：${sv.flowNotes}`);
+      addSummaryBox("進行（方向）", lines);
+    }
+
+    // 指摘テープ
+    {
+      const map = { none:"なし", remove:"あり（剥がす）", recheck:"あり（レチェック残し）" };
+      const lines = [`状態：${map[sv.tape] || "未設定"}`];
+      if ((sv.tapeNotes||"").trim()) lines.push(`補足：${sv.tapeNotes}`);
+      addSummaryBox("指摘テープ", lines);
+    }
+
+    // トイレ
+    {
+      const onsite = Object.keys(sv.toiletOnsite||{}).filter(k=>sv.toiletOnsite[k]).join(" / ") || "未";
+      const nearby = Object.keys(sv.toiletNearby||{}).filter(k=>sv.toiletNearby[k]).join(" / ") || "未";
+      const lines = [`現場：${onsite}`, `近隣：${nearby}`];
+      if ((sv.toiletNotes||"").trim()) lines.push(`補足：${sv.toiletNotes}`);
+      addSummaryBox("トイレ", lines);
+    }
+
+    // 残業
+    {
+      const map = { unknown:"未設定", ok_apply:"可（昼礼にて要申請）", no:"不可" };
+      const lines = [`残業：${map[sv.overtime] || "未設定"}`];
+      if ((sv.overtimeNotes||"").trim()) lines.push(`補足：${sv.overtimeNotes}`);
+      addSummaryBox("残業", lines);
+    }
+
+    // 休業日
+    {
+      const regular = Object.keys(sv.holidayRegular||{}).filter(k=>sv.holidayRegular[k]).join(" / ") || "未";
+      const extra = (sv.holidayExtra||[]).map(x=> (x.label||"").trim()).filter(Boolean);
+      const lines = [`定休：${regular}`];
+      if (extra.length) lines.push(`追記：${extra.join(" / ")}`);
+      addSummaryBox("現場の休業日", lines);
+    }
+
+    surveyContainer.appendChild(wrap);
+  }
+
+  function renderSurveyEdit(site) {
     ensureSurvey(site);
     const sv = site.survey;
 
@@ -762,7 +1017,7 @@
           if (!ok) return;
           sv.repairSupervisors = sv.repairSupervisors.filter(x => x.id !== row.id);
           save();
-          renderSurvey();
+          renderSurveyEdit(site);
         });
 
         r.appendChild(name); r.appendChild(phone); r.appendChild(del);
@@ -775,7 +1030,7 @@
       add.addEventListener("click", () => {
         sv.repairSupervisors.push({ id: uid(), name:"", phone:"" });
         save();
-        renderSurvey();
+        renderSurveyEdit(site);
       });
       box.appendChild(add);
       root.appendChild(box);
@@ -1041,7 +1296,7 @@
           if (sv.holidayExtra.length<=1) { alert("最低1行は残ります"); return; }
           const ok=confirm("この行を削除しますか？"); if(!ok) return;
           sv.holidayExtra = sv.holidayExtra.filter(x=>x.id!==row.id);
-          save(); renderSurvey();
+          save(); renderSurveyEdit(site);
         });
 
         r.appendChild(input); r.appendChild(del);
@@ -1053,7 +1308,7 @@
       add.textContent="＋ 休業日を追記";
       add.addEventListener("click",()=>{
         sv.holidayExtra.push({ id: uid(), label:"" });
-        save(); renderSurvey();
+        save(); renderSurveyEdit(site);
       });
       box.appendChild(add);
 
@@ -1061,6 +1316,13 @@
     }
 
     surveyContainer.appendChild(root);
+  }
+
+  function renderSurvey() {
+    const site = getCurrentSite();
+    if (!site) return;
+    if (state.ui.surveyView === "summary") renderSurveySummary(site);
+    else renderSurveyEdit(site);
   }
 
   // --- Render ---
@@ -1092,8 +1354,12 @@
     floorSpec.value = site.floorSpec || "";
     siteNotes.value = site.notes || "";
 
+    renderScheduleToggleButtons();
     renderSchedules();
+
+    renderSurveyToggleButtons();
     renderSurvey();
+
     renderSiteMeta();
   }
 
@@ -1263,6 +1529,11 @@
     s.rooms = generateRoomsFromSpec(s.floorSpec);
     state.sites.push(s);
     state.currentSiteId = s.id;
+
+    // 新規現場は「一覧」を基本に
+    state.ui.scheduleView = "summary";
+    state.ui.surveyView = "summary";
+
     saveState();
     renderAll();
   });
@@ -1336,6 +1607,34 @@
     jumpInput.value = "";
     saveState();
     renderRooms();
+  });
+
+  // スケジュール：一覧/編集
+  scheduleViewBtn.addEventListener("click", () => {
+    state.ui.scheduleView = "summary";
+    saveState();
+    renderScheduleToggleButtons();
+    renderSchedules();
+  });
+  scheduleEditBtn.addEventListener("click", () => {
+    state.ui.scheduleView = "edit";
+    saveState();
+    renderScheduleToggleButtons();
+    renderSchedules();
+  });
+
+  // アンケート：一覧/編集
+  surveyViewBtn.addEventListener("click", () => {
+    state.ui.surveyView = "summary";
+    saveState();
+    renderSurveyToggleButtons();
+    renderSurvey();
+  });
+  surveyEditBtn.addEventListener("click", () => {
+    state.ui.surveyView = "edit";
+    saveState();
+    renderSurveyToggleButtons();
+    renderSurvey();
   });
 
   // Admin danger actions (2-step + confirm)
