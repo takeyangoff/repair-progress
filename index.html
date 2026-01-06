@@ -1,0 +1,447 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>リペア進捗管理（MVP）</title>
+  <style>
+    body { font-family: -apple-system, system-ui, sans-serif; margin: 0; background:#f6f7f9; }
+    header { position: sticky; top: 0; background: white; padding: 12px; border-bottom: 1px solid #e6e6e6; }
+    h1 { font-size: 16px; margin: 0 0 8px; }
+    .row { display:flex; gap:8px; flex-wrap: wrap; align-items: center; }
+    select, input, button { font-size: 14px; padding: 8px; }
+    input { flex: 1; min-width: 180px; }
+    button { border: 1px solid #ddd; background:#fff; border-radius: 8px; }
+    button.primary { background: #111827; color: white; border-color: #111827; }
+    button.danger { border-color: #ef4444; color: #ef4444; }
+    .meta { font-size: 12px; color: #6b7280; margin-top: 6px; }
+    main { padding: 12px; }
+    .stats { display:flex; gap:8px; flex-wrap: wrap; margin-bottom: 10px; }
+    .pill { background:white; border:1px solid #e6e6e6; border-radius: 999px; padding: 6px 10px; font-size: 13px; }
+    .grid { display:grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap:8px; }
+    @media (max-width: 480px) { .grid { grid-template-columns: repeat(4, minmax(0,1fr)); } }
+    .room {
+      background:white; border:1px solid #e6e6e6; border-radius: 10px;
+      padding: 10px 8px; text-align:center; user-select:none; cursor:pointer;
+      display:flex; flex-direction: column; gap:6px;
+    }
+    .room .num { font-weight: 700; font-size: 14px; }
+    .room .st { font-size: 12px; padding: 2px 6px; border-radius: 999px; display:inline-block; margin: 0 auto; }
+    .todo .st { background:#f3f4f6; color:#111827; }
+    .doing .st { background:#fffbeb; color:#92400e; }
+    .done .st { background:#ecfdf5; color:#065f46; }
+    .panel { background:white; border:1px solid #e6e6e6; border-radius: 12px; padding: 12px; margin-bottom: 12px; }
+    .panel h2 { font-size: 14px; margin:0 0 8px; }
+    .help { font-size: 12px; color:#6b7280; line-height: 1.5; }
+    .split { display:flex; gap:8px; flex-wrap: wrap; }
+    .split > * { flex: 1; min-width: 220px; }
+    .small { font-size: 12px; padding: 6px 8px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>リペア進捗管理（MVP）</h1>
+    <div class="row">
+      <select id="siteSelect"></select>
+      <button id="newSiteBtn" class="primary">現場を追加</button>
+      <button id="deleteSiteBtn" class="danger">現場削除</button>
+    </div>
+    <div class="meta" id="siteMeta"></div>
+  </header>
+
+  <main>
+    <div class="panel">
+      <h2>現場設定</h2>
+      <div class="split">
+        <div>
+          <div class="row">
+            <input id="siteName" placeholder="現場名（例：〇〇マンション）" />
+          </div>
+          <div class="row">
+            <input id="buildingName" placeholder="棟/建物名（任意）" />
+          </div>
+        </div>
+        <div>
+          <div class="row">
+            <input id="floorSpec" placeholder="階:部屋数（例 1:4,2-11:5）" />
+          </div>
+          <div class="help">
+            入力例：<b>1:4,2-11:5</b>（カンマ区切り）<br/>
+            形式：<b>階</b> または <b>開始階-終了階</b> : <b>部屋数</b><br/>
+            部屋番号は <b>101方式</b>（階×100 + 連番）で自動生成
+          </div>
+        </div>
+      </div>
+      <div class="row" style="margin-top:10px;">
+        <button id="saveSiteBtn" class="primary">設定を保存</button>
+        <button id="regenRoomsBtn">部屋を再生成（注意：状態が初期化）</button>
+      </div>
+    </div>
+
+    <div class="stats" id="stats"></div>
+
+    <div class="panel">
+      <div class="row">
+        <button class="small" data-filter="all">全件</button>
+        <button class="small" data-filter="todo">未着手</button>
+        <button class="small" data-filter="doing">途中</button>
+        <button class="small" data-filter="done">完了</button>
+        <button class="small" id="resetAllBtn">全て未着手に戻す</button>
+      </div>
+    </div>
+
+    <div class="grid" id="roomGrid"></div>
+    <div class="help" style="padding: 10px 2px;">
+      部屋をタップすると：未着手 → 途中 → 完了 → 未着手
+    </div>
+  </main>
+
+<script>
+(() => {
+  const STORAGE_KEY = "repair_progress_mvp_v1";
+
+  /** @typedef {"todo"|"doing"|"done"} Status */
+  /** @typedef {{ id:string, label:string, floor:number, idx:number, status:Status }} Room */
+  /** @typedef {{ id:string, name:string, building:string, floorSpec:string, rooms:Room[], createdAt:number, updatedAt:number }} Site */
+  /** @typedef {{ sites:Site[], currentSiteId:string|null, ui:{filter:"all"|Status} }} AppState */
+
+  /** Utils */
+  const uid = () => Math.random().toString(36).slice(2, 10) + "-" + Date.now().toString(36);
+  const now = () => Date.now();
+
+  const $ = (id) => document.getElementById(id);
+  const siteSelect = $("siteSelect");
+  const newSiteBtn = $("newSiteBtn");
+  const deleteSiteBtn = $("deleteSiteBtn");
+  const saveSiteBtn = $("saveSiteBtn");
+  const regenRoomsBtn = $("regenRoomsBtn");
+  const resetAllBtn = $("resetAllBtn");
+
+  const siteName = $("siteName");
+  const buildingName = $("buildingName");
+  const floorSpec = $("floorSpec");
+
+  const siteMeta = $("siteMeta");
+  const statsEl = $("stats");
+  const roomGrid = $("roomGrid");
+
+  /** Load/Save */
+  function loadState() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return /** @type {AppState} */ ({ sites: [], currentSiteId: null, ui: { filter: "all" } });
+      const parsed = JSON.parse(raw);
+      // minimal validation
+      if (!parsed || !Array.isArray(parsed.sites)) throw new Error("invalid");
+      if (!parsed.ui) parsed.ui = { filter: "all" };
+      if (!parsed.ui.filter) parsed.ui.filter = "all";
+      return parsed;
+    } catch {
+      return /** @type {AppState} */ ({ sites: [], currentSiteId: null, ui: { filter: "all" } });
+    }
+  }
+
+  function saveState() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
+
+  /** Parsing "1:4,2-11:5" -> [{from,to,roomsPerFloor}] */
+  function parseFloorSpec(spec) {
+    const s = (spec || "").trim();
+    if (!s) return [];
+    const parts = s.split(",").map(x => x.trim()).filter(Boolean);
+    const out = [];
+    for (const p of parts) {
+      const [lhs, rhs] = p.split(":").map(x => (x || "").trim());
+      const roomsPerFloor = Number(rhs);
+      if (!lhs || !Number.isFinite(roomsPerFloor) || roomsPerFloor <= 0) {
+        throw new Error(`入力形式エラー: "${p}"`);
+      }
+      if (lhs.includes("-")) {
+        const [a, b] = lhs.split("-").map(x => Number(x.trim()));
+        if (!Number.isInteger(a) || !Number.isInteger(b) || a <= 0 || b <= 0 || a > b) {
+          throw new Error(`階範囲エラー: "${lhs}"`);
+        }
+        out.push({ from: a, to: b, roomsPerFloor });
+      } else {
+        const f = Number(lhs);
+        if (!Number.isInteger(f) || f <= 0) throw new Error(`階エラー: "${lhs}"`);
+        out.push({ from: f, to: f, roomsPerFloor });
+      }
+    }
+    // detect overlaps (simple)
+    const used = new Set();
+    for (const r of out) {
+      for (let f = r.from; f <= r.to; f++) {
+        if (used.has(f)) throw new Error(`同じ階の指定が重複しています: ${f}階`);
+        used.add(f);
+      }
+    }
+    // sort by floor
+    out.sort((a,b) => a.from - b.from);
+    return out;
+  }
+
+  /** Generate rooms for a site */
+  function generateRoomsFromSpec(spec) {
+    const ranges = parseFloorSpec(spec);
+    /** @type {Room[]} */
+    const rooms = [];
+    for (const r of ranges) {
+      for (let f = r.from; f <= r.to; f++) {
+        for (let i = 1; i <= r.roomsPerFloor; i++) {
+          const label = String(f * 100 + i); // 101方式
+          rooms.push({ id: uid(), label, floor: f, idx: i, status: "todo" });
+        }
+      }
+    }
+    // Sort by floor then idx
+    rooms.sort((a,b) => a.floor - b.floor || a.idx - b.idx);
+    return rooms;
+  }
+
+  /** State */
+  /** @type {AppState} */
+  let state = loadState();
+
+  function getCurrentSite() {
+    if (!state.currentSiteId) return null;
+    return state.sites.find(s => s.id === state.currentSiteId) || null;
+  }
+
+  function ensureInitialSite() {
+    if (state.sites.length === 0) {
+      const s = /** @type {Site} */ ({
+        id: uid(),
+        name: "サンプル現場",
+        building: "",
+        floorSpec: "1:4,2-3:5",
+        rooms: [],
+        createdAt: now(),
+        updatedAt: now(),
+      });
+      s.rooms = generateRoomsFromSpec(s.floorSpec);
+      state.sites.push(s);
+      state.currentSiteId = s.id;
+      saveState();
+    } else if (!state.currentSiteId || !getCurrentSite()) {
+      state.currentSiteId = state.sites[0].id;
+      saveState();
+    }
+  }
+
+  /** Rendering */
+  function renderSiteSelect() {
+    siteSelect.innerHTML = "";
+    for (const s of state.sites) {
+      const opt = document.createElement("option");
+      opt.value = s.id;
+      opt.textContent = s.building ? `${s.name}（${s.building}）` : s.name;
+      siteSelect.appendChild(opt);
+    }
+    if (state.currentSiteId) siteSelect.value = state.currentSiteId;
+  }
+
+  function renderSiteForm() {
+    const site = getCurrentSite();
+    if (!site) return;
+    siteName.value = site.name || "";
+    buildingName.value = site.building || "";
+    floorSpec.value = site.floorSpec || "";
+    const updated = new Date(site.updatedAt).toLocaleString("ja-JP");
+    siteMeta.textContent = `部屋数: ${site.rooms.length} / 最終更新: ${updated}`;
+  }
+
+  function computeStats(rooms) {
+    let todo = 0, doing = 0, done = 0;
+    for (const r of rooms) {
+      if (r.status === "todo") todo++;
+      else if (r.status === "doing") doing++;
+      else done++;
+    }
+    return { total: rooms.length, todo, doing, done };
+  }
+
+  function renderStats() {
+    const site = getCurrentSite();
+    if (!site) return;
+    const st = computeStats(site.rooms);
+    statsEl.innerHTML = "";
+    const mk = (label, val) => {
+      const d = document.createElement("div");
+      d.className = "pill";
+      d.textContent = `${label}: ${val}`;
+      return d;
+    };
+    statsEl.appendChild(mk("合計", st.total));
+    statsEl.appendChild(mk("未着手", st.todo));
+    statsEl.appendChild(mk("途中", st.doing));
+    statsEl.appendChild(mk("完了", st.done));
+  }
+
+  function statusLabel(status) {
+    if (status === "todo") return "未着手";
+    if (status === "doing") return "途中";
+    return "完了";
+  }
+
+  function nextStatus(status) {
+    if (status === "todo") return "doing";
+    if (status === "doing") return "done";
+    return "todo";
+  }
+
+  function renderRooms() {
+    const site = getCurrentSite();
+    if (!site) return;
+    const filter = state.ui.filter;
+    const rooms = (filter === "all") ? site.rooms : site.rooms.filter(r => r.status === filter);
+
+    roomGrid.innerHTML = "";
+    for (const r of rooms) {
+      const card = document.createElement("div");
+      card.className = `room ${r.status}`;
+      card.dataset.roomId = r.id;
+
+      const num = document.createElement("div");
+      num.className = "num";
+      num.textContent = r.label;
+
+      const st = document.createElement("div");
+      st.className = "st";
+      st.textContent = statusLabel(r.status);
+
+      card.appendChild(num);
+      card.appendChild(st);
+
+      card.addEventListener("click", () => {
+        const site2 = getCurrentSite();
+        if (!site2) return;
+        const room = site2.rooms.find(x => x.id === r.id);
+        if (!room) return;
+        room.status = nextStatus(room.status);
+        site2.updatedAt = now();
+        saveState();
+        // rerender quickly
+        renderStats();
+        renderRooms();
+        renderSiteForm();
+      });
+
+      roomGrid.appendChild(card);
+    }
+  }
+
+  function renderAll() {
+    renderSiteSelect();
+    renderSiteForm();
+    renderStats();
+    renderRooms();
+  }
+
+  /** Actions */
+  siteSelect.addEventListener("change", () => {
+    state.currentSiteId = siteSelect.value;
+    saveState();
+    renderAll();
+  });
+
+  newSiteBtn.addEventListener("click", () => {
+    const s = /** @type {Site} */ ({
+      id: uid(),
+      name: `新規現場 ${state.sites.length + 1}`,
+      building: "",
+      floorSpec: "1:4,2-11:5",
+      rooms: [],
+      createdAt: now(),
+      updatedAt: now(),
+    });
+    s.rooms = generateRoomsFromSpec(s.floorSpec);
+    state.sites.push(s);
+    state.currentSiteId = s.id;
+    saveState();
+    renderAll();
+  });
+
+  deleteSiteBtn.addEventListener("click", () => {
+    const site = getCurrentSite();
+    if (!site) return;
+    const ok = confirm(`現場「${site.name}」を削除しますか？（元に戻せません）`);
+    if (!ok) return;
+    state.sites = state.sites.filter(s => s.id !== site.id);
+    state.currentSiteId = state.sites.length ? state.sites[0].id : null;
+    saveState();
+    ensureInitialSite();
+    renderAll();
+  });
+
+  saveSiteBtn.addEventListener("click", () => {
+    const site = getCurrentSite();
+    if (!site) return;
+
+    const name = siteName.value.trim() || "無題の現場";
+    const bld = buildingName.value.trim();
+    const spec = floorSpec.value.trim();
+
+    // validate spec without regenerating
+    try {
+      parseFloorSpec(spec);
+    } catch (e) {
+      alert(e.message || String(e));
+      return;
+    }
+
+    site.name = name;
+    site.building = bld;
+    site.floorSpec = spec;
+    site.updatedAt = now();
+    saveState();
+    renderAll();
+  });
+
+  regenRoomsBtn.addEventListener("click", () => {
+    const site = getCurrentSite();
+    if (!site) return;
+    const ok = confirm("部屋を再生成します。現在の進捗（未/途/完）は初期化されます。よろしいですか？");
+    if (!ok) return;
+
+    try {
+      site.rooms = generateRoomsFromSpec(site.floorSpec);
+      site.updatedAt = now();
+      saveState();
+      renderAll();
+    } catch (e) {
+      alert(e.message || String(e));
+    }
+  });
+
+  resetAllBtn.addEventListener("click", () => {
+    const site = getCurrentSite();
+    if (!site) return;
+    const ok = confirm("全ての部屋を未着手に戻しますか？");
+    if (!ok) return;
+    for (const r of site.rooms) r.status = "todo";
+    site.updatedAt = now();
+    saveState();
+    renderAll();
+  });
+
+  // filter buttons
+  document.querySelectorAll("[data-filter]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const f = btn.getAttribute("data-filter");
+      if (f === "all" || f === "todo" || f === "doing" || f === "done") {
+        state.ui.filter = f;
+        saveState();
+        renderRooms();
+      }
+    });
+  });
+
+  /** Boot */
+  ensureInitialSite();
+  renderAll();
+})();
+</script>
+</body>
+</html>
