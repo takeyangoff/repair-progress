@@ -10,7 +10,7 @@
     h1 { font-size: 16px; margin: 0 0 8px; }
     .row { display:flex; gap:8px; flex-wrap: wrap; align-items: center; }
     select, input, button, textarea { font-size: 14px; padding: 8px; }
-    input { flex: 1; min-width: 150px; }
+    input { flex: 1; min-width: 160px; }
     textarea { width: 100%; box-sizing: border-box; border: 1px solid #ddd; border-radius: 12px; background:#fff; }
     button { border: 1px solid #ddd; background:#fff; border-radius: 10px; }
     button.primary { background: #111827; color: white; border-color: #111827; }
@@ -41,11 +41,12 @@
     .room .st { font-size: 12px; padding: 2px 6px; border-radius: 999px; display:inline-block; margin: 0 auto; }
     .room .sub { font-size: 11px; color:#6b7280; line-height: 1.2; }
 
+    /* ステータス文字（前と同じ） */
     .todo .st { background:#f3f4f6; color:#111827; }
     .doing .st { background:#fffbeb; color:#92400e; }
     .done .st { background:#ecfdf5; color:#065f46; }
 
-    /* カード全体も進捗で色分け */
+    /* カード全体の色分け（追加要望） */
     .room.todo  { background:#f9fafb; border-color:#e5e7eb; }
     .room.doing { background:#fffbeb; border-color:#f59e0b; }
     .room.done  { background:#ecfdf5; border-color:#10b981; }
@@ -62,7 +63,7 @@
     }
     .room.highlight { outline: 3px solid #111827; outline-offset: 2px; }
 
-    /* 折りたたみ */
+    /* 折りたたみ（スケジュール） */
     details.panelInner {
       margin-top: 10px;
       border: 1px solid #e6e6e6;
@@ -73,7 +74,6 @@
     details.panelInner > summary { cursor: pointer; font-weight: 700; font-size: 13px; }
     details > summary { list-style: none; }
     details > summary::-webkit-details-marker { display: none; }
-
     .divider { height:1px; background:#eee; margin: 10px 0; }
     .sectionTitleRow { display:flex; justify-content: space-between; align-items:center; gap: 8px; margin-top: 8px; }
     .sectionTitleRow .title { font-weight: 700; font-size: 13px; }
@@ -106,6 +106,7 @@
     }
   </style>
 </head>
+
 <body>
   <header>
     <h1>リペア進捗管理（MVP）</h1>
@@ -122,6 +123,7 @@
     <div id="mainView">
       <div class="panel">
         <h2>現場設定</h2>
+
         <div class="split">
           <div>
             <div class="row">
@@ -131,10 +133,13 @@
               <input id="buildingName" placeholder="棟/建物名（任意）" />
             </div>
           </div>
+
           <div>
             <div class="row">
               <input id="floorSpec" placeholder="階:部屋数（例 1:4,2-11:5）" />
             </div>
+
+            <!-- ★ここ：例文＆欄外説明（復活） -->
             <div class="help">
               入力例：<b>1:4,2-11:5</b>（カンマ区切り）<br/>
               形式：<b>階</b> または <b>開始階-終了階</b> : <b>部屋数</b><br/>
@@ -143,7 +148,7 @@
           </div>
         </div>
 
-        <!-- 8項目スケジュール（折りたたみ・初期は閉） -->
+        <!-- ★検査・内覧スケジュール（8項目、初期は閉） -->
         <details class="panelInner" id="scheduleDetails">
           <summary>検査・内覧スケジュール（タップで開閉）</summary>
           <div class="help" style="margin-top:8px;">
@@ -154,7 +159,7 @@
           <div id="scheduleContainer"></div>
         </details>
 
-        <!-- 備考 -->
+        <!-- ★備考欄（復活） -->
         <div style="margin-top:10px;">
           <div class="help"><b>備考（現場メモ）</b></div>
           <textarea id="siteNotes" rows="4" placeholder="自由メモ（段取り、注意事項、共通の指示など）"></textarea>
@@ -218,7 +223,7 @@
         <button id="resetAllBtn" class="danger">全て未着手に戻す</button>
       </div>
 
-      <!-- ★ここが要望どおり：最下部・赤枠・説明文・二段階タップ -->
+      <!-- ★要望どおり：一番下・赤枠＋説明文・二段階タップ -->
       <div class="panel dangerPanel">
         <h2>部屋の再生成（最終・危険）</h2>
         <div class="dangerNote">
@@ -231,7 +236,7 @@
           <button id="regenRoomsBtn" class="danger">部屋を再生成</button>
         </div>
         <div class="help" style="margin-top:8px;">
-          1回目：確認状態にします / 2回目：confirm後に実行
+          1回目：確認状態 / 2回目：confirm後に実行
         </div>
       </div>
     </div>
@@ -239,7 +244,7 @@
 
 <script>
 (() => {
-  const STORAGE_KEY = "repair_progress_full_safe_v1";
+  const STORAGE_KEY = "repair_progress_full_safe_v2";
 
   /** @typedef {"todo"|"doing"|"done"} Status */
   /** @typedef {{ id:string, label:string, floor:number, idx:number, status:Status, assignee?:string, workedDate?:string }} Room */
@@ -266,7 +271,6 @@
   const now = () => Date.now();
   const $ = (id) => document.getElementById(id);
 
-  // Elements
   const siteSelect = $("siteSelect");
   const newSiteBtn = $("newSiteBtn");
   const manageBtn = $("manageBtn");
@@ -296,7 +300,7 @@
   const jumpBtn = $("jumpBtn");
   const clearJumpBtn = $("clearJumpBtn");
 
-  // Safety arming flags
+  // safety arming
   let deleteArmed = false;
   let resetArmed = false;
   let regenArmed = false;
@@ -320,7 +324,6 @@
     return { sites: [], currentSiteId: null, ui: { filter: "all", editMode: false, highlightedRoomId: null } };
   }
 
-  /** @returns {AppState} */
   function loadState() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
@@ -332,12 +335,12 @@
       if (typeof parsed.ui.editMode !== "boolean") parsed.ui.editMode = false;
       if (!("highlightedRoomId" in parsed.ui)) parsed.ui.highlightedRoomId = null;
 
-      // Backfill new fields
       for (const s of parsed.sites) {
         if (!("notes" in s)) s.notes = "";
         if (!("schedules" in s) || !s.schedules) s.schedules = defaultSchedules();
-        const keys = Object.keys(defaultSchedules());
-        for (const k of keys) if (!Array.isArray(s.schedules[k])) s.schedules[k] = [];
+        for (const k of Object.keys(defaultSchedules())) {
+          if (!Array.isArray(s.schedules[k])) s.schedules[k] = [];
+        }
       }
       return parsed;
     } catch {
@@ -349,7 +352,7 @@
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   }
 
-  // Parsing "1:4,2-11:5"
+  // "1:4,2-11:5"
   function parseFloorSpec(spec) {
     const s = (spec || "").trim();
     if (!s) return [];
@@ -373,7 +376,6 @@
         out.push({ from: f, to: f, roomsPerFloor });
       }
     }
-    // overlap check
     const used = new Set();
     for (const r of out) {
       for (let f = r.from; f <= r.to; f++) {
@@ -443,166 +445,25 @@
     return { total: rooms.length, todo, doing, done };
   }
 
-  function renderSiteSelect() {
-    siteSelect.innerHTML = "";
-    for (const s of state.sites) {
-      const opt = document.createElement("option");
-      opt.value = s.id;
-      opt.textContent = s.building ? `${s.name}（${s.building}）` : s.name;
-      siteSelect.appendChild(opt);
-    }
-    if (state.currentSiteId) siteSelect.value = state.currentSiteId;
-  }
-
-  function renderSiteForm() {
-    const site = getCurrentSite();
-    if (!site) return;
-
-    siteName.value = site.name || "";
-    buildingName.value = site.building || "";
-    floorSpec.value = site.floorSpec || "";
-    siteNotes.value = site.notes || "";
-
-    renderSchedules();
-
-    const updated = new Date(site.updatedAt).toLocaleString("ja-JP");
-    siteMeta.textContent = `部屋数: ${site.rooms.length} / 最終更新: ${updated}`;
-  }
-
-  function renderStats() {
-    const site = getCurrentSite();
-    if (!site) return;
-    const st = computeStats(site.rooms);
-    statsEl.innerHTML = "";
-    const mk = (label, val) => {
-      const d = document.createElement("div");
-      d.className = "pill";
-      d.textContent = `${label}: ${val}`;
-      return d;
-    };
-    statsEl.appendChild(mk("合計", st.total));
-    statsEl.appendChild(mk("未着手", st.todo));
-    statsEl.appendChild(mk("途中", st.doing));
-    statsEl.appendChild(mk("完了", st.done));
-  }
-
   function statusLabel(status) {
     if (status === "todo") return "未着手";
     if (status === "doing") return "途中";
     return "完了";
   }
-
   function nextStatus(status) {
     if (status === "todo") return "doing";
     if (status === "doing") return "done";
     return "todo";
   }
 
-  function renderModeButton() {
-    modeBtn.textContent = state.ui.editMode ? "入力モード: ON" : "入力モード: OFF";
-  }
-
-  function renderRooms() {
-    const site = getCurrentSite();
-    if (!site) return;
-
-    const filter = state.ui.filter;
-    const rooms = (filter === "all") ? site.rooms : site.rooms.filter(r => r.status === filter);
-
-    roomGrid.innerHTML = "";
-    let lastFloor = null;
-
-    for (const r of rooms) {
-      if (lastFloor !== r.floor) {
-        const header = document.createElement("div");
-        header.className = "floorHeader";
-        header.textContent = `${r.floor}階`;
-        roomGrid.appendChild(header);
-        lastFloor = r.floor;
-      }
-
-      const card = document.createElement("div");
-      card.className = `room ${r.status}`;
-      card.dataset.roomId = r.id;
-      if (r.id === state.ui.highlightedRoomId) card.classList.add("highlight");
-
-      const num = document.createElement("div");
-      num.className = "num";
-      num.textContent = r.label;
-
-      const st = document.createElement("div");
-      st.className = "st";
-      st.textContent = statusLabel(r.status);
-
-      const sub = document.createElement("div");
-      sub.className = "sub";
-      const d = r.workedDate ? r.workedDate : "";
-      const a = r.assignee ? r.assignee : "";
-      sub.textContent = (d || a) ? `${d}${(d && a) ? " / " : ""}${a}` : "";
-
-      card.appendChild(num);
-      card.appendChild(st);
-      card.appendChild(sub);
-
-      card.addEventListener("click", () => {
-        const site2 = getCurrentSite();
-        if (!site2) return;
-        const room = site2.rooms.find(x => x.id === r.id);
-        if (!room) return;
-
-        if (state.ui.editMode) {
-          const today = new Date().toISOString().slice(0, 10);
-          const newDate = prompt("作業日（YYYY-MM-DD）", room.workedDate || today);
-          if (newDate === null) return;
-          const newAssignee = prompt("担当者（例：佐藤）", room.assignee || "");
-          if (newAssignee === null) return;
-
-          room.workedDate = (newDate || "").trim();
-          room.assignee = (newAssignee || "").trim();
-        } else {
-          room.status = nextStatus(room.status);
-        }
-
-        site2.updatedAt = now();
-        saveState();
-        renderStats();
-        renderRooms();
-        renderSiteForm();
-      });
-
-      roomGrid.appendChild(card);
+  function ensureSchedules(site) {
+    if (!site.schedules) site.schedules = defaultSchedules();
+    for (const k of Object.keys(defaultSchedules())) {
+      if (!Array.isArray(site.schedules[k])) site.schedules[k] = [];
     }
   }
 
-  function renderAll() {
-    renderSiteSelect();
-    renderSiteForm();
-    renderModeButton();
-    renderStats();
-    renderRooms();
-  }
-
-  // Jump
-  function jumpToRoom(label) {
-    const site = getCurrentSite();
-    if (!site) return;
-    const target = site.rooms.find(r => r.label === String(label));
-    if (!target) {
-      alert(`部屋が見つかりません: ${label}`);
-      return;
-    }
-    state.ui.filter = "all";
-    state.ui.highlightedRoomId = target.id;
-    saveState();
-
-    renderRooms();
-    requestAnimationFrame(() => {
-      const el = document.querySelector(`[data-room-id="${target.id}"]`);
-      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
-    });
-  }
-
-  // ---- Schedules (8 sections) ----
+  // --- Schedules UI ---
   const SCHED_DEFS = [
     { key: "internal",   label: "社内検査" },
     { key: "internalFix",label: "社内検査 是正期間" },
@@ -614,10 +475,10 @@
     { key: "reViewingFix",label:"再内覧 是正期間" },
   ];
 
-  function ensureSchedules(site) {
-    if (!site.schedules) site.schedules = defaultSchedules();
-    const keys = Object.keys(defaultSchedules());
-    for (const k of keys) if (!Array.isArray(site.schedules[k])) site.schedules[k] = [];
+  function clampInt(v, def=1) {
+    const n = Number(v);
+    if (!Number.isFinite(n)) return def;
+    return Math.max(1, Math.floor(n));
   }
 
   function addScheduleRow(site, key) {
@@ -628,7 +489,7 @@
     site.updatedAt = now();
     saveState();
     renderSchedules();
-    renderSiteForm();
+    renderSiteMeta();
   }
 
   function deleteScheduleRow(site, key, rowId) {
@@ -637,7 +498,7 @@
     site.updatedAt = now();
     saveState();
     renderSchedules();
-    renderSiteForm();
+    renderSiteMeta();
   }
 
   function onScheduleChange(site, key, rowId, patch) {
@@ -647,14 +508,7 @@
     Object.assign(row, patch);
     site.updatedAt = now();
     saveState();
-    const updated = new Date(site.updatedAt).toLocaleString("ja-JP");
-    siteMeta.textContent = `部屋数: ${site.rooms.length} / 最終更新: ${updated}`;
-  }
-
-  function clampInt(v, def=1) {
-    const n = Number(v);
-    if (!Number.isFinite(n)) return def;
-    return Math.max(1, Math.floor(n));
+    renderSiteMeta();
   }
 
   function renderSchedules() {
@@ -697,8 +551,8 @@
       table.appendChild(thead);
 
       const tbody = document.createElement("tbody");
-
       const rows = site.schedules[def.key] || [];
+
       if (rows.length === 0) {
         const tr = document.createElement("tr");
         const td = document.createElement("td");
@@ -762,7 +616,6 @@
 
           tr.appendChild(td1); tr.appendChild(td2); tr.appendChild(td3);
           tr.appendChild(td4); tr.appendChild(td5); tr.appendChild(td6);
-
           tbody.appendChild(tr);
         }
       }
@@ -770,12 +623,167 @@
       table.appendChild(tbody);
       section.appendChild(titleRow);
       section.appendChild(table);
-      section.appendChild(Object.assign(document.createElement("div"), { className: "divider" }));
+
+      const div = document.createElement("div");
+      div.className = "divider";
+      section.appendChild(div);
+
       scheduleContainer.appendChild(section);
     }
   }
 
-  // View switching
+  // --- Render ---
+  function renderSiteSelect() {
+    siteSelect.innerHTML = "";
+    for (const s of state.sites) {
+      const opt = document.createElement("option");
+      opt.value = s.id;
+      opt.textContent = s.building ? `${s.name}（${s.building}）` : s.name;
+      siteSelect.appendChild(opt);
+    }
+    if (state.currentSiteId) siteSelect.value = state.currentSiteId;
+  }
+
+  function renderSiteMeta() {
+    const site = getCurrentSite();
+    if (!site) return;
+    const updated = new Date(site.updatedAt).toLocaleString("ja-JP");
+    siteMeta.textContent = `部屋数: ${site.rooms.length} / 最終更新: ${updated}`;
+  }
+
+  function renderSiteForm() {
+    const site = getCurrentSite();
+    if (!site) return;
+
+    siteName.value = site.name || "";
+    buildingName.value = site.building || "";
+    floorSpec.value = site.floorSpec || "";
+    siteNotes.value = site.notes || "";
+
+    renderSchedules();
+    renderSiteMeta();
+  }
+
+  function renderStats() {
+    const site = getCurrentSite();
+    if (!site) return;
+    const st = computeStats(site.rooms);
+    statsEl.innerHTML = "";
+    const mk = (label, val) => {
+      const d = document.createElement("div");
+      d.className = "pill";
+      d.textContent = `${label}: ${val}`;
+      return d;
+    };
+    statsEl.appendChild(mk("合計", st.total));
+    statsEl.appendChild(mk("未着手", st.todo));
+    statsEl.appendChild(mk("途中", st.doing));
+    statsEl.appendChild(mk("完了", st.done));
+  }
+
+  function renderModeButton() {
+    modeBtn.textContent = state.ui.editMode ? "入力モード: ON" : "入力モード: OFF";
+  }
+
+  function renderRooms() {
+    const site = getCurrentSite();
+    if (!site) return;
+
+    const filter = state.ui.filter;
+    const rooms = (filter === "all") ? site.rooms : site.rooms.filter(r => r.status === filter);
+
+    roomGrid.innerHTML = "";
+    let lastFloor = null;
+
+    for (const r of rooms) {
+      if (lastFloor !== r.floor) {
+        const header = document.createElement("div");
+        header.className = "floorHeader";
+        header.textContent = `${r.floor}階`;
+        roomGrid.appendChild(header);
+        lastFloor = r.floor;
+      }
+
+      const card = document.createElement("div");
+      card.className = `room ${r.status}`;
+      card.dataset.roomId = r.id;
+      if (r.id === state.ui.highlightedRoomId) card.classList.add("highlight");
+
+      const num = document.createElement("div");
+      num.className = "num";
+      num.textContent = r.label;
+
+      const st = document.createElement("div");
+      st.className = "st";
+      st.textContent = statusLabel(r.status); // ★文字は残す（未着手/途中/完了）
+
+      const sub = document.createElement("div");
+      sub.className = "sub";
+      const d = r.workedDate ? r.workedDate : "";
+      const a = r.assignee ? r.assignee : "";
+      sub.textContent = (d || a) ? `${d}${(d && a) ? " / " : ""}${a}` : "";
+
+      card.appendChild(num);
+      card.appendChild(st);
+      card.appendChild(sub);
+
+      card.addEventListener("click", () => {
+        const site2 = getCurrentSite();
+        if (!site2) return;
+        const room = site2.rooms.find(x => x.id === r.id);
+        if (!room) return;
+
+        if (state.ui.editMode) {
+          const today = new Date().toISOString().slice(0, 10);
+          const newDate = prompt("作業日（YYYY-MM-DD）", room.workedDate || today);
+          if (newDate === null) return;
+          const newAssignee = prompt("担当者（例：佐藤）", room.assignee || "");
+          if (newAssignee === null) return;
+          room.workedDate = (newDate || "").trim();
+          room.assignee = (newAssignee || "").trim();
+        } else {
+          room.status = nextStatus(room.status);
+        }
+
+        site2.updatedAt = now();
+        saveState();
+        renderStats();
+        renderRooms();
+        renderSiteMeta();
+      });
+
+      roomGrid.appendChild(card);
+    }
+  }
+
+  function renderAll() {
+    renderSiteSelect();
+    renderSiteForm();
+    renderModeButton();
+    renderStats();
+    renderRooms();
+  }
+
+  // Jump
+  function jumpToRoom(label) {
+    const site = getCurrentSite();
+    if (!site) return;
+    const target = site.rooms.find(r => r.label === String(label));
+    if (!target) {
+      alert(`部屋が見つかりません: ${label}`);
+      return;
+    }
+    state.ui.filter = "all";
+    state.ui.highlightedRoomId = target.id;
+    saveState();
+    renderRooms();
+    requestAnimationFrame(() => {
+      const el = document.querySelector(`[data-room-id="${target.id}"]`);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+  }
+
+  // View switching + disarm
   function showAdmin() {
     mainView.style.display = "none";
     adminView.style.display = "block";
@@ -799,7 +807,7 @@
     regenRoomsBtn.classList.remove("armedBtn");
   }
 
-  // ---- Events ----
+  // --- Actions ---
   siteSelect.addEventListener("change", () => {
     state.currentSiteId = siteSelect.value;
     saveState();
@@ -844,8 +852,8 @@
     site.building = bld;
     site.floorSpec = spec;
     site.notes = (siteNotes.value || "");
-
     site.updatedAt = now();
+
     saveState();
     renderAll();
   });
@@ -857,8 +865,7 @@
     site.notes = (siteNotes.value || "");
     site.updatedAt = now();
     saveState();
-    const updated = new Date(site.updatedAt).toLocaleString("ja-JP");
-    siteMeta.textContent = `部屋数: ${site.rooms.length} / 最終更新: ${updated}`;
+    renderSiteMeta();
   });
 
   // filters
@@ -899,9 +906,7 @@
     renderRooms();
   });
 
-  // ---- Admin danger actions ----
-
-  // 現場削除（二段階＋confirm）
+  // Admin danger actions (2-step + confirm)
   deleteSiteBtn.addEventListener("click", () => {
     const site = getCurrentSite();
     if (!site) return;
@@ -913,7 +918,6 @@
       deleteSiteBtn.classList.add("armedBtn");
       return;
     }
-
     const ok = confirm(`現場「${site.name}」を削除しますか？（元に戻せません）`);
     if (!ok) { disarmAll(); return; }
 
@@ -926,7 +930,6 @@
     renderAll();
   });
 
-  // 全て未着手（二段階＋confirm）
   resetAllBtn.addEventListener("click", () => {
     const site = getCurrentSite();
     if (!site) return;
@@ -938,7 +941,6 @@
       resetAllBtn.classList.add("armedBtn");
       return;
     }
-
     const ok = confirm("全ての部屋を未着手に戻しますか？（作業日・担当者は残ります）");
     if (!ok) { disarmAll(); return; }
 
@@ -949,7 +951,6 @@
     renderAll();
   });
 
-  // 部屋を再生成（最下部・赤枠・二段階＋confirm）★要望どおり
   regenRoomsBtn.addEventListener("click", () => {
     const site = getCurrentSite();
     if (!site) return;
@@ -961,7 +962,6 @@
       regenRoomsBtn.classList.add("armedBtn");
       return;
     }
-
     const ok = confirm("部屋を再生成します。進捗・作業日・担当者は初期化されます。よろしいですか？");
     if (!ok) { disarmAll(); return; }
 
@@ -982,6 +982,7 @@
   // Boot
   ensureInitialSite();
   renderAll();
+
 })();
 </script>
 </body>
