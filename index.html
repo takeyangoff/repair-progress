@@ -5,490 +5,359 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>リペア進捗管理（完成版）</title>
   <style>
-    body { font-family: -apple-system, system-ui, sans-serif; margin: 0; background:#f6f7f9; }
-    header { position: sticky; top: 0; background: white; padding: 12px; border-bottom: 1px solid #e6e6e6; z-index: 20; }
+    :root{
+      --primary:#2563eb;        /* 青 */
+      --primary-ink:#0b2a6f;
+      --danger:#ef4444;
+      --bg:#f6f7f9;
+      --card:#ffffff;
+      --line:#e6e6e6;
+      --muted:#6b7280;
+    }
+    body { font-family: -apple-system, system-ui, sans-serif; margin: 0; background:var(--bg); }
+    header { position: sticky; top: 0; background: white; padding: 12px; border-bottom: 1px solid var(--line); z-index:5; }
     h1 { font-size: 16px; margin: 0 0 8px; }
     .row { display:flex; gap:8px; flex-wrap: wrap; align-items: center; }
     select, input, button, textarea { font-size: 14px; padding: 8px; }
-    input { flex: 1; min-width: 160px; }
-    textarea { width: 100%; box-sizing: border-box; border: 1px solid #ddd; border-radius: 12px; background:#fff; }
+    input, textarea { flex: 1; min-width: 180px; }
+    textarea { width:100%; min-height: 88px; resize: vertical; }
     button { border: 1px solid #ddd; background:#fff; border-radius: 10px; }
-    button.primary { background: #111827; color: white; border-color: #111827; }
-    button.danger { border-color: #ef4444; color: #ef4444; }
-    button.small { font-size: 12px; padding: 6px 10px; border-radius: 999px; }
-    input.small { font-size: 12px; padding: 6px 10px; border-radius: 999px; }
-
-    .meta { font-size: 12px; color: #6b7280; margin-top: 6px; }
+    button.primary { background: var(--primary); color: white; border-color: var(--primary); }
+    button.secondary { border-color: #c7d2fe; color: var(--primary); background:#fff; }
+    button.danger { border-color: var(--danger); color: var(--danger); }
+    button.ghost { border-color: transparent; background: transparent; color: var(--primary); }
+    .meta { font-size: 12px; color: var(--muted); margin-top: 6px; }
     main { padding: 12px; }
     .stats { display:flex; gap:8px; flex-wrap: wrap; margin-bottom: 10px; }
-    .pill { background:white; border:1px solid #e6e6e6; border-radius: 999px; padding: 6px 10px; font-size: 13px; }
-
-    .panel { background:white; border:1px solid #e6e6e6; border-radius: 12px; padding: 12px; margin-bottom: 12px; }
+    .pill { background:white; border:1px solid var(--line); border-radius: 999px; padding: 6px 10px; font-size: 13px; }
+    .panel { background:var(--card); border:1px solid var(--line); border-radius: 14px; padding: 12px; margin-bottom: 12px; }
     .panel h2 { font-size: 14px; margin:0 0 8px; }
-    .help { font-size: 12px; color:#6b7280; line-height: 1.5; }
+    .help { font-size: 12px; color:var(--muted); line-height: 1.55; }
     .split { display:flex; gap:8px; flex-wrap: wrap; }
     .split > * { flex: 1; min-width: 220px; }
+    .small { font-size: 12px; padding: 6px 8px; }
+    input.small { font-size: 12px; padding: 6px 8px; }
 
+    /* Rooms */
     .grid { display:grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap:8px; }
     @media (max-width: 480px) { .grid { grid-template-columns: repeat(4, minmax(0,1fr)); } }
-
-    .room{
-      background:white; border:1px solid #e6e6e6; border-radius: 10px;
-      padding: 10px 8px; text-align:center; user-select:none; cursor:pointer;
-      display:flex; flex-direction: column; gap:6px;
-    }
-    .room .num { font-weight: 700; font-size: 14px; }
-    .room .st { font-size: 12px; padding: 2px 6px; border-radius: 999px; display:inline-block; margin: 0 auto; }
-    .room .sub { font-size: 11px; color:#6b7280; line-height: 1.2; }
-
-    /* ステータス文字（未着手/途中/完了） */
-    .todo .st { background:#f3f4f6; color:#111827; }
-    .doing .st { background:#fffbeb; color:#92400e; }
-    .done .st { background:#ecfdf5; color:#065f46; }
-
-    /* カード全体の色分け（進捗） */
-    .room.todo  { background:#f9fafb; border-color:#e5e7eb; }
-    .room.doing { background:#fffbeb; border-color:#f59e0b; }
-    .room.done  { background:#ecfdf5; border-color:#10b981; }
-    .room.doing .num, .room.doing .sub { color:#92400e; }
-    .room.done  .num, .room.done  .sub { color:#065f46; }
-
     .floorHeader {
       grid-column: 1 / -1;
       background: #ffffff;
-      border: 1px solid #e6e6e6;
+      border: 1px solid var(--line);
       border-radius: 10px;
       padding: 8px 10px;
-      font-weight: 700;
-    }
-    .room.highlight { outline: 3px solid #111827; outline-offset: 2px; }
-
-    /* 折りたたみカード：青系（スケジュール／アンケート） */
-    details.panelInner {
-      margin-top: 10px;
-      border: 1px solid #93c5fd;
-      border-radius: 12px;
-      padding: 10px;
-      background: #eff6ff;
-    }
-    details.panelInner > summary {
-      cursor: pointer;
       font-weight: 800;
-      font-size: 13px;
-      background: #dbeafe;
-      border-radius: 10px;
-      padding: 10px 10px;
     }
-    details.panelInner[open] > summary { background:#bfdbfe; }
-    details > summary { list-style: none; }
-    details > summary::-webkit-details-marker { display: none; }
-
-    .divider { height:1px; background:#e5e7eb; margin: 10px 0; }
-    .sectionTitleRow { display:flex; justify-content: space-between; align-items:center; gap: 8px; margin-top: 8px; }
-    .sectionTitleRow .title { font-weight: 800; font-size: 13px; }
-
-    /* スケジュール表（編集モード） */
-    .schedTable { width:100%; border-collapse: collapse; }
-    .schedTable th, .schedTable td { border-top: 1px solid #e5e7eb; padding: 8px 6px; font-size: 12px; vertical-align: middle; }
-    .schedTable th { text-align:left; color:#6b7280; font-weight: 700; }
-    .schedRow input { min-width: 92px; }
-    .schedRow .mini { width: 70px; min-width: 70px; }
-    .schedRow .memo { min-width: 140px; }
-    .schedRow button { padding: 6px 10px; border-radius: 999px; font-size: 12px; }
-
-    /* スケジュール一覧（サマリー） */
-    .summaryBox {
-      border: 1px solid #e5e7eb;
+    .room {
+      background: white;
+      border:1px solid var(--line);
       border-radius: 12px;
-      padding: 10px;
-      background: #fff;
-      margin-bottom: 10px;
+      padding: 10px 8px;
+      text-align:center;
+      user-select:none;
+      cursor:pointer;
+      display:flex;
+      flex-direction: column;
+      gap:6px;
+      transition: transform .04s ease;
     }
-    .summaryTitle { font-weight: 800; font-size: 13px; }
-    .summaryLine { font-size: 12px; color:#374151; margin-top: 6px; line-height: 1.45; }
-    .summaryEmpty { font-size: 12px; color:#6b7280; margin-top: 6px; }
+    .room:active{ transform: scale(0.985); }
+    .room .num { font-weight: 800; font-size: 14px; }
+    .room .st { font-size: 12px; padding: 3px 8px; border-radius: 999px; display:inline-block; margin: 0 auto; border:1px solid transparent; }
+    .room .sub { font-size: 11px; color:var(--muted); line-height: 1.2; }
 
-    /* 管理画面 */
-    .adminHeader { display:flex; justify-content: space-between; align-items: center; gap: 8px; }
-    .dangerPanel { border: 2px solid #ef4444; background: #fff5f5; }
-    .dangerNote { font-size: 12px; color: #b91c1c; line-height: 1.5; margin-top: 6px; }
-    .armedBtn { background:#ef4444 !important; color:#fff !important; border-color:#ef4444 !important; font-weight: 800; }
+    /* status color (card background changes too) */
+    .room.todo { background:#ffffff; }
+    .room.doing { background:#eff6ff; border-color:#bfdbfe; }
+    .room.done { background:#ecfdf5; border-color:#bbf7d0; }
 
-    /* 入力モードON：青 */
-    #modeBtn.isOn { background: #2563eb; color: #ffffff; border-color: #2563eb; font-weight: 800; }
-    #modeBtn.isOn::after { content: "（作業日/担当者入力）"; font-size: 11px; margin-left: 6px; opacity: 0.9; font-weight: 600; }
+    .todo .st { background:#f3f4f6; color:#111827; }
+    .doing .st { background:#dbeafe; color:#1d4ed8; border-color:#bfdbfe; }
+    .done .st { background:#dcfce7; color:#166534; border-color:#bbf7d0; }
 
-    /* ===== アンケート ===== */
-    .qGrid { display:grid; grid-template-columns: 1fr; gap:10px; margin-top:10px; }
-    .qItem { border:1px solid #e6e6e6; border-radius: 12px; padding: 10px; background:#fff; }
-    .qTitle { font-weight:800; font-size:13px; margin-bottom:6px; }
-    .qRow { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
-    .qRow > * { flex: 1; min-width: 140px; }
-    .qHelp { font-size:12px; color:#6b7280; line-height:1.5; margin-top:6px; }
-    .chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
-    .chips label { display:flex; gap:6px; align-items:center; font-size:12px; border:1px solid #e6e6e6; padding:6px 10px; border-radius:999px; background:#fff; }
+    .badge {
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      margin: 0 auto;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      border:1px solid var(--line);
+      background:#fff;
+      color:#111827;
+    }
+    .badge.dame-on{
+      border-color:#fecaca;
+      background:#fef2f2;
+      color:#991b1b;
+    }
 
-    /* 切り替えボタン（一覧/編集） */
-    .toggleBtn.on { background:#2563eb; color:#fff; border-color:#2563eb; font-weight: 800; }
+    .room.highlight { outline: 3px solid var(--primary); outline-offset: 2px; }
+
+    /* Accordion */
+    details { border:1px solid var(--line); border-radius: 12px; background:#fff; overflow:hidden; }
+    details > summary {
+      list-style:none;
+      cursor:pointer;
+      padding: 10px 12px;
+      font-weight: 800;
+      color: var(--primary-ink);
+      background: #eef2ff;
+    }
+    details[open] > summary { background:#e0e7ff; }
+    summary::-webkit-details-marker { display:none; }
+    .accBody{ padding: 10px 12px; }
+    .tag { font-size:11px; padding:2px 8px; border-radius:999px; border:1px solid #c7d2fe; color:var(--primary); background:#fff; }
+
+    /* Manage modal */
+    .modalBackdrop{
+      position:fixed; inset:0; background: rgba(0,0,0,.35);
+      display:none; align-items:flex-end; justify-content:center; z-index:50;
+    }
+    .modal{
+      width: min(720px, 100%);
+      background:#fff; border-radius: 16px 16px 0 0;
+      border:1px solid var(--line);
+      padding: 12px;
+      max-height: 82vh;
+      overflow:auto;
+    }
+    .modalHeader{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+    .modalHeader h3{ margin:0; font-size:14px; }
+    .phaseRow{ display:flex; gap:8px; align-items:center; margin: 8px 0; }
+    .phaseRow input{ min-width: 160px; }
+    .divider{ height:1px; background: var(--line); margin: 10px 0; }
+
+    /* Regen danger box */
+    .dangerBox{
+      border:2px solid #fecaca;
+      background:#fff1f2;
+      border-radius: 14px;
+      padding: 12px;
+    }
+    .dangerBox h3{ margin:0 0 6px; font-size:13px; color:#991b1b; }
+    .dangerBox p{ margin:0 0 10px; font-size:12px; color:#7f1d1d; line-height:1.5; }
   </style>
 </head>
 
 <body>
-  <header>
-    <h1>リペア進捗管理（完成版）</h1>
-    <div class="row">
-      <select id="siteSelect"></select>
-      <button id="newSiteBtn" class="primary">現場を追加</button>
-      <button id="manageBtn">⚙ 管理</button>
-    </div>
-    <div class="meta" id="siteMeta"></div>
-  </header>
+<header>
+  <h1>リペア進捗管理（完成版）</h1>
+  <div class="row">
+    <select id="siteSelect"></select>
+    <button id="newSiteBtn" class="primary">現場を追加</button>
+    <button id="manageBtn" class="secondary">⚙ 管理</button>
+    <button id="deleteSiteBtn" class="danger">現場削除</button>
+  </div>
 
-  <main>
-    <!-- 通常画面 -->
-    <div id="mainView">
-      <div class="panel">
-        <h2>現場設定</h2>
+  <div class="row" style="margin-top:8px;">
+    <span class="tag">検査段階</span>
+    <select id="phaseSelect"></select>
+  </div>
 
-        <div class="split">
-          <div>
-            <div class="row">
-              <input id="siteName" placeholder="現場名（例：〇〇マンション）" />
-            </div>
-            <div class="row">
-              <input id="generalContractor" placeholder="ゼネコン（例：〇〇建設）" />
-            </div>
-            <div class="row">
-              <input id="buildingName" placeholder="棟/建物名（任意）" />
-            </div>
-          </div>
+  <div class="meta" id="siteMeta"></div>
+</header>
 
-          <div>
-            <div class="row">
-              <input id="floorSpec" placeholder="階:部屋数（例 1:4,2-11:5）" />
-            </div>
-            <div class="help">
-              入力例：<b>1:4,2-11:5</b>（カンマ区切り）<br/>
-              形式：<b>階</b> または <b>開始階-終了階</b> : <b>部屋数</b><br/>
-              部屋番号は <b>101方式</b>（階×100 + 連番）で自動生成
-            </div>
-          </div>
-        </div>
-
-        <!-- 検査・内覧スケジュール（初期は閉） -->
-        <details class="panelInner" id="scheduleDetails">
-          <summary>検査・内覧スケジュール（タップで開閉）</summary>
-
-          <div class="help" style="margin-top:8px;">
-            8項目すべて：<b>階範囲</b>＋<b>期間（開始〜終了）</b>＋<b>メモ</b> を行追加できます。<br/>
-            日付はカレンダーで選択＆手入力OK（YYYY-MM-DD）。
-          </div>
-
-          <div class="row" style="margin-top:8px;">
-            <button class="small toggleBtn" id="scheduleViewBtn">一覧</button>
-            <button class="small toggleBtn" id="scheduleEditBtn">編集</button>
-          </div>
-
-          <div class="divider"></div>
-          <div id="scheduleContainer"></div>
-        </details>
-
-        <!-- 現場基本情報（アンケート）（初期は閉） -->
-        <details class="panelInner" id="surveyDetails">
-          <summary>現場基本情報（アンケート）</summary>
-
-          <div class="help" style="margin-top:8px;">
-            現場ごとに保存されます。普段は<b>一覧（要点）</b>で確認 → 「編集」で入力フォームへ。
-          </div>
-
-          <div class="row" style="margin-top:8px;">
-            <button class="small toggleBtn" id="surveyViewBtn">一覧</button>
-            <button class="small toggleBtn" id="surveyEditBtn">編集</button>
-          </div>
-
-          <div class="divider"></div>
-          <div id="surveyContainer"></div>
-        </details>
-
-        <!-- 備考欄 -->
-        <div style="margin-top:10px;">
-          <div class="help"><b>備考（現場メモ）</b></div>
-          <textarea id="siteNotes" rows="4" placeholder="自由メモ（段取り、注意事項、共通の指示など）"></textarea>
-        </div>
-
-        <div class="row" style="margin-top:10px;">
-          <button id="saveSiteBtn" class="primary">設定を保存</button>
-        </div>
-      </div>
-
-      <div class="stats" id="stats"></div>
-
-      <div class="panel">
+<main>
+  <div class="panel">
+    <h2>現場設定</h2>
+    <div class="split">
+      <div>
         <div class="row">
-          <button class="small" data-filter="all">全件</button>
-          <button class="small" data-filter="todo">未着手</button>
-          <button class="small" data-filter="doing">途中</button>
-          <button class="small" data-filter="done">完了</button>
-          <button class="small" id="modeBtn">入力モード: OFF</button>
+          <input id="siteName" placeholder="現場名（例：〇〇マンション）" />
         </div>
-
-        <div class="row" style="margin-top:8px;">
-          <input id="jumpInput" class="small" placeholder="部屋番号でジャンプ（例 703）" />
-          <button class="small" id="jumpBtn">移動</button>
-          <button class="small" id="clearJumpBtn">解除</button>
+        <div class="row">
+          <input id="generalContractor" placeholder="ゼネコン（例：〇〇建設）" />
         </div>
-
-        <div class="help" style="margin-top:8px;">
-          入力モードON：部屋カードをタップ → <b>作業日</b> → <b>担当者</b>（自由入力）
+        <div class="row">
+          <input id="buildingName" placeholder="棟/建物名（任意）" />
         </div>
       </div>
-
-      <div class="grid" id="roomGrid"></div>
-
-      <div class="help" style="padding: 10px 2px;">
-        通常モード：部屋カードをタップで 未着手 → 途中 → 完了 → 未着手
+      <div>
+        <div class="row">
+          <input id="floorSpec" placeholder="階:部屋数（例 1:4,2-11:5）" />
+        </div>
+        <div class="help">
+          入力例：<b>1:4,2-11:5</b>（カンマ区切り）<br/>
+          形式：<b>階</b> または <b>開始階-終了階</b> : <b>部屋数</b><br/>
+          部屋番号は <b>101方式</b>（階×100 + 連番）で自動生成
+        </div>
       </div>
     </div>
 
-    <!-- 管理画面 -->
-    <div id="adminView" style="display:none;">
-      <div class="panel">
-        <div class="adminHeader">
-          <h2 style="margin:0;">管理（危険操作）</h2>
-          <button id="backBtn">← 戻る</button>
+    <div style="margin-top:10px;">
+      <details id="scheduleAcc">
+        <summary>検査・内覧スケジュール（タップで開閉）</summary>
+        <div class="accBody">
+          <div class="help" style="margin-bottom:8px;">
+            ここは現場スケジュール（自由入力）。日付はカレンダー（開始・終了）でも手入力でもOK。
+          </div>
+          <div id="scheduleList"></div>
+          <button id="addScheduleBtn" class="secondary" style="margin-top:8px;">＋ スケジュール行を追加</button>
         </div>
-        <div class="help" style="margin-top:6px;">
-          誤操作防止のため、初期化・削除などはここにまとめています。
-        </div>
-      </div>
+      </details>
+    </div>
 
-      <div class="panel">
-        <h2>現場の削除</h2>
-        <div class="help">現場ごとのデータが消えます（元に戻せません）。</div>
-        <button id="deleteSiteBtn" class="danger">現場削除</button>
-      </div>
+    <div style="margin-top:10px;">
+      <div class="help" style="font-weight:800; color:#111827; margin-bottom:6px;">備考（現場メモ）</div>
+      <textarea id="siteMemo" placeholder="自由メモ（段取り、注意事項、共通の指示など）"></textarea>
+    </div>
 
-      <div class="panel">
-        <h2>進捗の初期化</h2>
-        <div class="help">すべての部屋を「未着手」に戻します（作業日・担当者は残します）。</div>
-        <button id="resetAllBtn" class="danger">全て未着手に戻す</button>
-      </div>
+    <div class="row" style="margin-top:10px;">
+      <button id="saveSiteBtn" class="primary">設定を保存</button>
+    </div>
+  </div>
 
-      <div class="panel dangerPanel">
-        <h2>部屋の再生成（最終・危険）</h2>
-        <div class="dangerNote">
-          ・階数設定（階:部屋数）から、部屋一覧を作り直します<br/>
-          ・<b>進捗（未/途/完）・作業日・担当者</b>が全て初期化されます<br/>
-          ・この操作は<b>元に戻せません</b><br/>
-          ※ 誤操作防止：<b>二段階タップ</b>になっています
-        </div>
-        <div style="margin-top:10px;">
-          <button id="regenRoomsBtn" class="danger">部屋を再生成</button>
-        </div>
-        <div class="help" style="margin-top:8px;">
-          1回目：確認状態 / 2回目：confirm後に実行
-        </div>
+  <div class="stats" id="stats"></div>
+
+  <div class="panel">
+    <div class="row">
+      <button class="small" data-filter="all">全件</button>
+      <button class="small" data-filter="todo">未着手</button>
+      <button class="small" data-filter="doing">途中</button>
+      <button class="small" data-filter="done">完了</button>
+      <button class="small" id="resetAllBtn">全て未着手に戻す</button>
+      <button class="small secondary" id="modeBtn">入力モード: OFF</button>
+    </div>
+
+    <div class="row" style="margin-top:8px;">
+      <span class="tag">ダメ帳</span>
+      <button class="small" data-dame="all">全て</button>
+      <button class="small" data-dame="on">ありだけ</button>
+      <button class="small" data-dame="off">なしだけ</button>
+    </div>
+
+    <div class="help" style="margin-top:8px;">
+      タップ：未着手→途中→完了→未着手 ／ 長押し：ダメ帳 なし↔あり（段階ごと）
+    </div>
+  </div>
+
+  <div class="row" style="margin-top:8px;">
+    <input id="jumpInput" class="small" placeholder="部屋番号でジャンプ（例 703）" />
+    <button class="small" id="jumpBtn">移動</button>
+    <button class="small" id="clearJumpBtn">解除</button>
+  </div>
+
+  <div class="grid" id="roomGrid" style="margin-top:10px;"></div>
+
+  <div class="panel" style="margin-top:14px;">
+    <div class="dangerBox">
+      <h3>危険：部屋を再生成（状態が初期化されます）</h3>
+      <p>
+        「階数・部屋数」の設定を変えた後に部屋一覧を作り直したい時だけ使ってください。<br/>
+        <b>この操作をすると、この現場の全ての進捗・作業日・担当者・ダメ帳フラグが初期化</b>されます。
+      </p>
+      <div class="row">
+        <button id="regenStep1Btn" class="danger">部屋を再生成（1回目タップ）</button>
+        <button id="regenStep2Btn" class="danger" disabled>部屋を再生成（2回目で確定）</button>
+      </div>
+      <div class="help" id="regenHint" style="margin-top:8px; color:#991b1b;">
+        2回目ボタンは、1回目を押してから30秒間だけ有効になります。
       </div>
     </div>
-  </main>
+  </div>
+</main>
+
+<div id="modalBackdrop" class="modalBackdrop">
+  <div class="modal">
+    <div class="modalHeader">
+      <h3>管理（検査段階の編集）</h3>
+      <button id="closeModalBtn" class="ghost">閉じる</button>
+    </div>
+    <div class="help" style="margin-top:6px;">
+      現場ごとに検査段階を追加・削除できます。段階を削除すると、その段階の進捗データも消えます。
+    </div>
+
+    <div class="divider"></div>
+
+    <div id="phaseEditor"></div>
+    <button id="addPhaseBtn" class="secondary" style="margin-top:6px;">＋ 検査段階を追加</button>
+
+    <div class="divider"></div>
+
+    <button id="deleteSiteBtn2" class="danger" style="width:100%;">現場を削除</button>
+  </div>
+</div>
 
 <script>
 (() => {
-  const STORAGE_KEY = "repair_progress_complete_v2";
+  const STORAGE_KEY = "repair_progress_complete_v4";
 
   /** @typedef {"todo"|"doing"|"done"} Status */
-  /** @typedef {{ id:string, label:string, floor:number, idx:number, status:Status, assignee?:string, workedDate?:string }} Room */
-  /** @typedef {{ id:string, floorFrom:number, floorTo:number, start:string, end:string, memo:string }} ScheduleRow */
-  /** @typedef {{
-      internal: ScheduleRow[],
-      internalFix: ScheduleRow[],
-      client: ScheduleRow[],
-      clientFix: ScheduleRow[],
-      viewing: ScheduleRow[],
-      viewingFix: ScheduleRow[],
-      reViewing: ScheduleRow[],
-      reViewingFix: ScheduleRow[]
-  }} Schedules */
-  /** @typedef {{
-    id:string, name:string, generalContractor?:string, building:string, floorSpec:string, rooms:Room[],
-    createdAt:number, updatedAt:number,
-    notes?:string,
-    schedules?:Schedules,
-    survey?:any
-  }} Site */
-  /** @typedef {{ sites:Site[], currentSiteId:string|null, ui:{
-    filter:"all"|Status, editMode:boolean, highlightedRoomId:string|null,
-    scheduleView:"summary"|"edit",
-    surveyView:"summary"|"edit"
-  } }} AppState */
+  /** @typedef {{ status:Status, dame:boolean, workDate?:string, worker?:string }} PhaseState */
+  /** @typedef {{ id:string, label:string, floor:number, idx:number, phases: Record<string, PhaseState> }} Room */
+  /** @typedef {{ id:string, name:string }} Phase */
+  /** @typedef {{ title:string, start:string, end:string, startFree?:string, endFree?:string, note:string }} ScheduleRow */
+  /** @typedef {{ filter:"all"|Status, inputMode:boolean, dameFilter:"all"|"on"|"off" }} SiteUI */
+  /** @typedef {{ id:string, name:string, generalContractor:string, building:string, floorSpec:string, memo:string,
+                phases:Phase[], currentPhaseId:string,
+                scheduleRows: ScheduleRow[],
+                rooms:Room[], createdAt:number, updatedAt:number,
+                ui: SiteUI
+              }} Site */
+  /** @typedef {{ sites:Site[], currentSiteId:string|null }} AppState */
 
   const uid = () => Math.random().toString(36).slice(2, 10) + "-" + Date.now().toString(36);
   const now = () => Date.now();
   const $ = (id) => document.getElementById(id);
 
   const siteSelect = $("siteSelect");
+  const phaseSelect = $("phaseSelect");
   const newSiteBtn = $("newSiteBtn");
+  const deleteSiteBtn = $("deleteSiteBtn");
   const manageBtn = $("manageBtn");
-  const backBtn = $("backBtn");
-
-  const mainView = $("mainView");
-  const adminView = $("adminView");
 
   const siteName = $("siteName");
   const generalContractor = $("generalContractor");
   const buildingName = $("buildingName");
   const floorSpec = $("floorSpec");
-  const siteNotes = $("siteNotes");
+  const siteMemo = $("siteMemo");
+
   const saveSiteBtn = $("saveSiteBtn");
-
-  const scheduleContainer = $("scheduleContainer");
-  const surveyContainer = $("surveyContainer");
-
-  const scheduleViewBtn = $("scheduleViewBtn");
-  const scheduleEditBtn = $("scheduleEditBtn");
-  const surveyViewBtn = $("surveyViewBtn");
-  const surveyEditBtn = $("surveyEditBtn");
-
-  const deleteSiteBtn = $("deleteSiteBtn");
   const resetAllBtn = $("resetAllBtn");
-  const regenRoomsBtn = $("regenRoomsBtn");
-
-  const siteMeta = $("siteMeta");
-  const statsEl = $("stats");
-  const roomGrid = $("roomGrid");
-
   const modeBtn = $("modeBtn");
+
   const jumpInput = $("jumpInput");
   const jumpBtn = $("jumpBtn");
   const clearJumpBtn = $("clearJumpBtn");
 
-  // safety arming
-  let deleteArmed = false;
-  let resetArmed = false;
-  let regenArmed = false;
+  const roomGrid = $("roomGrid");
+  const statsEl = $("stats");
+  const siteMeta = $("siteMeta");
 
-  function defaultSchedules() {
-    return {
-      internal: [],
-      internalFix: [],
-      client: [],
-      clientFix: [],
-      viewing: [],
-      viewingFix: [],
-      reViewing: [],
-      reViewingFix: []
-    };
-  }
+  const scheduleList = $("scheduleList");
+  const addScheduleBtn = $("addScheduleBtn");
 
-  // 現場基本情報（アンケート）
-  function defaultSurvey() {
-    const repairItems = ["木枠","建具","額縁","枕棚","家具","床","サッシ","キッチン家具","洗面家具","見切り"];
-    return {
-      repairSupervisors: [{ id: uid(), name: "", phone: "" }],
+  const regenStep1Btn = $("regenStep1Btn");
+  const regenStep2Btn = $("regenStep2Btn");
+  const regenHint = $("regenHint");
+  let regenArmedUntil = 0;
 
-      chiefName: "", chiefPhone: "",
-      foremanName: "", foremanPhone: "",
+  const modalBackdrop = $("modalBackdrop");
+  const closeModalBtn = $("closeModalBtn");
+  const phaseEditor = $("phaseEditor");
+  const addPhaseBtn = $("addPhaseBtn");
+  const deleteSiteBtn2 = $("deleteSiteBtn2");
 
-      morningMeetingTime: "8:00〜",
-      morningMeetingPlace: "",
-      morningMeetingNotes: "",
-
-      lunchMeetingTime: "13:00〜",
-      lunchMeetingMode: "none", // none | leaders
-      lunchMeetingPlace: "",
-      lunchMeetingNotes: "",
-
-      kyPaper: "unknown", // yes | no | unknown
-      kyPaperPlace: "",
-
-      induction: "unknown", // yes | no | unknown
-
-      responsibleItems: repairItems.reduce((a,k)=> (a[k]=false,a), {}),
-      responsibleNotes: "",
-
-      otherVendorItems: repairItems.reduce((a,k)=> (a[k]=false,a), {}),
-      otherVendorNotes: "",
-
-      damecho: "unknown", // yes | no | unknown
-      damechoNotes: "",
-
-      flow: "downToUp", // downToUp | upToDown
-      flowNotes: "",
-
-      tape: "none", // none | remove | recheck
-      tapeNotes: "",
-
-      toiletOnsite: { "仮設トイレ": true, "管理人室": false },
-      toiletNearby: { "コンビニ": true, "公園": false },
-      toiletNotes: "",
-
-      overtime: "unknown", // ok_apply | no | unknown
-      overtimeNotes: "",
-
-      holidayRegular: { "日曜": true, "祝日": true },
-      holidayExtra: [{ id: uid(), label: "" }],
-    };
-  }
-
-  function ensureSurvey(site) {
-    if (!site.survey) site.survey = defaultSurvey();
-    const sv = site.survey;
-    if (!Array.isArray(sv.repairSupervisors) || sv.repairSupervisors.length === 0) sv.repairSupervisors = [{ id: uid(), name:"", phone:"" }];
-    if (!Array.isArray(sv.holidayExtra) || sv.holidayExtra.length === 0) sv.holidayExtra = [{ id: uid(), label:"" }];
-    if (!sv.responsibleItems) sv.responsibleItems = defaultSurvey().responsibleItems;
-    if (!sv.otherVendorItems) sv.otherVendorItems = defaultSurvey().otherVendorItems;
-    if (!sv.toiletOnsite) sv.toiletOnsite = defaultSurvey().toiletOnsite;
-    if (!sv.toiletNearby) sv.toiletNearby = defaultSurvey().toiletNearby;
-    if (!sv.holidayRegular) sv.holidayRegular = defaultSurvey().holidayRegular;
-  }
-
-  function defaultState() {
-    return {
-      sites: [],
-      currentSiteId: null,
-      ui: {
-        filter: "all",
-        editMode: false,
-        highlightedRoomId: null,
-        scheduleView: "summary",
-        surveyView: "summary"
-      }
-    };
-  }
+  let highlightedRoomId = null;
 
   function loadState() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return defaultState();
+      if (!raw) return /** @type {AppState} */ ({ sites: [], currentSiteId: null });
       const parsed = JSON.parse(raw);
-      if (!parsed || !Array.isArray(parsed.sites)) return defaultState();
-      if (!parsed.ui) parsed.ui = defaultState().ui;
-
-      if (!parsed.ui.filter) parsed.ui.filter = "all";
-      if (typeof parsed.ui.editMode !== "boolean") parsed.ui.editMode = false;
-      if (!("highlightedRoomId" in parsed.ui)) parsed.ui.highlightedRoomId = null;
-      if (!parsed.ui.scheduleView) parsed.ui.scheduleView = "summary";
-      if (!parsed.ui.surveyView) parsed.ui.surveyView = "summary";
-
-      for (const s of parsed.sites) {
-        if (!("notes" in s)) s.notes = "";
-        if (!("generalContractor" in s)) s.generalContractor = "";
-        if (!("schedules" in s) || !s.schedules) s.schedules = defaultSchedules();
-        for (const k of Object.keys(defaultSchedules())) if (!Array.isArray(s.schedules[k])) s.schedules[k] = [];
-        if (!("survey" in s) || !s.survey) s.survey = defaultSurvey();
-        ensureSurvey(s);
-      }
+      if (!parsed || !Array.isArray(parsed.sites)) throw new Error("invalid");
       return parsed;
     } catch {
-      return defaultState();
+      return /** @type {AppState} */ ({ sites: [], currentSiteId: null });
     }
   }
-
   function saveState() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   }
 
-  // "1:4,2-11:5"
   function parseFloorSpec(spec) {
     const s = (spec || "").trim();
     if (!s) return [];
@@ -497,10 +366,14 @@
     for (const p of parts) {
       const [lhs, rhs] = p.split(":").map(x => (x || "").trim());
       const roomsPerFloor = Number(rhs);
-      if (!lhs || !Number.isFinite(roomsPerFloor) || roomsPerFloor <= 0) throw new Error(`入力形式エラー: "${p}"`);
+      if (!lhs || !Number.isFinite(roomsPerFloor) || roomsPerFloor <= 0) {
+        throw new Error(`入力形式エラー: "${p}"`);
+      }
       if (lhs.includes("-")) {
         const [a, b] = lhs.split("-").map(x => Number(x.trim()));
-        if (!Number.isInteger(a) || !Number.isInteger(b) || a <= 0 || b <= 0 || a > b) throw new Error(`階範囲エラー: "${lhs}"`);
+        if (!Number.isInteger(a) || !Number.isInteger(b) || a <= 0 || b <= 0 || a > b) {
+          throw new Error(`階範囲エラー: "${lhs}"`);
+        }
         out.push({ from: a, to: b, roomsPerFloor });
       } else {
         const f = Number(lhs);
@@ -509,19 +382,42 @@
       }
     }
     const used = new Set();
-    for (const r of out) for (let f = r.from; f <= r.to; f++) { if (used.has(f)) throw new Error(`同じ階の指定が重複しています: ${f}階`); used.add(f); }
+    for (const r of out) {
+      for (let f = r.from; f <= r.to; f++) {
+        if (used.has(f)) throw new Error(`同じ階の指定が重複しています: ${f}階`);
+        used.add(f);
+      }
+    }
     out.sort((a,b) => a.from - b.from);
     return out;
   }
 
-  function generateRoomsFromSpec(spec) {
+  function defaultPhases() {
+    return /** @type {Phase[]} */ ([
+      { id: uid(), name: "自主検査" },
+      { id: uid(), name: "社内検査" },
+      { id: uid(), name: "設計検査" },
+      { id: uid(), name: "施主検査" },
+      { id: uid(), name: "内覧" },
+    ]);
+  }
+
+  function ensureRoomHasPhase(room, phaseId) {
+    if (!room.phases) room.phases = {};
+    if (!room.phases[phaseId]) room.phases[phaseId] = { status:"todo", dame:false, workDate:"", worker:"" };
+  }
+
+  function generateRoomsFromSpec(spec, phases) {
     const ranges = parseFloorSpec(spec);
+    /** @type {Room[]} */
     const rooms = [];
     for (const r of ranges) {
       for (let f = r.from; f <= r.to; f++) {
         for (let i = 1; i <= r.roomsPerFloor; i++) {
           const label = String(f * 100 + i);
-          rooms.push({ id: uid(), label, floor: f, idx: i, status: "todo", assignee: "", workedDate: "" });
+          const rm = /** @type {Room} */ ({ id: uid(), label, floor:f, idx:i, phases:{} });
+          for (const ph of phases) ensureRoomHasPhase(rm, ph.id);
+          rooms.push(rm);
         }
       }
     }
@@ -529,6 +425,7 @@
     return rooms;
   }
 
+  /** @type {AppState} */
   let state = loadState();
 
   function getCurrentSite() {
@@ -538,20 +435,27 @@
 
   function ensureInitialSite() {
     if (state.sites.length === 0) {
-      const s = {
+      const phases = defaultPhases();
+      const s = /** @type {Site} */ ({
         id: uid(),
         name: "サンプル現場",
         generalContractor: "",
         building: "",
         floorSpec: "1:4,2-3:5",
+        memo: "",
+        phases,
+        currentPhaseId: phases[0].id,
+        scheduleRows: [
+          { title:"社内検査", start:"", end:"", note:"" },
+          { title:"施主検査", start:"", end:"", note:"" },
+          { title:"内覧", start:"", end:"", note:"" },
+        ],
         rooms: [],
         createdAt: now(),
         updatedAt: now(),
-        notes: "",
-        schedules: defaultSchedules(),
-        survey: defaultSurvey()
-      };
-      s.rooms = generateRoomsFromSpec(s.floorSpec);
+        ui: { filter:"all", inputMode:false, dameFilter:"all" }
+      });
+      s.rooms = generateRoomsFromSpec(s.floorSpec, s.phases);
       state.sites.push(s);
       state.currentSiteId = s.id;
       saveState();
@@ -559,814 +463,92 @@
       state.currentSiteId = state.sites[0].id;
       saveState();
     }
-  }
 
-  function computeStats(rooms) {
-    let todo = 0, doing = 0, done = 0;
-    for (const r of rooms) {
-      if (r.status === "todo") todo++;
-      else if (r.status === "doing") doing++;
-      else done++;
+    for (const s of state.sites) {
+      if (!s.ui) s.ui = { filter:"all", inputMode:false, dameFilter:"all" };
+      if (!s.ui.dameFilter) s.ui.dameFilter = "all";
+      if (!s.phases || !s.phases.length) {
+        s.phases = defaultPhases();
+        s.currentPhaseId = s.phases[0].id;
+      }
+      if (!s.currentPhaseId) s.currentPhaseId = s.phases[0].id;
+      if (!s.scheduleRows) s.scheduleRows = [];
+      for (const r of (s.rooms||[])) {
+        if (!r.phases) r.phases = {};
+        for (const ph of s.phases) ensureRoomHasPhase(r, ph.id);
+      }
     }
-    return { total: rooms.length, todo, doing, done };
   }
 
-  function statusLabel(status) {
-    if (status === "todo") return "未着手";
-    if (status === "doing") return "途中";
+  function currentPhase(site) {
+    return site.phases.find(p => p.id === site.currentPhaseId) || site.phases[0];
+  }
+
+  function statusLabel(status){
+    if (status==="todo") return "未着手";
+    if (status==="doing") return "途中";
     return "完了";
   }
-  function nextStatus(status) {
-    if (status === "todo") return "doing";
-    if (status === "doing") return "done";
+  function nextStatus(status){
+    if (status==="todo") return "doing";
+    if (status==="doing") return "done";
     return "todo";
   }
 
-  function ensureSchedules(site) {
-    if (!site.schedules) site.schedules = defaultSchedules();
-    for (const k of Object.keys(defaultSchedules())) if (!Array.isArray(site.schedules[k])) site.schedules[k] = [];
+  function computeStats(site){
+    const phId = site.currentPhaseId;
+    let todo=0, doing=0, done=0, dame=0;
+    for (const r of site.rooms) {
+      ensureRoomHasPhase(r, phId);
+      const st = r.phases[phId].status;
+      if (st==="todo") todo++;
+      else if (st==="doing") doing++;
+      else done++;
+      if (r.phases[phId].dame) dame++;
+    }
+    return { total: site.rooms.length, todo, doing, done, dame };
   }
 
-  // --- Schedules UI ---
-  const SCHED_DEFS = [
-    { key: "internal",   label: "社内検査" },
-    { key: "internalFix",label: "社内検査 是正期間" },
-    { key: "client",     label: "施主検査" },
-    { key: "clientFix",  label: "施主検査 是正期間" },
-    { key: "viewing",    label: "内覧" },
-    { key: "viewingFix", label: "内覧 是正期間" },
-    { key: "reViewing",  label: "再内覧" },
-    { key: "reViewingFix",label:"再内覧 是正期間" },
-  ];
-
-  function clampInt(v, def=1) {
-    const n = Number(v);
-    if (!Number.isFinite(n)) return def;
-    return Math.max(1, Math.floor(n));
-  }
-
-  function addScheduleRow(site, key) {
-    ensureSchedules(site);
-    const row = { id: uid(), floorFrom: 1, floorTo: 1, start: "", end: "", memo: "" };
-    site.schedules[key].push(row);
-    site.updatedAt = now();
-    saveState();
-    renderSchedules();
-    renderSiteMeta();
-  }
-
-  function deleteScheduleRow(site, key, rowId) {
-    ensureSchedules(site);
-    site.schedules[key] = site.schedules[key].filter(r => r.id !== rowId);
-    site.updatedAt = now();
-    saveState();
-    renderSchedules();
-    renderSiteMeta();
-  }
-
-  function onScheduleChange(site, key, rowId, patch) {
-    ensureSchedules(site);
-    const row = site.schedules[key].find(r => r.id === rowId);
-    if (!row) return;
-    Object.assign(row, patch);
-    site.updatedAt = now();
-    saveState();
-    renderSiteMeta();
-  }
-
-  function renderScheduleToggleButtons() {
-    const isSummary = state.ui.scheduleView === "summary";
-    scheduleViewBtn.classList.toggle("on", isSummary);
-    scheduleEditBtn.classList.toggle("on", !isSummary);
-  }
-
-  function renderSchedules() {
-    const site = getCurrentSite();
-    if (!site) return;
-    ensureSchedules(site);
-
-    scheduleContainer.innerHTML = "";
-
-    // ===== 一覧（サマリー） =====
-    if (state.ui.scheduleView === "summary") {
-      for (const def of SCHED_DEFS) {
-        const rows = site.schedules[def.key] || [];
-
-        const box = document.createElement("div");
-        box.className = "summaryBox";
-
-        const title = document.createElement("div");
-        title.className = "summaryTitle";
-        title.textContent = def.label;
-        box.appendChild(title);
-
-        if (rows.length === 0) {
-          const empty = document.createElement("div");
-          empty.className = "summaryEmpty";
-          empty.textContent = "（未入力）";
-          box.appendChild(empty);
-        } else {
-          rows.forEach((r, i) => {
-            const line = document.createElement("div");
-            line.className = "summaryLine";
-            const floorTxt = `${r.floorFrom}〜${r.floorTo}階`;
-            const dateTxt = `${r.start || "未"} 〜 ${r.end || "未"}`;
-            const memoTxt = r.memo ? ` / ${r.memo}` : "";
-            line.textContent = `${i+1}. ${floorTxt} / ${dateTxt}${memoTxt}`;
-            box.appendChild(line);
-          });
-        }
-        scheduleContainer.appendChild(box);
-      }
-      return;
-    }
-
-    // ===== 編集（テーブル） =====
-    for (const def of SCHED_DEFS) {
-      const section = document.createElement("div");
-
-      const titleRow = document.createElement("div");
-      titleRow.className = "sectionTitleRow";
-
-      const title = document.createElement("div");
-      title.className = "title";
-      title.textContent = def.label;
-
-      const addBtn = document.createElement("button");
-      addBtn.type = "button";
-      addBtn.className = "small";
-      addBtn.textContent = "＋ 行を追加";
-      addBtn.addEventListener("click", () => addScheduleRow(site, def.key));
-
-      titleRow.appendChild(title);
-      titleRow.appendChild(addBtn);
-
-      const table = document.createElement("table");
-      table.className = "schedTable";
-
-      const thead = document.createElement("thead");
-      const trh = document.createElement("tr");
-      ["階(開始)","階(終了)","開始日","終了日","メモ",""].forEach(t => {
-        const th = document.createElement("th");
-        th.textContent = t;
-        trh.appendChild(th);
-      });
-      thead.appendChild(trh);
-      table.appendChild(thead);
-
-      const tbody = document.createElement("tbody");
-      const rows = site.schedules[def.key] || [];
-
-      if (rows.length === 0) {
-        const tr = document.createElement("tr");
-        const td = document.createElement("td");
-        td.colSpan = 6;
-        td.style.color = "#6b7280";
-        td.style.fontSize = "12px";
-        td.style.padding = "10px 6px";
-        td.textContent = "（まだ行がありません）";
-        tr.appendChild(td);
-        tbody.appendChild(tr);
-      } else {
-        for (const r of rows) {
-          const tr = document.createElement("tr");
-          tr.className = "schedRow";
-
-          const f1 = document.createElement("input");
-          f1.type = "number"; f1.min = "1";
-          f1.className = "mini";
-          f1.value = String(r.floorFrom ?? 1);
-          f1.addEventListener("input", () => onScheduleChange(site, def.key, r.id, { floorFrom: clampInt(f1.value, 1) }));
-
-          const f2 = document.createElement("input");
-          f2.type = "number"; f2.min = "1";
-          f2.className = "mini";
-          f2.value = String(r.floorTo ?? 1);
-          f2.addEventListener("input", () => onScheduleChange(site, def.key, r.id, { floorTo: clampInt(f2.value, 1) }));
-
-          const d1 = document.createElement("input");
-          d1.type = "date";
-          d1.value = (r.start || "");
-          d1.addEventListener("change", () => onScheduleChange(site, def.key, r.id, { start: (d1.value || "") }));
-
-          const d2 = document.createElement("input");
-          d2.type = "date";
-          d2.value = (r.end || "");
-          d2.addEventListener("change", () => onScheduleChange(site, def.key, r.id, { end: (d2.value || "") }));
-
-          const memo = document.createElement("input");
-          memo.type = "text";
-          memo.className = "memo";
-          memo.placeholder = "任意（例：AM/PM、A班、2部制など）";
-          memo.value = (r.memo || "");
-          memo.addEventListener("input", () => onScheduleChange(site, def.key, r.id, { memo: (memo.value || "") }));
-
-          const delBtn = document.createElement("button");
-          delBtn.type = "button";
-          delBtn.className = "danger";
-          delBtn.textContent = "削除";
-          delBtn.addEventListener("click", () => {
-            const ok = confirm(`「${def.label}」のこの行を削除しますか？`);
-            if (!ok) return;
-            deleteScheduleRow(site, def.key, r.id);
-          });
-
-          const td1 = document.createElement("td"); td1.appendChild(f1);
-          const td2 = document.createElement("td"); td2.appendChild(f2);
-          const td3 = document.createElement("td"); td3.appendChild(d1);
-          const td4 = document.createElement("td"); td4.appendChild(d2);
-          const td5 = document.createElement("td"); td5.appendChild(memo);
-          const td6 = document.createElement("td"); td6.appendChild(delBtn);
-
-          tr.appendChild(td1); tr.appendChild(td2); tr.appendChild(td3);
-          tr.appendChild(td4); tr.appendChild(td5); tr.appendChild(td6);
-          tbody.appendChild(tr);
-        }
-      }
-
-      table.appendChild(tbody);
-      section.appendChild(titleRow);
-      section.appendChild(table);
-
-      const div = document.createElement("div");
-      div.className = "divider";
-      section.appendChild(div);
-
-      scheduleContainer.appendChild(section);
-    }
-  }
-
-  // --- Survey (アンケート) ---
-  function renderSurveyToggleButtons() {
-    const isSummary = state.ui.surveyView === "summary";
-    surveyViewBtn.classList.toggle("on", isSummary);
-    surveyEditBtn.classList.toggle("on", !isSummary);
-  }
-
-  function ynLabel(v, yes="あり", no="なし", unk="未設定") {
-    if (v === "yes") return yes;
-    if (v === "no") return no;
-    return unk;
-  }
-
-  function countTrue(obj) {
-    return Object.values(obj || {}).filter(Boolean).length;
-  }
-
-  function renderSurveySummary(site) {
-    ensureSurvey(site);
-    const sv = site.survey;
-    surveyContainer.innerHTML = "";
-
-    const wrap = document.createElement("div");
-    wrap.className = "qGrid";
-
-    const addSummaryBox = (title, lines) => {
-      const box = document.createElement("div");
-      box.className = "summaryBox";
-      const t = document.createElement("div");
-      t.className = "summaryTitle";
-      t.textContent = title;
-      box.appendChild(t);
-      if (!lines.length) {
-        const e = document.createElement("div");
-        e.className = "summaryEmpty";
-        e.textContent = "（未入力）";
-        box.appendChild(e);
-      } else {
-        for (const l of lines) {
-          const p = document.createElement("div");
-          p.className = "summaryLine";
-          p.textContent = l;
-          box.appendChild(p);
-        }
-      }
-      wrap.appendChild(box);
-    };
-
-    // 担当監督
-    {
-      const lines = (sv.repairSupervisors || [])
-        .filter(x => (x.name || "").trim() || (x.phone || "").trim())
-        .map((x,i)=> `${i+1}. ${x.name || "（名前未）"} / ${x.phone || "（電話未）"}`);
-      addSummaryBox("補修の担当監督", lines);
-    }
-
-    // 所長/監督
-    {
-      const lines = [];
-      if ((sv.chiefName||"").trim() || (sv.chiefPhone||"").trim()) lines.push(`所長：${sv.chiefName || "（名前未）"} / ${sv.chiefPhone || "（電話未）"}`);
-      if ((sv.foremanName||"").trim() || (sv.foremanPhone||"").trim()) lines.push(`監督：${sv.foremanName || "（名前未）"} / ${sv.foremanPhone || "（電話未）"}`);
-      addSummaryBox("連絡先（所長 / 監督）", lines);
-    }
-
-    // 朝礼
-    {
-      const lines = [];
-      if ((sv.morningMeetingTime||"").trim() || (sv.morningMeetingPlace||"").trim() || (sv.morningMeetingNotes||"").trim()) {
-        lines.push(`時間：${sv.morningMeetingTime || "未"} / 場所：${sv.morningMeetingPlace || "未"}`);
-        if ((sv.morningMeetingNotes||"").trim()) lines.push(`補足：${sv.morningMeetingNotes}`);
-      }
-      addSummaryBox("朝礼", lines);
-    }
-
-    // 昼礼
-    {
-      const lines = [];
-      const modeLabel = (sv.lunchMeetingMode === "leaders") ? "あり（職長のみ参加）" : "なし";
-      if ((sv.lunchMeetingTime||"").trim() || (sv.lunchMeetingPlace||"").trim() || (sv.lunchMeetingNotes||"").trim() || sv.lunchMeetingMode) {
-        lines.push(`時間：${sv.lunchMeetingTime || "未"} / ${modeLabel}`);
-        lines.push(`場所：${sv.lunchMeetingPlace || "未"}`);
-        if ((sv.lunchMeetingNotes||"").trim()) lines.push(`補足：${sv.lunchMeetingNotes}`);
-      }
-      addSummaryBox("昼礼", lines);
-    }
-
-    // KY
-    {
-      const lines = [];
-      lines.push(`新規用紙・KY用紙：${ynLabel(sv.kyPaper)}`);
-      if ((sv.kyPaperPlace||"").trim()) lines.push(`場所：${sv.kyPaperPlace}`);
-      addSummaryBox("新規用紙・KY用紙", lines.filter(l=>l.trim()));
-    }
-
-    // 新規入場説明
-    {
-      addSummaryBox("新規入場説明", [`${ynLabel(sv.induction)}`]);
-    }
-
-    // 担当補修箇所 / 他業者
-    {
-      const lines = [];
-      lines.push(`担当補修箇所：${countTrue(sv.responsibleItems)}項目チェック`);
-      if ((sv.responsibleNotes||"").trim()) lines.push(`メモ：${sv.responsibleNotes}`);
-      addSummaryBox("担当補修箇所", lines);
-    }
-    {
-      const lines = [];
-      lines.push(`他業者へ：${countTrue(sv.otherVendorItems)}項目チェック`);
-      if ((sv.otherVendorNotes||"").trim()) lines.push(`メモ：${sv.otherVendorNotes}`);
-      addSummaryBox("他業者に振り分ける箇所（業者違い）", lines);
-    }
-
-    // ダメ帳
-    {
-      const lines = [`ダメ帳：${ynLabel(sv.damecho)}`];
-      if ((sv.damechoNotes||"").trim()) lines.push(`メモ：${sv.damechoNotes}`);
-      addSummaryBox("ダメ帳", lines);
-    }
-
-    // 進行
-    {
-      const flowLabel = (sv.flow === "upToDown") ? "上階より下へ" : "下階より上へ";
-      const lines = [`方向：${flowLabel}`];
-      if ((sv.flowNotes||"").trim()) lines.push(`メモ：${sv.flowNotes}`);
-      addSummaryBox("進行（方向）", lines);
-    }
-
-    // 指摘テープ
-    {
-      const map = { none:"なし", remove:"あり（剥がす）", recheck:"あり（レチェック残し）" };
-      const lines = [`状態：${map[sv.tape] || "未設定"}`];
-      if ((sv.tapeNotes||"").trim()) lines.push(`補足：${sv.tapeNotes}`);
-      addSummaryBox("指摘テープ", lines);
-    }
-
-    // トイレ
-    {
-      const onsite = Object.keys(sv.toiletOnsite||{}).filter(k=>sv.toiletOnsite[k]).join(" / ") || "未";
-      const nearby = Object.keys(sv.toiletNearby||{}).filter(k=>sv.toiletNearby[k]).join(" / ") || "未";
-      const lines = [`現場：${onsite}`, `近隣：${nearby}`];
-      if ((sv.toiletNotes||"").trim()) lines.push(`補足：${sv.toiletNotes}`);
-      addSummaryBox("トイレ", lines);
-    }
-
-    // 残業
-    {
-      const map = { unknown:"未設定", ok_apply:"可（昼礼にて要申請）", no:"不可" };
-      const lines = [`残業：${map[sv.overtime] || "未設定"}`];
-      if ((sv.overtimeNotes||"").trim()) lines.push(`補足：${sv.overtimeNotes}`);
-      addSummaryBox("残業", lines);
-    }
-
-    // 休業日
-    {
-      const regular = Object.keys(sv.holidayRegular||{}).filter(k=>sv.holidayRegular[k]).join(" / ") || "未";
-      const extra = (sv.holidayExtra||[]).map(x=> (x.label||"").trim()).filter(Boolean);
-      const lines = [`定休：${regular}`];
-      if (extra.length) lines.push(`追記：${extra.join(" / ")}`);
-      addSummaryBox("現場の休業日", lines);
-    }
-
-    surveyContainer.appendChild(wrap);
-  }
-
-  function renderSurveyEdit(site) {
-    ensureSurvey(site);
-    const sv = site.survey;
-
-    surveyContainer.innerHTML = "";
-    const root = document.createElement("div");
-    root.className = "qGrid";
-
-    const mkItem = (title) => {
-      const box = document.createElement("div");
-      box.className = "qItem";
-      const t = document.createElement("div");
-      t.className = "qTitle";
-      t.textContent = title;
-      box.appendChild(t);
-      return box;
-    };
-
-    const save = () => {
-      site.updatedAt = now();
-      saveState();
-      renderSiteMeta();
-    };
-
-    // 補修の担当監督（追記可）
-    {
-      const box = mkItem("補修の担当監督（追記可）");
-      const help = document.createElement("div");
-      help.className = "qHelp";
-      help.textContent = "必要な人数分、行を追加できます。";
-      box.appendChild(help);
-
-      sv.repairSupervisors.forEach((row) => {
-        const r = document.createElement("div");
-        r.className = "qRow";
-
-        const name = document.createElement("input");
-        name.placeholder = "監督名";
-        name.value = row.name || "";
-        name.addEventListener("input", () => { row.name = name.value; save(); });
-
-        const phone = document.createElement("input");
-        phone.placeholder = "電話番号";
-        phone.inputMode = "tel";
-        phone.value = row.phone || "";
-        phone.addEventListener("input", () => { row.phone = phone.value; save(); });
-
-        const del = document.createElement("button");
-        del.textContent = "削除";
-        del.className = "danger";
-        del.addEventListener("click", () => {
-          if (sv.repairSupervisors.length <= 1) { alert("最低1行は残ります"); return; }
-          const ok = confirm("この行を削除しますか？");
-          if (!ok) return;
-          sv.repairSupervisors = sv.repairSupervisors.filter(x => x.id !== row.id);
-          save();
-          renderSurveyEdit(site);
-        });
-
-        r.appendChild(name); r.appendChild(phone); r.appendChild(del);
-        box.appendChild(r);
-      });
-
-      const add = document.createElement("button");
-      add.className = "small";
-      add.textContent = "＋ 行を追加";
-      add.addEventListener("click", () => {
-        sv.repairSupervisors.push({ id: uid(), name:"", phone:"" });
-        save();
-        renderSurveyEdit(site);
-      });
-      box.appendChild(add);
-      root.appendChild(box);
-    }
-
-    // 連絡先（所長/監督）
-    {
-      const box = mkItem("連絡先（所長 / 監督）");
-      const r1 = document.createElement("div"); r1.className = "qRow";
-      const cName = document.createElement("input"); cName.placeholder = "○○所長 名前"; cName.value = sv.chiefName || "";
-      cName.addEventListener("input", ()=>{ sv.chiefName=cName.value; save(); });
-      const cPhone = document.createElement("input"); cPhone.placeholder = "○○所長 電話"; cPhone.inputMode="tel"; cPhone.value = sv.chiefPhone || "";
-      cPhone.addEventListener("input", ()=>{ sv.chiefPhone=cPhone.value; save(); });
-      r1.appendChild(cName); r1.appendChild(cPhone);
-
-      const r2 = document.createElement("div"); r2.className = "qRow";
-      const fName = document.createElement("input"); fName.placeholder = "○○監督 名前"; fName.value = sv.foremanName || "";
-      fName.addEventListener("input", ()=>{ sv.foremanName=fName.value; save(); });
-      const fPhone = document.createElement("input"); fPhone.placeholder = "○○監督 電話"; fPhone.inputMode="tel"; fPhone.value = sv.foremanPhone || "";
-      fPhone.addEventListener("input", ()=>{ sv.foremanPhone=fPhone.value; save(); });
-      r2.appendChild(fName); r2.appendChild(fPhone);
-
-      box.appendChild(r1); box.appendChild(r2);
-      root.appendChild(box);
-    }
-
-    // 朝礼
-    {
-      const box = mkItem("朝礼");
-      const r = document.createElement("div"); r.className="qRow";
-      const time = document.createElement("input"); time.placeholder="時間（例：8:00〜 / 8:15〜）"; time.value = sv.morningMeetingTime || "";
-      time.addEventListener("input",()=>{ sv.morningMeetingTime=time.value; save(); });
-      const place = document.createElement("input"); place.placeholder="場所（自由記入）"; place.value = sv.morningMeetingPlace || "";
-      place.addEventListener("input",()=>{ sv.morningMeetingPlace=place.value; save(); });
-      r.appendChild(time); r.appendChild(place);
-
-      const notes = document.createElement("input"); notes.placeholder="補足（例：ラジオ体操あり等）"; notes.value = sv.morningMeetingNotes || "";
-      notes.addEventListener("input",()=>{ sv.morningMeetingNotes=notes.value; save(); });
-
-      box.appendChild(r); box.appendChild(notes);
-      root.appendChild(box);
-    }
-
-    // 昼礼
-    {
-      const box = mkItem("昼礼");
-      const r = document.createElement("div"); r.className="qRow";
-
-      const time = document.createElement("input"); time.placeholder="時間（例：13:00〜 / 11:40〜）"; time.value = sv.lunchMeetingTime || "";
-      time.addEventListener("input",()=>{ sv.lunchMeetingTime=time.value; save(); });
-
-      const sel = document.createElement("select");
-      [["none","なし"],["leaders","あり（職長のみ参加）"]].forEach(([v,t])=>{
-        const o=document.createElement("option"); o.value=v; o.textContent=t; sel.appendChild(o);
-      });
-      sel.value = sv.lunchMeetingMode || "none";
-      sel.addEventListener("change",()=>{ sv.lunchMeetingMode=sel.value; save(); });
-
-      const place = document.createElement("input"); place.placeholder="場所（自由記入）"; place.value = sv.lunchMeetingPlace || "";
-      place.addEventListener("input",()=>{ sv.lunchMeetingPlace=place.value; save(); });
-
-      r.appendChild(time); r.appendChild(sel); r.appendChild(place);
-
-      const notes = document.createElement("input"); notes.placeholder="補足（自由記入）"; notes.value = sv.lunchMeetingNotes || "";
-      notes.addEventListener("input",()=>{ sv.lunchMeetingNotes=notes.value; save(); });
-
-      box.appendChild(r); box.appendChild(notes);
-      root.appendChild(box);
-    }
-
-    // 新規用紙 / KY用紙
-    {
-      const box = mkItem("新規用紙 / KY用紙");
-      const r = document.createElement("div"); r.className="qRow";
-      const sel = document.createElement("select");
-      [["unknown","未設定"],["yes","あり"],["no","なし"]].forEach(([v,t])=>{
-        const o=document.createElement("option"); o.value=v; o.textContent=t; sel.appendChild(o);
-      });
-      sel.value = sv.kyPaper || "unknown";
-      sel.addEventListener("change",()=>{ sv.kyPaper=sel.value; save(); });
-
-      const place = document.createElement("input"); place.placeholder="場所（自由記入）"; place.value = sv.kyPaperPlace || "";
-      place.addEventListener("input",()=>{ sv.kyPaperPlace=place.value; save(); });
-
-      r.appendChild(sel); r.appendChild(place);
-      box.appendChild(r);
-      root.appendChild(box);
-    }
-
-    // 新規入場説明
-    {
-      const box = mkItem("新規入場説明");
-      const r = document.createElement("div"); r.className="qRow";
-      const sel = document.createElement("select");
-      [["unknown","未設定"],["yes","あり"],["no","なし"]].forEach(([v,t])=>{
-        const o=document.createElement("option"); o.value=v; o.textContent=t; sel.appendChild(o);
-      });
-      sel.value = sv.induction || "unknown";
-      sel.addEventListener("change",()=>{ sv.induction=sel.value; save(); });
-      r.appendChild(sel);
-      box.appendChild(r);
-      root.appendChild(box);
-    }
-
-    // チェックブロック共通
-    const renderCheckBlock = (title, mapKey, notesKey) => {
-      const box = mkItem(title);
-      const chips = document.createElement("div"); chips.className="chips";
-      Object.keys(sv[mapKey]).forEach((k)=>{
-        const label = document.createElement("label");
-        const cb = document.createElement("input"); cb.type="checkbox"; cb.checked = !!sv[mapKey][k];
-        cb.addEventListener("change",()=>{ sv[mapKey][k]=cb.checked; save(); });
-        const span = document.createElement("span"); span.textContent = k;
-        label.appendChild(cb); label.appendChild(span);
-        chips.appendChild(label);
-      });
-      const notes = document.createElement("input");
-      notes.placeholder = "自由メモ（補足があれば）";
-      notes.value = sv[notesKey] || "";
-      notes.addEventListener("input",()=>{ sv[notesKey]=notes.value; save(); });
-
-      box.appendChild(chips);
-      box.appendChild(notes);
-      return box;
-    };
-
-    root.appendChild(renderCheckBlock("担当補修箇所", "responsibleItems", "responsibleNotes"));
-    root.appendChild(renderCheckBlock("他業者に振り分ける箇所（業者違い）", "otherVendorItems", "otherVendorNotes"));
-
-    // ダメ帳
-    {
-      const box = mkItem("ダメ帳");
-      const r = document.createElement("div"); r.className="qRow";
-      const sel = document.createElement("select");
-      [["unknown","未設定"],["yes","あり"],["no","なし"]].forEach(([v,t])=>{
-        const o=document.createElement("option"); o.value=v; o.textContent=t; sel.appendChild(o);
-      });
-      sel.value = sv.damecho || "unknown";
-      sel.addEventListener("change",()=>{ sv.damecho=sel.value; save(); });
-
-      const notes = document.createElement("input"); notes.placeholder="メモ（例：自主検査しながら記入 など）"; notes.value = sv.damechoNotes || "";
-      notes.addEventListener("input",()=>{ sv.damechoNotes=notes.value; save(); });
-
-      r.appendChild(sel); r.appendChild(notes);
-      box.appendChild(r);
-      root.appendChild(box);
-    }
-
-    // 進行
-    {
-      const box = mkItem("進行（方向）");
-      const r = document.createElement("div"); r.className="qRow";
-      const sel = document.createElement("select");
-      [["downToUp","下階より上へ"],["upToDown","上階より下へ"]].forEach(([v,t])=>{
-        const o=document.createElement("option"); o.value=v; o.textContent=t; sel.appendChild(o);
-      });
-      sel.value = sv.flow || "downToUp";
-      sel.addEventListener("change",()=>{ sv.flow=sel.value; save(); });
-
-      const notes = document.createElement("input"); notes.placeholder="自由メモ（例：12/15は1階101から…）"; notes.value = sv.flowNotes || "";
-      notes.addEventListener("input",()=>{ sv.flowNotes=notes.value; save(); });
-
-      r.appendChild(sel); r.appendChild(notes);
-      box.appendChild(r);
-      root.appendChild(box);
-    }
-
-    // 指摘テープ
-    {
-      const box = mkItem("指摘テープ");
-      const r = document.createElement("div"); r.className="qRow";
-      const sel = document.createElement("select");
-      [["none","なし"],["remove","あり（剥がす）"],["recheck","あり（レチェック残し）"]].forEach(([v,t])=>{
-        const o=document.createElement("option"); o.value=v; o.textContent=t; sel.appendChild(o);
-      });
-      sel.value = sv.tape || "none";
-      sel.addEventListener("change",()=>{ sv.tape=sel.value; save(); });
-
-      const notes = document.createElement("input"); notes.placeholder="補足（例：薄紫テープ等）"; notes.value = sv.tapeNotes || "";
-      notes.addEventListener("input",()=>{ sv.tapeNotes=notes.value; save(); });
-
-      r.appendChild(sel); r.appendChild(notes);
-      box.appendChild(r);
-      root.appendChild(box);
-    }
-
-    // トイレ
-    {
-      const box = mkItem("トイレ");
-      const a = document.createElement("div"); a.className="qHelp"; a.textContent="現場トイレ";
-      const chips1 = document.createElement("div"); chips1.className="chips";
-      Object.keys(sv.toiletOnsite).forEach((k)=>{
-        const lab=document.createElement("label");
-        const cb=document.createElement("input"); cb.type="checkbox"; cb.checked=!!sv.toiletOnsite[k];
-        cb.addEventListener("change",()=>{ sv.toiletOnsite[k]=cb.checked; save(); });
-        lab.appendChild(cb); lab.appendChild(document.createTextNode(k));
-        chips1.appendChild(lab);
-      });
-
-      const b = document.createElement("div"); b.className="qHelp"; b.style.marginTop="8px"; b.textContent="近隣トイレ";
-      const chips2 = document.createElement("div"); chips2.className="chips";
-      Object.keys(sv.toiletNearby).forEach((k)=>{
-        const lab=document.createElement("label");
-        const cb=document.createElement("input"); cb.type="checkbox"; cb.checked=!!sv.toiletNearby[k];
-        cb.addEventListener("change",()=>{ sv.toiletNearby[k]=cb.checked; save(); });
-        lab.appendChild(cb); lab.appendChild(document.createTextNode(k));
-        chips2.appendChild(lab);
-      });
-
-      const notes = document.createElement("input"); notes.placeholder="補足（自由メモ）"; notes.value = sv.toiletNotes || "";
-      notes.addEventListener("input",()=>{ sv.toiletNotes=notes.value; save(); });
-
-      box.appendChild(a); box.appendChild(chips1);
-      box.appendChild(b); box.appendChild(chips2);
-      box.appendChild(notes);
-      root.appendChild(box);
-    }
-
-    // 残業
-    {
-      const box = mkItem("残業");
-      const r = document.createElement("div"); r.className="qRow";
-      const sel = document.createElement("select");
-      [["unknown","未設定"],["ok_apply","可（昼礼にて要申請）"],["no","不可"]].forEach(([v,t])=>{
-        const o=document.createElement("option"); o.value=v; o.textContent=t; sel.appendChild(o);
-      });
-      sel.value = sv.overtime || "unknown";
-      sel.addEventListener("change",()=>{ sv.overtime=sel.value; save(); });
-
-      const notes = document.createElement("input"); notes.placeholder="補足（自由メモ）"; notes.value = sv.overtimeNotes || "";
-      notes.addEventListener("input",()=>{ sv.overtimeNotes=notes.value; save(); });
-
-      r.appendChild(sel); r.appendChild(notes);
-      box.appendChild(r);
-      root.appendChild(box);
-    }
-
-    // 休業日
-    {
-      const box = mkItem("現場の休業日");
-      const chips = document.createElement("div"); chips.className="chips";
-      Object.keys(sv.holidayRegular).forEach((k)=>{
-        const lab=document.createElement("label");
-        const cb=document.createElement("input"); cb.type="checkbox"; cb.checked=!!sv.holidayRegular[k];
-        cb.addEventListener("change",()=>{ sv.holidayRegular[k]=cb.checked; save(); });
-        lab.appendChild(cb); lab.appendChild(document.createTextNode(k));
-        chips.appendChild(lab);
-      });
-      box.appendChild(chips);
-
-      const note = document.createElement("div");
-      note.className = "qHelp";
-      note.textContent = "カレンダーに関係なく入れない日があれば、下に追記できます。";
-      box.appendChild(note);
-
-      sv.holidayExtra.forEach((row) => {
-        const r = document.createElement("div"); r.className="qRow";
-        const input = document.createElement("input"); input.placeholder="例：毎週水曜／1/10は入れない／雨天中止日など"; input.value=row.label||"";
-        input.addEventListener("input",()=>{ row.label=input.value; save(); });
-
-        const del = document.createElement("button"); del.textContent="削除"; del.className="danger";
-        del.addEventListener("click",()=>{
-          if (sv.holidayExtra.length<=1) { alert("最低1行は残ります"); return; }
-          const ok=confirm("この行を削除しますか？"); if(!ok) return;
-          sv.holidayExtra = sv.holidayExtra.filter(x=>x.id!==row.id);
-          save(); renderSurveyEdit(site);
-        });
-
-        r.appendChild(input); r.appendChild(del);
-        box.appendChild(r);
-      });
-
-      const add = document.createElement("button");
-      add.className="small";
-      add.textContent="＋ 休業日を追記";
-      add.addEventListener("click",()=>{
-        sv.holidayExtra.push({ id: uid(), label:"" });
-        save(); renderSurveyEdit(site);
-      });
-      box.appendChild(add);
-
-      root.appendChild(box);
-    }
-
-    surveyContainer.appendChild(root);
-  }
-
-  function renderSurvey() {
-    const site = getCurrentSite();
-    if (!site) return;
-    if (state.ui.surveyView === "summary") renderSurveySummary(site);
-    else renderSurveyEdit(site);
-  }
-
-  // --- Render ---
-  function renderSiteSelect() {
+  function renderSiteSelect(){
     siteSelect.innerHTML = "";
     for (const s of state.sites) {
       const opt = document.createElement("option");
       opt.value = s.id;
-      opt.textContent = s.building ? `${s.name}（${s.building}）` : s.name;
+      const b = (s.building||"").trim();
+      opt.textContent = b ? `${s.name}（${b}）` : s.name;
       siteSelect.appendChild(opt);
     }
     if (state.currentSiteId) siteSelect.value = state.currentSiteId;
   }
 
-  function renderSiteMeta() {
-    const site = getCurrentSite();
-    if (!site) return;
-    const updated = new Date(site.updatedAt).toLocaleString("ja-JP");
-    siteMeta.textContent = `部屋数: ${site.rooms.length} / 最終更新: ${updated}`;
+  function renderPhaseSelect(){
+    const site = getCurrentSite(); if (!site) return;
+    phaseSelect.innerHTML = "";
+    for (const p of site.phases) {
+      const opt = document.createElement("option");
+      opt.value = p.id;
+      opt.textContent = p.name;
+      phaseSelect.appendChild(opt);
+    }
+    phaseSelect.value = site.currentPhaseId;
   }
 
-  function renderSiteForm() {
-    const site = getCurrentSite();
-    if (!site) return;
-
+  function renderSiteForm(){
+    const site = getCurrentSite(); if (!site) return;
     siteName.value = site.name || "";
     generalContractor.value = site.generalContractor || "";
     buildingName.value = site.building || "";
     floorSpec.value = site.floorSpec || "";
-    siteNotes.value = site.notes || "";
+    siteMemo.value = site.memo || "";
 
-    renderScheduleToggleButtons();
-    renderSchedules();
-
-    renderSurveyToggleButtons();
-    renderSurvey();
-
-    renderSiteMeta();
+    const updated = new Date(site.updatedAt).toLocaleString("ja-JP");
+    const ph = currentPhase(site);
+    siteMeta.textContent = `部屋数: ${site.rooms.length} / 検査段階: ${ph.name} / 最終更新: ${updated}`;
   }
 
-  function renderStats() {
-    const site = getCurrentSite();
-    if (!site) return;
-    const st = computeStats(site.rooms);
+  function renderStats(){
+    const site = getCurrentSite(); if (!site) return;
+    const st = computeStats(site);
     statsEl.innerHTML = "";
     const mk = (label, val) => {
       const d = document.createElement("div");
@@ -1378,101 +560,372 @@
     statsEl.appendChild(mk("未着手", st.todo));
     statsEl.appendChild(mk("途中", st.doing));
     statsEl.appendChild(mk("完了", st.done));
+    statsEl.appendChild(mk("ダメ帳あり", st.dame));
   }
 
-  function renderModeButton() {
-    const on = state.ui.editMode;
-    modeBtn.textContent = on ? "入力モード: ON" : "入力モード: OFF";
-    modeBtn.classList.toggle("isOn", on);
-  }
+  function renderSchedule(){
+    const site = getCurrentSite(); if (!site) return;
+    scheduleList.innerHTML = "";
 
-  function renderRooms() {
-    const site = getCurrentSite();
-    if (!site) return;
+    const rows = site.scheduleRows || [];
+    rows.forEach((row, idx) => {
+      const box = document.createElement("div");
+      box.className = "panel";
+      box.style.margin = "0 0 8px";
+      box.style.borderRadius = "12px";
 
-    const filter = state.ui.filter;
-    const rooms = (filter === "all") ? site.rooms : site.rooms.filter(r => r.status === filter);
+      const titleRow = document.createElement("div");
+      titleRow.className = "row";
+      const t = document.createElement("input");
+      t.value = row.title || "";
+      t.placeholder = "項目名（例：社内検査日）";
 
-    roomGrid.innerHTML = "";
-    let lastFloor = null;
-
-    for (const r of rooms) {
-      if (lastFloor !== r.floor) {
-        const header = document.createElement("div");
-        header.className = "floorHeader";
-        header.textContent = `${r.floor}階`;
-        roomGrid.appendChild(header);
-        lastFloor = r.floor;
-      }
-
-      const card = document.createElement("div");
-      card.className = `room ${r.status}`;
-      card.dataset.roomId = r.id;
-      if (r.id === state.ui.highlightedRoomId) card.classList.add("highlight");
-
-      const num = document.createElement("div");
-      num.className = "num";
-      num.textContent = r.label;
-
-      const st = document.createElement("div");
-      st.className = "st";
-      st.textContent = statusLabel(r.status);
-
-      const sub = document.createElement("div");
-      sub.className = "sub";
-      const d = r.workedDate ? r.workedDate : "";
-      const a = r.assignee ? r.assignee : "";
-      sub.textContent = (d || a) ? `${d}${(d && a) ? " / " : ""}${a}` : "";
-
-      card.appendChild(num);
-      card.appendChild(st);
-      card.appendChild(sub);
-
-      card.addEventListener("click", () => {
-        const site2 = getCurrentSite();
-        if (!site2) return;
-        const room = site2.rooms.find(x => x.id === r.id);
-        if (!room) return;
-
-        if (state.ui.editMode) {
-          const today = new Date().toISOString().slice(0, 10);
-          const newDate = prompt("作業日（YYYY-MM-DD）", room.workedDate || today);
-          if (newDate === null) return;
-          const newAssignee = prompt("担当者（例：山田）", room.assignee || "");
-          if (newAssignee === null) return;
-          room.workedDate = (newDate || "").trim();
-          room.assignee = (newAssignee || "").trim();
-        } else {
-          room.status = nextStatus(room.status);
-        }
-
-        site2.updatedAt = now();
+      const del = document.createElement("button");
+      del.className = "danger small";
+      del.textContent = "削除";
+      del.addEventListener("click", () => {
+        site.scheduleRows.splice(idx,1);
+        site.updatedAt = now();
         saveState();
-        renderStats();
-        renderRooms();
-        renderSiteMeta();
+        renderSchedule();
+        renderSiteForm();
       });
 
-      roomGrid.appendChild(card);
+      titleRow.appendChild(t);
+      titleRow.appendChild(del);
+
+      const dateRow = document.createElement("div");
+      dateRow.className = "row";
+      const start = document.createElement("input");
+      start.type = "date";
+      start.value = row.start || "";
+      const end = document.createElement("input");
+      end.type = "date";
+      end.value = row.end || "";
+      start.style.minWidth = "140px";
+      end.style.minWidth = "140px";
+
+      const freeRow = document.createElement("div");
+      freeRow.className = "row";
+      const startFree = document.createElement("input");
+      startFree.placeholder = "開始（手入力OK）";
+      startFree.value = row.startFree || "";
+      const endFree = document.createElement("input");
+      endFree.placeholder = "終了（手入力OK）";
+      endFree.value = row.endFree || "";
+
+      const noteRow = document.createElement("div");
+      noteRow.className = "row";
+      const note = document.createElement("input");
+      note.placeholder = "補足（任意）";
+      note.value = row.note || "";
+
+      dateRow.appendChild(start);
+      dateRow.appendChild(end);
+      freeRow.appendChild(startFree);
+      freeRow.appendChild(endFree);
+      noteRow.appendChild(note);
+
+      const sync = () => {
+        row.title = t.value;
+        row.start = start.value;
+        row.end = end.value;
+        row.startFree = startFree.value;
+        row.endFree = endFree.value;
+        row.note = note.value;
+        site.updatedAt = now();
+        saveState();
+        renderSiteForm();
+      };
+      [t,start,end,startFree,endFree,note].forEach(el => el.addEventListener("input", sync));
+
+      box.appendChild(titleRow);
+      box.appendChild(dateRow);
+      box.appendChild(freeRow);
+      box.appendChild(noteRow);
+      scheduleList.appendChild(box);
+    });
+  }
+
+  function roomPassDameFilter(ps, dameFilter){
+    if (dameFilter === "all") return true;
+    if (dameFilter === "on") return !!ps.dame;
+    return !ps.dame;
+  }
+
+  function renderRooms(){
+    const site = getCurrentSite(); if (!site) return;
+    const filter = site.ui.filter;
+    const phId = site.currentPhaseId;
+    const dameFilter = site.ui.dameFilter || "all";
+
+    // 1) まず部屋を絞る
+    let rooms = site.rooms.slice();
+
+    if (filter !== "all") {
+      rooms = rooms.filter(r => (ensureRoomHasPhase(r, phId), r.phases[phId].status === filter));
+    }
+    rooms = rooms.filter(r => (ensureRoomHasPhase(r, phId), roomPassDameFilter(r.phases[phId], dameFilter)));
+
+    // 2) 階ごとにグルーピング（←ここが「空階ヘッダー防止」）
+    /** @type {Map<number, Room[]>} */
+    const byFloor = new Map();
+    for (const r of rooms) {
+      const arr = byFloor.get(r.floor) || [];
+      arr.push(r);
+      byFloor.set(r.floor, arr);
+    }
+    const floors = Array.from(byFloor.keys()).sort((a,b)=>a-b);
+    floors.forEach(f => byFloor.get(f).sort((a,b)=>a.idx-b.idx));
+
+    // 3) 描画（部屋がある階だけヘッダーを出す）
+    roomGrid.innerHTML = "";
+
+    for (const f of floors) {
+      const list = byFloor.get(f);
+      if (!list || list.length === 0) continue;
+
+      const header = document.createElement("div");
+      header.className = "floorHeader";
+      header.textContent = `${f}階`;
+      roomGrid.appendChild(header);
+
+      for (const r of list) {
+        ensureRoomHasPhase(r, phId);
+        const ps = r.phases[phId];
+
+        const card = document.createElement("div");
+        card.className = `room ${ps.status}`;
+        card.dataset.roomId = r.id;
+        if (r.id === highlightedRoomId) card.classList.add("highlight");
+
+        const num = document.createElement("div");
+        num.className = "num";
+        num.textContent = r.label;
+
+        const st = document.createElement("div");
+        st.className = "st";
+        st.textContent = statusLabel(ps.status);
+
+        const badge = document.createElement("div");
+        badge.className = "badge" + (ps.dame ? " dame-on" : "");
+        badge.textContent = ps.dame ? "ダメ帳：あり" : "ダメ帳：なし";
+
+        const sub = document.createElement("div");
+        sub.className = "sub";
+        if (site.ui.inputMode) {
+          const wd = (ps.workDate||"").trim() || "（日付未）";
+          const wk = (ps.worker||"").trim() || "（担当未）";
+          sub.textContent = `${wd} / ${wk}`;
+        } else {
+          sub.textContent = " ";
+        }
+
+        card.appendChild(num);
+        card.appendChild(st);
+        card.appendChild(badge);
+        card.appendChild(sub);
+
+        // Tap: status OR free input
+        card.addEventListener("click", () => {
+          const site2 = getCurrentSite(); if (!site2) return;
+          const room = site2.rooms.find(x => x.id === r.id); if (!room) return;
+          ensureRoomHasPhase(room, site2.currentPhaseId);
+          const ps2 = room.phases[site2.currentPhaseId];
+
+          if (site2.ui.inputMode) {
+            const d = prompt("作業日（自由入力 / 例 2026-01-07）", ps2.workDate || "");
+            if (d === null) return;
+            const w = prompt("担当者（例：山田）", ps2.worker || "");
+            if (w === null) return;
+            ps2.workDate = d;
+            ps2.worker = w;
+            site2.updatedAt = now();
+            saveState();
+            renderRooms(); renderStats(); renderSiteForm();
+            return;
+          }
+
+          ps2.status = nextStatus(ps2.status);
+          site2.updatedAt = now();
+          saveState();
+          renderStats(); renderRooms(); renderSiteForm();
+        });
+
+        // Long press: toggle dame
+        let pressTimer = null;
+        const startPress = () => {
+          pressTimer = setTimeout(() => {
+            const site2 = getCurrentSite(); if (!site2) return;
+            const room = site2.rooms.find(x => x.id === r.id); if (!room) return;
+            ensureRoomHasPhase(room, site2.currentPhaseId);
+            room.phases[site2.currentPhaseId].dame = !room.phases[site2.currentPhaseId].dame;
+            site2.updatedAt = now();
+            saveState();
+            renderStats(); renderRooms(); renderSiteForm();
+          }, 450);
+        };
+        const cancelPress = () => { if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; } };
+        card.addEventListener("touchstart", startPress, {passive:true});
+        card.addEventListener("touchend", cancelPress);
+        card.addEventListener("touchcancel", cancelPress);
+        card.addEventListener("mousedown", startPress);
+        card.addEventListener("mouseup", cancelPress);
+        card.addEventListener("mouseleave", cancelPress);
+
+        roomGrid.appendChild(card);
+      }
     }
   }
 
-  function renderAll() {
+  function renderAll(){
     renderSiteSelect();
+    renderPhaseSelect();
     renderSiteForm();
-    renderModeButton();
+    renderSchedule();
     renderStats();
     renderRooms();
+    modeBtn.textContent = `入力モード: ${getCurrentSite()?.ui.inputMode ? "ON" : "OFF"}`;
   }
 
-  // Jump
+  // Actions
+  siteSelect.addEventListener("change", () => {
+    state.currentSiteId = siteSelect.value;
+    saveState();
+    renderAll();
+  });
+
+  phaseSelect.addEventListener("change", () => {
+    const site = getCurrentSite(); if (!site) return;
+    site.currentPhaseId = phaseSelect.value;
+    site.updatedAt = now();
+    saveState();
+    renderAll();
+  });
+
+  newSiteBtn.addEventListener("click", () => {
+    const phases = defaultPhases();
+    const s = /** @type {Site} */ ({
+      id: uid(),
+      name: `新規現場 ${state.sites.length + 1}`,
+      generalContractor: "",
+      building: "",
+      floorSpec: "1:4,2-11:5",
+      memo: "",
+      phases,
+      currentPhaseId: phases[0].id,
+      scheduleRows: [
+        { title:"社内検査", start:"", end:"", note:"" },
+        { title:"施主検査", start:"", end:"", note:"" },
+        { title:"内覧", start:"", end:"", note:"" },
+      ],
+      rooms: [],
+      createdAt: now(),
+      updatedAt: now(),
+      ui: { filter:"all", inputMode:false, dameFilter:"all" }
+    });
+    s.rooms = generateRoomsFromSpec(s.floorSpec, s.phases);
+    state.sites.push(s);
+    state.currentSiteId = s.id;
+    saveState();
+    renderAll();
+  });
+
+  function deleteCurrentSite(){
+    const site = getCurrentSite(); if (!site) return;
+    const ok = confirm(`現場「${site.name}」を削除しますか？（元に戻せません）`);
+    if (!ok) return;
+    state.sites = state.sites.filter(s => s.id !== site.id);
+    state.currentSiteId = state.sites.length ? state.sites[0].id : null;
+    saveState();
+    ensureInitialSite();
+    renderAll();
+  }
+  deleteSiteBtn.addEventListener("click", deleteCurrentSite);
+  deleteSiteBtn2.addEventListener("click", () => { closeModal(); deleteCurrentSite(); });
+
+  saveSiteBtn.addEventListener("click", () => {
+    const site = getCurrentSite(); if (!site) return;
+    const name = siteName.value.trim() || "無題の現場";
+    const gc = generalContractor.value.trim();
+    const bld = buildingName.value.trim();
+    const spec = floorSpec.value.trim();
+    const memo = siteMemo.value || "";
+
+    try { parseFloorSpec(spec); } catch (e) { alert(e.message || String(e)); return; }
+
+    site.name = name;
+    site.generalContractor = gc;
+    site.building = bld;
+    site.floorSpec = spec;
+    site.memo = memo;
+    site.updatedAt = now();
+    saveState();
+    renderAll();
+  });
+
+  addScheduleBtn.addEventListener("click", () => {
+    const site = getCurrentSite(); if (!site) return;
+    site.scheduleRows.push({ title:"（項目）", start:"", end:"", note:"" });
+    site.updatedAt = now();
+    saveState();
+    renderSchedule();
+    renderSiteForm();
+  });
+
+  document.querySelectorAll("[data-filter]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const site = getCurrentSite(); if (!site) return;
+      const f = btn.getAttribute("data-filter");
+      if (f === "all" || f === "todo" || f === "doing" || f === "done") {
+        site.ui.filter = f;
+        saveState();
+        renderRooms();
+      }
+    });
+  });
+
+  document.querySelectorAll("[data-dame]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const site = getCurrentSite(); if (!site) return;
+      const d = btn.getAttribute("data-dame");
+      if (d === "all" || d === "on" || d === "off") {
+        site.ui.dameFilter = d;
+        saveState();
+        renderRooms();
+      }
+    });
+  });
+
+  resetAllBtn.addEventListener("click", () => {
+    const site = getCurrentSite(); if (!site) return;
+    const ok = confirm("（この検査段階の）全ての部屋を未着手に戻しますか？");
+    if (!ok) return;
+    const phId = site.currentPhaseId;
+    for (const r of site.rooms) {
+      ensureRoomHasPhase(r, phId);
+      r.phases[phId].status = "todo";
+    }
+    site.updatedAt = now();
+    saveState();
+    renderAll();
+  });
+
+  modeBtn.addEventListener("click", () => {
+    const site = getCurrentSite(); if (!site) return;
+    site.ui.inputMode = !site.ui.inputMode;
+    site.updatedAt = now();
+    saveState();
+    renderAll();
+  });
+
   function jumpToRoom(label) {
-    const site = getCurrentSite();
-    if (!site) return;
+    const site = getCurrentSite(); if (!site) return;
     const target = site.rooms.find(r => r.label === String(label));
     if (!target) { alert(`部屋が見つかりません: ${label}`); return; }
-    state.ui.filter = "all";
-    state.ui.highlightedRoomId = target.id;
+    site.ui.filter = "all";
+    site.ui.dameFilter = "all";
+    highlightedRoomId = target.id;
     saveState();
     renderRooms();
     requestAnimationFrame(() => {
@@ -1480,237 +933,165 @@
       if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
     });
   }
-
-  // View switching + disarm
-  function showAdmin() {
-    mainView.style.display = "none";
-    adminView.style.display = "block";
-    disarmAll();
-    window.scrollTo(0, 0);
-  }
-  function showMain() {
-    adminView.style.display = "none";
-    mainView.style.display = "block";
-    disarmAll();
-    window.scrollTo(0, 0);
-  }
-
-  function disarmAll() {
-    deleteArmed = resetArmed = regenArmed = false;
-    deleteSiteBtn.textContent = "現場削除";
-    resetAllBtn.textContent = "全て未着手に戻す";
-    regenRoomsBtn.textContent = "部屋を再生成";
-    deleteSiteBtn.classList.remove("armedBtn");
-    resetAllBtn.classList.remove("armedBtn");
-    regenRoomsBtn.classList.remove("armedBtn");
-  }
-
-  // --- Actions ---
-  siteSelect.addEventListener("change", () => {
-    state.currentSiteId = siteSelect.value;
-    saveState();
-    renderAll();
-  });
-
-  newSiteBtn.addEventListener("click", () => {
-    const s = {
-      id: uid(),
-      name: `新規現場 ${state.sites.length + 1}`,
-      generalContractor: "",
-      building: "",
-      floorSpec: "1:4,2-11:5",
-      rooms: [],
-      createdAt: now(),
-      updatedAt: now(),
-      notes: "",
-      schedules: defaultSchedules(),
-      survey: defaultSurvey()
-    };
-    s.rooms = generateRoomsFromSpec(s.floorSpec);
-    state.sites.push(s);
-    state.currentSiteId = s.id;
-
-    // 新規現場は「一覧」を基本に
-    state.ui.scheduleView = "summary";
-    state.ui.surveyView = "summary";
-
-    saveState();
-    renderAll();
-  });
-
-  manageBtn.addEventListener("click", showAdmin);
-  backBtn.addEventListener("click", showMain);
-
-  saveSiteBtn.addEventListener("click", () => {
-    const site = getCurrentSite();
-    if (!site) return;
-
-    const name = siteName.value.trim() || "無題の現場";
-    const gc = (generalContractor.value || "").trim();
-    const bld = buildingName.value.trim();
-    const spec = floorSpec.value.trim();
-
-    try { parseFloorSpec(spec); }
-    catch (e) { alert(e?.message || String(e)); return; }
-
-    site.name = name;
-    site.generalContractor = gc;
-    site.building = bld;
-    site.floorSpec = spec;
-    site.notes = (siteNotes.value || "");
-    site.updatedAt = now();
-
-    saveState();
-    renderAll();
-  });
-
-  siteNotes.addEventListener("input", () => {
-    const site = getCurrentSite();
-    if (!site) return;
-    site.notes = (siteNotes.value || "");
-    site.updatedAt = now();
-    saveState();
-    renderSiteMeta();
-  });
-
-  document.querySelectorAll("[data-filter]").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const f = btn.getAttribute("data-filter");
-      if (f === "all" || f === "todo" || f === "doing" || f === "done") {
-        state.ui.filter = f;
-        saveState();
-        renderRooms();
-      }
-    });
-  });
-
-  modeBtn.addEventListener("click", () => {
-    state.ui.editMode = !state.ui.editMode;
-    saveState();
-    renderModeButton();
-  });
-
   jumpBtn.addEventListener("click", () => {
     const v = (jumpInput.value || "").trim();
-    if (!v) return;
-    jumpToRoom(v);
+    if (v) jumpToRoom(v);
   });
   jumpInput.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
       const v = (jumpInput.value || "").trim();
-      if (!v) return;
-      jumpToRoom(v);
+      if (v) jumpToRoom(v);
     }
   });
   clearJumpBtn.addEventListener("click", () => {
-    state.ui.highlightedRoomId = null;
+    highlightedRoomId = null;
     jumpInput.value = "";
-    saveState();
     renderRooms();
   });
 
-  // スケジュール：一覧/編集
-  scheduleViewBtn.addEventListener("click", () => {
-    state.ui.scheduleView = "summary";
-    saveState();
-    renderScheduleToggleButtons();
-    renderSchedules();
+  function armRegen(){
+    regenArmedUntil = Date.now() + 30000;
+    regenStep2Btn.disabled = false;
+    regenHint.textContent = "2回目ボタンが有効になりました（30秒以内に押すと確定）。";
+    setTimeout(() => {
+      if (Date.now() > regenArmedUntil) {
+        regenStep2Btn.disabled = true;
+        regenHint.textContent = "2回目ボタンは、1回目を押してから30秒間だけ有効になります。";
+      }
+    }, 31000);
+  }
+  regenStep1Btn.addEventListener("click", () => {
+    const ok = confirm("本当に「部屋再生成」を実行しますか？（2回目タップで確定します）");
+    if (!ok) return;
+    armRegen();
   });
-  scheduleEditBtn.addEventListener("click", () => {
-    state.ui.scheduleView = "edit";
-    saveState();
-    renderScheduleToggleButtons();
-    renderSchedules();
-  });
-
-  // アンケート：一覧/編集
-  surveyViewBtn.addEventListener("click", () => {
-    state.ui.surveyView = "summary";
-    saveState();
-    renderSurveyToggleButtons();
-    renderSurvey();
-  });
-  surveyEditBtn.addEventListener("click", () => {
-    state.ui.surveyView = "edit";
-    saveState();
-    renderSurveyToggleButtons();
-    renderSurvey();
-  });
-
-  // Admin danger actions (2-step + confirm)
-  deleteSiteBtn.addEventListener("click", () => {
-    const site = getCurrentSite();
-    if (!site) return;
-
-    if (!deleteArmed) {
-      disarmAll();
-      deleteArmed = true;
-      deleteSiteBtn.textContent = "もう一度タップで削除（危険）";
-      deleteSiteBtn.classList.add("armedBtn");
-      return;
-    }
-    const ok = confirm(`現場「${site.name}」を削除しますか？（元に戻せません）`);
-    if (!ok) { disarmAll(); return; }
-
-    state.sites = state.sites.filter(s => s.id !== site.id);
-    state.currentSiteId = state.sites.length ? state.sites[0].id : null;
-    saveState();
-    ensureInitialSite();
-    disarmAll();
-    showMain();
-    renderAll();
-  });
-
-  resetAllBtn.addEventListener("click", () => {
-    const site = getCurrentSite();
-    if (!site) return;
-
-    if (!resetArmed) {
-      disarmAll();
-      resetArmed = true;
-      resetAllBtn.textContent = "もう一度タップで実行（危険）";
-      resetAllBtn.classList.add("armedBtn");
-      return;
-    }
-    const ok = confirm("全ての部屋を未着手に戻しますか？（作業日・担当者は残ります）");
-    if (!ok) { disarmAll(); return; }
-
-    for (const r of site.rooms) r.status = "todo";
-    site.updatedAt = now();
-    saveState();
-    disarmAll();
-    renderAll();
-  });
-
-  regenRoomsBtn.addEventListener("click", () => {
-    const site = getCurrentSite();
-    if (!site) return;
-
-    if (!regenArmed) {
-      disarmAll();
-      regenArmed = true;
-      regenRoomsBtn.textContent = "もう一度タップで再生成（最終実行）";
-      regenRoomsBtn.classList.add("armedBtn");
-      return;
-    }
-    const ok = confirm("部屋を再生成します。進捗・作業日・担当者は初期化されます。よろしいですか？");
-    if (!ok) { disarmAll(); return; }
-
+  regenStep2Btn.addEventListener("click", () => {
+    const site = getCurrentSite(); if (!site) return;
+    if (Date.now() > regenArmedUntil) { alert("期限切れです。もう一度 1回目タップからやり直してください。"); regenStep2Btn.disabled = true; return; }
     try {
-      site.rooms = generateRoomsFromSpec(site.floorSpec);
+      parseFloorSpec(site.floorSpec);
+      site.rooms = generateRoomsFromSpec(site.floorSpec, site.phases);
       site.updatedAt = now();
-      state.ui.highlightedRoomId = null;
       saveState();
-      disarmAll();
-      showMain();
+      regenStep2Btn.disabled = true;
+      regenHint.textContent = "再生成しました。";
       renderAll();
     } catch (e) {
-      alert(e?.message || String(e));
-      disarmAll();
+      alert(e.message || String(e));
     }
   });
 
-  // Boot
+  function openModal(){
+    modalBackdrop.style.display = "flex";
+    renderPhaseEditor();
+  }
+  function closeModal(){
+    modalBackdrop.style.display = "none";
+  }
+  manageBtn.addEventListener("click", openModal);
+  closeModalBtn.addEventListener("click", closeModal);
+  modalBackdrop.addEventListener("click", (e) => {
+    if (e.target === modalBackdrop) closeModal();
+  });
+
+  function renderPhaseEditor(){
+    const site = getCurrentSite(); if (!site) return;
+    phaseEditor.innerHTML = "";
+
+    site.phases.forEach((ph, idx) => {
+      const row = document.createElement("div");
+      row.className = "phaseRow";
+
+      const input = document.createElement("input");
+      input.value = ph.name;
+      input.placeholder = "検査段階名";
+
+      const up = document.createElement("button");
+      up.className = "small";
+      up.textContent = "↑";
+      up.disabled = idx===0;
+
+      const down = document.createElement("button");
+      down.className = "small";
+      down.textContent = "↓";
+      down.disabled = idx===site.phases.length-1;
+
+      const del = document.createElement("button");
+      del.className = "danger small";
+      del.textContent = "削除";
+
+      input.addEventListener("input", () => {
+        ph.name = input.value;
+        site.updatedAt = now();
+        saveState();
+        renderPhaseSelect();
+        renderSiteForm();
+      });
+
+      up.addEventListener("click", () => {
+        const a = site.phases[idx-1];
+        site.phases[idx-1] = site.phases[idx];
+        site.phases[idx] = a;
+        site.updatedAt = now();
+        saveState();
+        renderPhaseSelect();
+        renderPhaseEditor();
+      });
+
+      down.addEventListener("click", () => {
+        const a = site.phases[idx+1];
+        site.phases[idx+1] = site.phases[idx];
+        site.phases[idx] = a;
+        site.updatedAt = now();
+        saveState();
+        renderPhaseSelect();
+        renderPhaseEditor();
+      });
+
+      del.addEventListener("click", () => {
+        if (site.phases.length <= 1) { alert("検査段階は最低1つ必要です。"); return; }
+        const ok = confirm(`検査段階「${ph.name}」を削除しますか？（この段階の進捗データも消えます）`);
+        if (!ok) return;
+
+        site.phases = site.phases.filter(p => p.id !== ph.id);
+        for (const r of site.rooms) {
+          if (r.phases && r.phases[ph.id]) delete r.phases[ph.id];
+        }
+        if (site.currentPhaseId === ph.id) site.currentPhaseId = site.phases[0].id;
+
+        site.updatedAt = now();
+        saveState();
+        renderPhaseSelect();
+        renderSiteForm();
+        renderStats();
+        renderRooms();
+        renderPhaseEditor();
+      });
+
+      row.appendChild(input);
+      row.appendChild(up);
+      row.appendChild(down);
+      row.appendChild(del);
+      phaseEditor.appendChild(row);
+    });
+  }
+
+  addPhaseBtn.addEventListener("click", () => {
+    const site = getCurrentSite(); if (!site) return;
+    const name = prompt("追加する検査段階名（例：再内覧）", "再内覧");
+    if (!name) return;
+
+    const ph = { id: uid(), name: name.trim() || "新しい段階" };
+    site.phases.push(ph);
+    for (const r of site.rooms) ensureRoomHasPhase(r, ph.id);
+
+    site.updatedAt = now();
+    saveState();
+    renderPhaseSelect();
+    renderSiteForm();
+    renderPhaseEditor();
+  });
+
   ensureInitialSite();
   renderAll();
 })();
