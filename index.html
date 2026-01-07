@@ -6,712 +6,531 @@
   <title>リペア進捗管理（完成版・段階＋総合）</title>
   <style>
     :root{
+      --blue:#2563eb;
+      --blue2:#1d4ed8;
       --bg:#f6f7f9;
       --card:#ffffff;
-      --line:#e6e6e6;
+      --bd:#e6e6e6;
       --text:#111827;
       --muted:#6b7280;
-
-      --blue:#2563eb;
-      --blueSoft:#dbeafe;
-
       --danger:#ef4444;
-
       --todoBg:#f3f4f6;
-      --todoBd:#d1d5db;
-
       --doingBg:#fffbeb;
-      --doingBd:#f59e0b;
-
       --doneBg:#ecfdf5;
-      --doneBd:#10b981;
+      --todoTx:#111827;
+      --doingTx:#92400e;
+      --doneTx:#065f46;
+      --shadow:0 1px 0 rgba(0,0,0,.03);
     }
-
-    body { font-family: -apple-system, system-ui, sans-serif; margin:0; background:var(--bg); color:var(--text); }
-    header { position: sticky; top: 0; background: var(--card); padding: 12px; border-bottom: 1px solid var(--line); z-index:10;}
+    *{box-sizing:border-box}
+    body { font-family: -apple-system, system-ui, sans-serif; margin: 0; background:var(--bg); color:var(--text); }
+    header { position: sticky; top: 0; background: white; padding: 12px; border-bottom: 1px solid var(--bd); z-index:10; }
     h1 { font-size: 16px; margin: 0 0 8px; }
-    .row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
-    select, input, button, textarea { font-size: 14px; padding: 8px; }
+    .row { display:flex; gap:8px; flex-wrap: wrap; align-items: center; }
+    select, input, button, textarea { font-size: 14px; padding: 10px; }
+    input, textarea, select{ border:1px solid var(--bd); border-radius:12px; background:white; }
+    input::placeholder, textarea::placeholder{ color:#9ca3af; } /* ←グレー例文 */
+    textarea{ width:100%; min-height:90px; resize:vertical; }
     input { flex: 1; min-width: 180px; }
-    textarea{ width:100%; min-height: 90px; resize: vertical; }
-
-    button { border: 1px solid var(--line); background:#fff; border-radius: 10px; }
+    button {
+      border: 1px solid var(--bd);
+      background:#fff;
+      border-radius: 12px;
+      padding: 10px 12px;
+      box-shadow: var(--shadow);
+    }
     button.primary { background: var(--blue); color: white; border-color: var(--blue); }
-    button.secondary { background: var(--blueSoft); color: #1e3a8a; border-color: #bfdbfe; }
+    button.primary:active{ background: var(--blue2); border-color:var(--blue2); }
+    button.soft { background:#eaf1ff; border-color:#cfe0ff; color:var(--blue2); }
     button.danger { border-color: var(--danger); color: var(--danger); background:#fff; }
-    button:active{ transform: translateY(1px); }
-
+    button.ghost { background:transparent; box-shadow:none; }
+    button.pill { border-radius:999px; padding:8px 12px; }
+    button.on { background: var(--blue); border-color: var(--blue); color:#fff; }
     .meta { font-size: 12px; color: var(--muted); margin-top: 6px; }
     main { padding: 12px; }
-
-    .panel { background: var(--card); border:1px solid var(--line); border-radius: 14px; padding: 12px; margin-bottom: 12px; }
+    .panel { background:var(--card); border:1px solid var(--bd); border-radius: 16px; padding: 12px; margin-bottom: 12px; box-shadow: var(--shadow); }
     .panel h2 { font-size: 14px; margin:0 0 8px; }
-    .help { font-size: 12px; color:var(--muted); line-height:1.55; }
-    .split { display:flex; gap:10px; flex-wrap:wrap; }
-    .split > * { flex:1; min-width: 240px; }
-
+    .help { font-size: 12px; color:var(--muted); line-height: 1.5; }
     .stats { display:flex; gap:8px; flex-wrap: wrap; margin-bottom: 10px; }
-    .pill { background: var(--card); border:1px solid var(--line); border-radius: 999px; padding: 6px 10px; font-size: 13px; }
-
-    .small { font-size: 12px; padding: 6px 8px; border-radius: 999px; }
-    input.small{ font-size:12px; padding: 6px 8px; }
-    .chip { display:inline-flex; align-items:center; gap:6px; border:1px solid var(--line); border-radius: 999px; padding: 6px 10px; background:#fff; font-size: 12px; color:var(--muted); }
-    .chip b{ color:var(--text); }
-    .chip.blue{ background: var(--blueSoft); border-color:#bfdbfe; color:#1e3a8a; font-weight:700; }
-
-    .grid { display:grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap:8px; }
-    @media (max-width: 480px) { .grid { grid-template-columns: repeat(4, minmax(0,1fr)); } }
-
+    .pillLabel { background:white; border:1px solid var(--bd); border-radius: 999px; padding: 6px 10px; font-size: 13px; box-shadow: var(--shadow); }
+    .split { display:flex; gap:8px; flex-wrap: wrap; }
+    .split > * { flex: 1; min-width: 220px; }
+    .small { font-size: 12px; padding: 8px 10px; }
+    .grid { display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap:10px; }
+    @media (min-width: 560px) { .grid { grid-template-columns: repeat(6, minmax(0,1fr)); } }
     .floorHeader {
       grid-column: 1 / -1;
-      background: var(--card);
-      border: 1px solid var(--line);
+      background: #ffffff;
+      border: 1px solid var(--bd);
       border-radius: 12px;
       padding: 8px 10px;
-      font-weight: 800;
+      font-weight: 700;
     }
 
-    .room{
-      border-radius: 12px;
+    /* room card */
+    .room {
+      border:1px solid var(--bd);
+      border-radius: 14px;
       padding: 10px 8px;
+      text-align:center;
       user-select:none;
       cursor:pointer;
-      border: 1px solid var(--line);
-      background: var(--card);
-      position: relative;
-      overflow: hidden;
+      display:flex;
+      flex-direction: column;
+      gap:6px;
+      box-shadow: var(--shadow);
+      position:relative;
     }
-    .room.todo{ background: var(--todoBg); border-color: var(--todoBd); }
-    .room.doing{ background: var(--doingBg); border-color: var(--doingBd); }
-    .room.done{ background: var(--doneBg); border-color: var(--doneBd); }
-
-    .room .num{ font-weight: 900; font-size: 14px; text-align:center; }
-    .room .st{ font-size: 12px; padding: 2px 8px; border-radius: 999px; display:inline-block; margin:6px auto 0; background:#fff; border:1px solid rgba(0,0,0,0.06); text-align:center; }
-    .room .sub{ font-size: 11px; color: var(--muted); line-height: 1.25; margin-top:6px; text-align:center; }
+    .room.todo { background: var(--todoBg); }
+    .room.doing { background: var(--doingBg); }
+    .room.done { background: var(--doneBg); }
+    .room .num { font-weight: 800; font-size: 14px; }
+    .room .st { font-size: 12px; padding: 2px 8px; border-radius: 999px; display:inline-block; margin: 0 auto; border:1px solid rgba(0,0,0,.06); background:rgba(255,255,255,.75); }
+    .room.todo .st{ color:var(--todoTx); }
+    .room.doing .st{ color:var(--doingTx); }
+    .room.done .st{ color:var(--doneTx); }
+    .room .sub { font-size: 11px; color:var(--muted); line-height: 1.15; }
     .room.highlight { outline: 3px solid var(--blue); outline-offset: 2px; }
 
-    .stageChips{
-      position:absolute; top:6px; right:6px;
-      display:flex; gap:4px; flex-wrap:wrap;
-      justify-content:flex-end;
-      max-width: 75%;
+    .badge {
+      position:absolute; top:8px; right:8px;
+      font-size:10px; padding:2px 6px; border-radius:999px;
+      border:1px solid rgba(239,68,68,.35);
+      background:#fff5f5; color:#b91c1c;
     }
-    .stageChips .sChip{
-      font-size: 10px;
-      font-weight: 900;
-      padding: 2px 6px;
-      border-radius: 999px;
-      border: 1px solid #bfdbfe;
-      background: var(--blueSoft);
-      color: #1e3a8a;
-      line-height: 1;
+    .badge2 {
+      position:absolute; top:8px; left:8px;
+      font-size:10px; padding:2px 6px; border-radius:999px;
+      border:1px solid rgba(37,99,235,.28);
+      background:#eff6ff; color:#1d4ed8;
     }
 
-    details summary{
-      list-style:none;
+    /* collapsible header card */
+    .tapCard {
+      border-radius: 14px;
+      border:1px solid #cfe0ff;
+      background:#eaf1ff;
+      color:#1d4ed8;
+      font-weight:800;
+      padding: 12px 12px;
       cursor:pointer;
-      padding: 10px 12px;
-      border-radius: 12px;
-      border: 1px solid var(--line);
-      background: var(--blueSoft);
-      color:#1e3a8a;
-      font-weight: 900;
+      user-select:none;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      box-shadow: var(--shadow);
     }
-    details summary::-webkit-details-marker{ display:none; }
-    .accBody{ padding: 10px 6px 0; }
+    .tapCard .hint{ font-weight:600; font-size:12px; color:#1d4ed8; opacity:.9; }
+    .tapCard .chev{ font-size:14px; opacity:.8; }
 
-    .cardMini{
-      border:1px solid var(--line);
+    .tabs { display:flex; gap:8px; margin-top:8px; }
+    .tabBtn { border-radius:999px; padding:8px 12px; }
+    .tabBtn.active { background:#eaf1ff; border-color:#cfe0ff; color:#1d4ed8; font-weight:700; }
+
+    .listCard{
+      border:1px solid var(--bd);
       border-radius: 14px;
-      padding: 10px;
-      background:#fff;
-      margin: 8px 0;
-    }
-    .cardMini h3{ margin:0 0 6px; font-size:13px; }
-    .cardMini p{ margin:0; font-size:12px; color:var(--muted); line-height:1.55; }
-
-    .checkgrid{
-      display:grid;
-      grid-template-columns: repeat(2, minmax(0,1fr));
-      gap:6px;
-    }
-    @media (max-width:480px){ .checkgrid{ grid-template-columns: 1fr; } }
-
-    .dangerZone{
-      border: 2px solid rgba(239,68,68,.5);
-      background: #fff;
-      border-radius: 16px;
+      background:white;
       padding: 12px;
+      box-shadow: var(--shadow);
+      margin-top:10px;
     }
-    .dangerTitle{
-      font-weight: 900;
-      color: var(--danger);
-      margin: 0 0 6px;
-      font-size: 14px;
-    }
-    .dangerHelp{ font-size:12px; color:var(--muted); line-height:1.55; margin-bottom: 10px; }
-    .dangerBtn{
-      width:100%;
-      border-radius: 14px;
-      padding: 12px 10px;
-      font-weight: 900;
-      border: 2px solid var(--danger);
-      color: var(--danger);
-      background: #fff;
-    }
-    .dangerBtn.armed{
-      background: var(--danger);
-      color:#fff;
-    }
+    .listCard h3{ margin:0 0 8px; font-size:14px; }
+    .kv{ display:flex; gap:8px; flex-wrap:wrap; }
+    .kv .k{ color:var(--muted); font-size:12px; min-width:120px; }
+    .kv .v{ font-size:13px; }
+    .hr{ height:1px; background:var(--bd); margin:12px 0; }
 
-    /* Modal */
-    .overlay{
-      position:fixed; inset:0; background:rgba(0,0,0,.35);
-      display:none; align-items:center; justify-content:center;
-      padding: 16px; z-index: 50;
-    }
-    .modal{
-      width:min(760px, 100%);
-      background:#fff;
-      border-radius: 16px;
-      border: 1px solid var(--line);
-      padding: 12px;
-    }
-    .modal h3{ margin:0 0 10px; font-size: 14px; }
-    .modal .row{ margin: 8px 0; }
-    .modal .actions{ display:flex; gap:8px; justify-content:flex-end; margin-top:10px; flex-wrap:wrap; }
-    .modal label{ font-size:12px; color:var(--muted); display:block; margin-bottom: 4px; }
-
-    table{
-      width:100%;
-      border-collapse: collapse;
-      font-size: 12px;
-      background:#fff;
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      overflow: hidden;
-    }
-    th, td{
-      border-bottom: 1px solid var(--line);
-      padding: 8px 8px;
-      text-align: left;
-      vertical-align: top;
-    }
-    th{ background:#f9fafb; font-weight: 900; }
-    tr:last-child td{ border-bottom:none; }
-
-    /* Schedule form */
-    .schedGrid{
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap:8px;
-    }
-    @media (max-width: 720px){
-      .schedGrid{ grid-template-columns: 1fr; }
-    }
+    /* schedule rows */
     .schedRow{
-      border:1px solid var(--line);
+      border:1px solid var(--bd);
       border-radius: 14px;
       padding: 10px;
-      background:#fff;
-      margin: 8px 0;
+      background:white;
+      box-shadow: var(--shadow);
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      margin-top:10px;
     }
-    .schedRowHead{
-      display:flex; gap:8px; flex-wrap:wrap; align-items:center; justify-content:space-between;
-      margin-bottom: 8px;
+    .schedRow .top{
+      display:flex; align-items:center; justify-content:space-between; gap:8px;
+      font-weight:800;
     }
-    .schedTitle{
-      font-weight: 900;
-      font-size: 13px;
+    .schedRow .grid2{ display:grid; grid-template-columns: 1fr 1fr; gap:8px; }
+    .schedRow .grid3{ display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px; }
+    @media(max-width:560px){ .schedRow .grid3{ grid-template-columns: 1fr 1fr; } }
+
+    /* danger box for regen */
+    .dangerBox{
+      border:2px dashed rgba(239,68,68,.55);
+      background:#fff5f5;
+      border-radius:16px;
+      padding:12px;
+      margin-top:14px;
     }
-    .schedActions{
-      display:flex; gap:8px; flex-wrap:wrap;
-    }
-    .schedLbl{
-      font-size: 12px;
-      color: var(--muted);
-      margin-bottom: 4px;
-      display:block;
+    .dangerBox .title{ font-weight:900; color:#b91c1c; display:flex; align-items:center; gap:8px; }
+    .dangerBox .desc{ color:#b91c1c; font-size:12px; margin-top:6px; line-height:1.45; }
+    .dangerBox button{ border-color: rgba(239,68,68,.6); color:#b91c1c; }
+    .dangerBox button.primaryDanger{
+      background:#ef4444; border-color:#ef4444; color:white;
     }
 
-    /* ✅ Schedule summary look */
-    .schedSummaryBlock{
-      border:1px solid var(--line);
-      border-radius: 14px;
-      background:#fff;
-      padding: 10px;
-      margin: 8px 0;
+    /* modal */
+    .overlay{
+      position:fixed; inset:0; background:rgba(0,0,0,.35); z-index:50;
+      display:none; align-items:flex-end; justify-content:center;
     }
-    .schedSummaryBlock h3{
-      margin:0 0 8px;
-      font-size: 13px;
-      font-weight: 900;
-      color:#1e3a8a;
+    .sheet{
+      width: min(760px, 100%);
+      background:white;
+      border-radius: 18px 18px 0 0;
+      padding: 12px;
+      border:1px solid var(--bd);
+      box-shadow: 0 -10px 35px rgba(0,0,0,.18);
+      max-height: 88vh;
+      overflow:auto;
     }
-    .schedSummaryLine{
-      font-size: 12px;
-      line-height: 1.7;
-      color: var(--text);
-      padding: 2px 0;
-      white-space: pre-wrap;
+    .sheet .head{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+    .sheet .head h3{ margin:0; font-size:14px; }
+    .sheet .head .x{ font-size:16px; }
+    .sheet .actions{ display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+    .sheet .actions button{ flex:1; min-width:120px; }
+
+    .miniNote{ font-size:12px; color:var(--muted); }
+
+    .chipRow{ display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+    .chip{
+      border:1px solid var(--bd);
+      background:white;
+      border-radius:999px;
+      padding:6px 10px;
+      font-size:12px;
+      cursor:pointer;
+      user-select:none;
+      box-shadow: var(--shadow);
     }
-    .schedSummaryLine.muted{
-      color: var(--muted);
+    .chip.on{ background:#eaf1ff; border-color:#cfe0ff; color:#1d4ed8; font-weight:700; }
+
+    .checkGrid{
+      display:flex; gap:8px; flex-wrap:wrap;
+      margin-top:8px;
     }
+    .checkGrid label{
+      border:1px solid var(--bd);
+      border-radius:999px;
+      padding:8px 10px;
+      font-size:12px;
+      background:white;
+      box-shadow: var(--shadow);
+      display:flex; align-items:center; gap:6px;
+    }
+
+    .addRowBtn{ width:100%; margin-top:8px; }
+
+    .mutedBtn{ color:#374151; }
   </style>
 </head>
-
 <body>
-<header>
-  <h1>リペア進捗管理（完成版・段階＋総合）</h1>
-
-  <div class="row">
-    <select id="siteSelect"></select>
-    <button id="newSiteBtn" class="primary">現場を追加</button>
-    <button id="manageBtn" class="secondary">⚙️ 管理</button>
-  </div>
-
-  <div class="row" style="margin-top:8px;">
-    <span class="chip blue">検査段階</span>
-    <select id="stageSelect"></select>
-    <button id="stageManageBtn" class="small secondary">段階を編集</button>
-  </div>
-
-  <div class="meta" id="siteMeta"></div>
-</header>
-
-<main>
-
-  <!-- 現場設定 -->
-  <div class="panel">
-    <h2>現場設定</h2>
-    <div class="split">
-      <div>
-        <div class="row">
-          <input id="siteName" placeholder="現場名（例：〇〇マンション）" />
-        </div>
-        <div class="row">
-          <input id="gcName" placeholder="ゼネコン（例：新日本建設）" />
-        </div>
-        <div class="row">
-          <input id="buildingName" placeholder="棟/建物名（任意）" />
-        </div>
-      </div>
-
-      <div>
-        <div class="row">
-          <input id="floorSpec" placeholder="階:部屋数（例 1:4,2-11:5）" />
-        </div>
-        <div class="help">
-          入力例：<b>1:4,2-11:5</b>（カンマ区切り）<br/>
-          形式：<b>階</b> または <b>開始階-終了階</b> : <b>部屋数</b><br/>
-          部屋番号は <b>101方式</b>（階×100 + 連番）で自動生成
-        </div>
-      </div>
-    </div>
-
-    <!-- ✅ 検査スケジュール（閉じた状態） -->
-    <div style="margin-top:10px;">
-      <details id="scheduleAcc">
-        <summary>検査・内覧スケジュール（タップで開閉）</summary>
-        <div class="accBody">
-
-          <div class="row" style="margin-bottom:8px;">
-            <button id="scheduleTabEdit" class="small secondary">編集（段階別）</button>
-            <button id="scheduleTabAll" class="small">一覧（全段階）</button>
-          </div>
-
-          <!-- 編集（段階別） -->
-          <div id="scheduleEditWrap">
-            <div class="help" style="margin-bottom:8px;">
-              ※ 段階ごとに「<b>何階〜何階</b>」の行を複数追加できます。<br/>
-              日付はカレンダー（date）から選ぶ／手入力どちらでもOK。
-            </div>
-
-            <div class="row" style="margin-bottom:8px;">
-              <span class="chip blue">段階</span>
-              <select id="scheduleStageSelect"></select>
-              <button id="addScheduleBtn" class="small primary">＋ 行を追加</button>
-            </div>
-
-            <div id="scheduleList"></div>
-          </div>
-
-          <!-- ✅ 一覧（全段階） -->
-          <div id="scheduleAllWrap" style="display:none;">
-            <div class="help" style="margin-bottom:8px;">
-              あなたの希望形式：段階ごとに「検査日（階範囲ごと）」を並べて、最後に「是正期間」を1本で表示します。
-            </div>
-            <div id="scheduleSummaryAll"></div>
-          </div>
-
-        </div>
-      </details>
-    </div>
-
-    <!-- 備考 -->
-    <div style="margin-top:10px;">
-      <div class="help" style="margin: 0 0 6px; font-weight:900; color:var(--text);">備考（現場メモ）</div>
-      <textarea id="siteMemo" placeholder="自由メモ（段取り、注意事項、共通の指示など）"></textarea>
-    </div>
-
-    <div class="row" style="margin-top:10px;">
-      <button id="saveSiteBtn" class="primary">設定を保存</button>
-      <button id="deleteSiteBtn" class="danger">現場削除</button>
-    </div>
-  </div>
-
-  <!-- 現場基本情報（アンケート） -->
-  <div class="panel">
-    <details id="surveyAcc">
-      <summary>現場基本情報（アンケート）（タップで開閉）</summary>
-      <div class="accBody">
-        <div class="row" style="margin-bottom:8px;">
-          <button id="surveyTabEdit" class="small secondary">入力</button>
-          <button id="surveyTabView" class="small">一覧</button>
-        </div>
-        <div id="surveyEdit"></div>
-        <div id="surveyView" style="display:none;"></div>
-      </div>
-    </details>
-  </div>
-
-  <!-- ダメ帳：まとめて入力（A案2） -->
-  <div class="panel">
-    <h2>ダメ帳（まとめて設定）</h2>
-    <div class="help" style="margin-bottom:8px;">
-      選択中の検査段階に対して、<b>階範囲</b> または <b>部屋番号範囲</b> を一括で「ダメ帳あり/なし」にできます。
-    </div>
+  <header>
+    <h1>リペア進捗管理（完成版・段階＋総合）</h1>
 
     <div class="row">
-      <span class="chip blue">対象段階</span>
-      <select id="bulkStageSelect"></select>
+      <select id="siteSelect"></select>
+      <button id="newSiteBtn" class="primary">現場を追加</button>
+      <button id="manageBtn" class="soft">⚙︎ 管理</button>
     </div>
 
     <div class="row" style="margin-top:8px;">
-      <span class="chip">対象</span>
-      <select id="bulkTargetType">
-        <option value="floors">階の範囲（例：1〜6）</option>
-        <option value="rooms">部屋番号の範囲（例：701〜1105）</option>
-      </select>
-
-      <input id="bulkFrom" class="small" inputmode="numeric" placeholder="開始" style="max-width:120px;" />
-      <input id="bulkTo" class="small" inputmode="numeric" placeholder="終了" style="max-width:120px;" />
-
-      <button id="bulkYesBtn" class="small primary">この範囲を「あり」</button>
-      <button id="bulkNoBtn" class="small">この範囲を「なし」</button>
+      <span class="pillLabel" style="background:#eaf1ff;border-color:#cfe0ff;color:#1d4ed8;font-weight:800;">検査段階</span>
+      <select id="stageSelect"></select>
+      <button id="editStagesBtn" class="soft">段階を編集</button>
     </div>
 
-    <div class="help" id="bulkPreview" style="margin-top:8px;"></div>
-  </div>
+    <div class="meta" id="siteMeta"></div>
+  </header>
 
-  <!-- 統計：総合（固定） -->
-  <div class="panel">
-    <h2>総合の進捗（長期把握）</h2>
-    <div class="help" style="margin-bottom:8px;">
-      ※ 「総合」は検査段階とは別の “長期の進捗” です（段階を切り替えても変わりません）。
-    </div>
-    <div class="stats" id="statsOverall"></div>
-  </div>
+  <main>
+    <!-- 現場設定 -->
+    <div class="panel" id="sitePanel">
+      <h2>現場設定</h2>
 
-  <!-- 統計：段階 -->
-  <div class="panel">
-    <h2>段階の進捗（選択中の検査段階）</h2>
-    <div class="stats" id="statsStage"></div>
-
-    <div class="row" style="margin-top:6px;">
-      <button id="resetStageBtn" class="small danger">この段階だけ：全て未着手に戻す</button>
-    </div>
-    <div class="help" style="margin-top:6px;">
-      ここは「今選択中の段階」だけに作用します。他の段階には影響しません。
-    </div>
-  </div>
-
-  <!-- 統計：報告用（ダメ帳あり範囲） -->
-  <div class="panel">
-    <h2>報告用（ダメ帳あり範囲の進捗）</h2>
-    <div class="help" style="margin-bottom:8px;">
-      会社報告向け：選んだ「範囲」かつ「ダメ帳あり」の部屋だけで、未着手/途中/完了を集計します。
-    </div>
-
-    <div class="row">
-      <span class="chip">範囲</span>
-      <select id="reportScopeType">
-        <option value="all">全部屋</option>
-        <option value="floors">階の範囲（例：1〜6）</option>
-        <option value="rooms">部屋番号の範囲（例：701〜1105）</option>
-      </select>
-
-      <input id="reportFrom" class="small" inputmode="numeric" placeholder="開始" style="max-width:120px; display:none;" />
-      <input id="reportTo" class="small" inputmode="numeric" placeholder="終了" style="max-width:120px; display:none;" />
-
-      <span class="chip blue">段階</span>
-      <select id="reportStageSelect"></select>
-
-      <button id="reportApplyBtn" class="small primary">適用</button>
-    </div>
-
-    <div class="stats" id="statsReport"></div>
-  </div>
-
-  <!-- 俯瞰（段階×進捗の表） -->
-  <div class="panel">
-    <details id="overviewAcc">
-      <summary>俯瞰（段階×進捗の表）（タップで開閉）</summary>
-      <div class="accBody">
-        <div class="help" style="margin-bottom:8px;">
-          「報告用」の範囲を基準に、各段階の <b>ダメ帳あり</b> 部屋について、未/途/完 を集計します（切り替え不要で把握）。
+      <div class="split">
+        <div>
+          <div class="row"><input id="siteName" placeholder="現場名（例：〇〇マンション）" /></div>
+          <div class="row"><input id="gcName" placeholder="ゼネコン（例：新日本建設）" /></div>
+          <div class="row"><input id="buildingName" placeholder="棟/建物名（任意）" /></div>
         </div>
-        <div id="overviewTable"></div>
+
+        <div>
+          <div class="row"><input id="floorSpec" placeholder="階:部屋数（例 1:4,2-11:5）" /></div>
+          <div class="help">
+            入力例：<b>1:4,2-11:5</b>（カンマ区切り）<br/>
+            形式：<b>階</b> または <b>開始階-終了階</b> : <b>部屋数</b><br/>
+            部屋番号は <b>101方式</b>（階×100 + 連番）で自動生成
+          </div>
+        </div>
       </div>
-    </details>
+
+      <div class="row" style="margin-top:10px;">
+        <button id="saveSiteBtn" class="primary">設定を保存</button>
+        <button id="deleteSiteBtn" class="danger">現場削除</button>
+      </div>
+
+      <!-- 検査・内覧スケジュール（折りたたみ） -->
+      <div style="margin-top:12px;">
+        <div id="scheduleToggle" class="tapCard">
+          <div>
+            検査・内覧スケジュール（タップで開閉）
+            <div class="hint">段階ごとに「範囲＋日付（期間）」を複数行で登録</div>
+          </div>
+          <div class="chev" id="scheduleChev">▼</div>
+        </div>
+
+        <div id="scheduleBody" style="display:none; margin-top:10px;">
+          <div class="tabs">
+            <button class="tabBtn" id="schedTabInput">入力</button>
+            <button class="tabBtn" id="schedTabList">一覧</button>
+          </div>
+
+          <div id="schedInputArea"></div>
+          <div id="schedListArea" style="display:none;"></div>
+        </div>
+      </div>
+
+      <!-- 備考 -->
+      <div style="margin-top:12px;">
+        <div class="help" style="font-weight:800; color:#374151;">備考（現場メモ）</div>
+        <textarea id="siteMemo" placeholder="自由メモ（段取り、注意事項、共通の指示など）"></textarea>
+      </div>
+
+      <!-- 現場基本情報（アンケート） -->
+      <div style="margin-top:12px;">
+        <div id="surveyToggle" class="tapCard" style="background:#f0f9ff;border-color:#bae6fd;color:#075985;">
+          <div>
+            現場基本情報（アンケート）（タップで開閉）
+            <div class="hint" style="color:#075985;">入力 → 一覧で見える → 後から編集OK</div>
+          </div>
+          <div class="chev" id="surveyChev">▼</div>
+        </div>
+
+        <div id="surveyBody" style="display:none; margin-top:10px;">
+          <div class="tabs">
+            <button class="tabBtn" id="surveyTabInput">入力</button>
+            <button class="tabBtn" id="surveyTabList">一覧</button>
+          </div>
+          <div id="surveyInputArea"></div>
+          <div id="surveyListArea" style="display:none;"></div>
+        </div>
+      </div>
+
+      <!-- 再生成（安全：最下部＋赤枠＋二段階） -->
+      <div class="dangerBox">
+        <div class="title">⚠️ 部屋を再生成（危険）</div>
+        <div class="desc">
+          階数/部屋数の仕様から部屋一覧を作り直します。<br/>
+          <b>各検査段階の進捗（未/途/完）・ダメ帳あり/なし・作業日・担当者</b>が初期化されます。
+        </div>
+        <div class="row" style="margin-top:10px;">
+          <button id="regenArmBtn" class="danger">再生成を有効化（1回目）</button>
+          <button id="regenGoBtn" class="primaryDanger" disabled>再生成を実行（2回目）</button>
+        </div>
+        <div class="help" style="margin-top:6px;">
+          ※「実行」は有効化後 <b>5秒以内</b>のみ押せます
+        </div>
+      </div>
+    </div>
+
+    <!-- 統計・集計範囲 -->
+    <div class="panel">
+      <h2>集計</h2>
+      <div class="help">「全体」または「階範囲」または「ダメ帳ありの範囲」で、未着手/途中/完了を見られます（毎日の報告用）</div>
+
+      <div class="chipRow" id="scopeChips"></div>
+
+      <div class="row" style="margin-top:8px;">
+        <input id="scopeFrom" class="small" placeholder="開始階（例 1）" inputmode="numeric" />
+        <input id="scopeTo" class="small" placeholder="終了階（例 6）" inputmode="numeric" />
+        <button id="applyScopeBtn" class="soft">範囲を適用</button>
+        <button id="clearScopeBtn" class="ghost mutedBtn">解除</button>
+      </div>
+
+      <div class="stats" id="stats"></div>
+    </div>
+
+    <!-- 操作 -->
+    <div class="panel">
+      <div class="row">
+        <button class="pill" data-filter="all">全件</button>
+        <button class="pill" data-filter="todo">未着手</button>
+        <button class="pill" data-filter="doing">途中</button>
+        <button class="pill" data-filter="done">完了</button>
+
+        <button class="pill" id="modeBtn">入力モード: OFF</button>
+        <button class="pill" id="toggleSummaryBtn">表示: 現在段階</button>
+      </div>
+
+      <div class="row" style="margin-top:8px;">
+        <input id="jumpInput" class="small" placeholder="部屋番号でジャンプ（例 703）" />
+        <button class="small soft" id="jumpBtn">移動</button>
+        <button class="small" id="clearJumpBtn">解除</button>
+      </div>
+
+      <div class="row" style="margin-top:8px;">
+        <button class="small" id="resetStageBtn">この段階だけ 全て未着手に戻す</button>
+        <button class="small" id="resetAllStagesBtn">（注意）全段階を未着手に戻す</button>
+      </div>
+
+      <div class="help" style="margin-top:8px;">
+        ・通常：部屋カードをタップ → 未着手 → 途中 → 完了<br/>
+        ・入力モードON：部屋カードをタップ → 作業日/担当者/ダメ帳あり を入力
+      </div>
+    </div>
+
+    <div class="grid" id="roomGrid"></div>
+  </main>
+
+  <!-- Room edit modal -->
+  <div class="overlay" id="overlay">
+    <div class="sheet">
+      <div class="head">
+        <h3 id="roomModalTitle">部屋</h3>
+        <button class="ghost x" id="closeModalBtn">✕</button>
+      </div>
+
+      <div class="row" style="margin-top:8px;">
+        <input id="modalAssignee" placeholder="担当者（例：山田）" />
+        <input id="modalWorkDate" type="date" />
+      </div>
+
+      <div class="row" style="margin-top:8px;">
+        <button id="modalDamechoBtn" class="pill">ダメ帳: なし</button>
+        <button id="modalCycleBtn" class="pill soft">進捗を1つ進める</button>
+      </div>
+
+      <div class="miniNote" style="margin-top:8px;">
+        ※「担当者（例：山田）」はグレーの例文です。入力すると保存されます。
+      </div>
+
+      <div class="actions">
+        <button id="modalSaveBtn" class="primary">保存</button>
+        <button id="modalCancelBtn">キャンセル</button>
+      </div>
+    </div>
   </div>
-
-  <!-- 表示・操作 -->
-  <div class="panel">
-    <div class="row">
-      <button class="small" data-filter="all">全件</button>
-      <button class="small" data-filter="todo">未着手</button>
-      <button class="small" data-filter="doing">途中</button>
-      <button class="small" data-filter="done">完了</button>
-
-      <button class="small" id="modeBtn">入力モード: OFF</button>
-      <button class="small" id="resetOverallBtn">総合：全て未着手に戻す（危険）</button>
-    </div>
-
-    <div class="row" style="margin-top:10px;">
-      <input id="jumpInput" class="small" placeholder="部屋番号でジャンプ（例 703）" />
-      <button class="small" id="jumpBtn">移動</button>
-      <button class="small" id="clearJumpBtn">解除</button>
-    </div>
-
-    <div class="help" style="margin-top:8px;">
-      ・通常：部屋をタップ → <b>未着手 → 途中 → 完了 → 未着手</b>（選択中段階に対して）<br/>
-      ・入力モードON：部屋をタップ → <b>作業日 / 担当者（例：山田）/ メモ / この段階のダメ帳（あり/なし）</b> を入力<br/>
-      ・カード右上のチップ（例：<b>社 設 施</b>）は「その段階でダメ帳が残っている」印です
-    </div>
-  </div>
-
-  <!-- 部屋グリッド -->
-  <div class="grid" id="roomGrid"></div>
-
-  <!-- 危険操作：再生成（最下部・赤枠・二段階） -->
-  <div class="panel">
-    <div class="dangerZone">
-      <div class="dangerTitle">⚠️ 部屋を再生成（危険）</div>
-      <div class="dangerHelp">
-        ・現在の部屋リストを <b>階数/部屋数</b> から作り直します。<br/>
-        ・<b>進捗（段階/総合）</b>、<b>作業日</b>、<b>担当者</b>、<b>ダメ帳</b> が初期化されます。<br/>
-        ・誤操作防止のため <b>二段階タップ</b> です（5秒で解除）。
-      </div>
-      <button id="regenRoomsBtn" class="dangerBtn">二段階：タップして準備</button>
-    </div>
-  </div>
-
-</main>
-
-<!-- 入力モード用モーダル -->
-<div class="overlay" id="overlay">
-  <div class="modal">
-    <h3 id="modalTitle">部屋入力</h3>
-
-    <div class="row">
-      <div style="flex:1; min-width: 200px;">
-        <label>作業日（カレンダー）</label>
-        <input type="date" id="workDate" />
-      </div>
-      <div style="flex:1; min-width: 200px;">
-        <label>作業日（手入力：YYYY-MM-DD）</label>
-        <input id="workDateText" placeholder="例：2026-01-07" />
-      </div>
-    </div>
-
-    <div class="row">
-      <div style="flex:1; min-width: 240px;">
-        <label>担当者（自由入力）</label>
-        <input id="workerName" placeholder="例：山田" />
-      </div>
-      <div style="flex:1; min-width: 240px;">
-        <label>この検査段階のダメ帳</label>
-        <select id="damachoSel">
-          <option value="none">未設定</option>
-          <option value="yes">あり</option>
-          <option value="no">なし</option>
-        </select>
-      </div>
-    </div>
-
-    <div class="row">
-      <div style="width:100%;">
-        <label>メモ（任意）</label>
-        <textarea id="roomNote" placeholder="例：枠の角、床の擦り傷など"></textarea>
-      </div>
-    </div>
-
-    <div class="actions">
-      <button id="modalCancelBtn">キャンセル</button>
-      <button id="modalSaveBtn" class="primary">保存</button>
-    </div>
-  </div>
-</div>
 
 <script>
 (() => {
-  const STORAGE_KEY = "repair_progress_complete_v6_schedule_summary_all";
+  const STORAGE_KEY = "repair_progress_complete_v1";
+
+  /** Types (informal)
+   * Site: {id,name,gc,building,floorSpec,memo, survey, stages, stageData, rooms, createdAt, updatedAt}
+   * Stage: {id,name}
+   * Room: {id,label,floor,idx}
+   * stageData[stageId].roomStates[roomId] = {status:"todo"|"doing"|"done", damecho:boolean, assignee:string, workDate:string}
+   * stageData[stageId].schedule = { segments:[{id,from,to,start,end}], correctionStart, correctionEnd }
+   */
 
   const uid = () => Math.random().toString(36).slice(2, 10) + "-" + Date.now().toString(36);
   const now = () => Date.now();
   const $ = (id) => document.getElementById(id);
 
-  const siteSelect = $("siteSelect");
-  const newSiteBtn = $("newSiteBtn");
-  const manageBtn = $("manageBtn");
+  const els = {
+    siteSelect: $("siteSelect"),
+    newSiteBtn: $("newSiteBtn"),
+    manageBtn: $("manageBtn"),
+    editStagesBtn: $("editStagesBtn"),
+    stageSelect: $("stageSelect"),
+    siteMeta: $("siteMeta"),
 
-  const stageSelect = $("stageSelect");
-  const stageManageBtn = $("stageManageBtn");
+    siteName: $("siteName"),
+    gcName: $("gcName"),
+    buildingName: $("buildingName"),
+    floorSpec: $("floorSpec"),
+    siteMemo: $("siteMemo"),
+    saveSiteBtn: $("saveSiteBtn"),
+    deleteSiteBtn: $("deleteSiteBtn"),
 
-  const siteMeta = $("siteMeta");
-  const siteName = $("siteName");
-  const gcName = $("gcName");
-  const buildingName = $("buildingName");
-  const floorSpec = $("floorSpec");
-  const siteMemo = $("siteMemo");
+    scheduleToggle: $("scheduleToggle"),
+    scheduleBody: $("scheduleBody"),
+    scheduleChev: $("scheduleChev"),
+    schedTabInput: $("schedTabInput"),
+    schedTabList: $("schedTabList"),
+    schedInputArea: $("schedInputArea"),
+    schedListArea: $("schedListArea"),
 
-  const saveSiteBtn = $("saveSiteBtn");
-  const deleteSiteBtn = $("deleteSiteBtn");
+    surveyToggle: $("surveyToggle"),
+    surveyBody: $("surveyBody"),
+    surveyChev: $("surveyChev"),
+    surveyTabInput: $("surveyTabInput"),
+    surveyTabList: $("surveyTabList"),
+    surveyInputArea: $("surveyInputArea"),
+    surveyListArea: $("surveyListArea"),
 
-  // Schedule
-  const scheduleTabEdit = $("scheduleTabEdit");
-  const scheduleTabAll  = $("scheduleTabAll");
-  const scheduleEditWrap = $("scheduleEditWrap");
-  const scheduleAllWrap  = $("scheduleAllWrap");
-  const scheduleStageSelect = $("scheduleStageSelect");
-  const addScheduleBtn = $("addScheduleBtn");
-  const scheduleList = $("scheduleList");
-  const scheduleSummaryAll = $("scheduleSummaryAll");
+    regenArmBtn: $("regenArmBtn"),
+    regenGoBtn: $("regenGoBtn"),
 
-  const surveyEdit = $("surveyEdit");
-  const surveyView = $("surveyView");
-  const surveyTabEdit = $("surveyTabEdit");
-  const surveyTabView = $("surveyTabView");
+    scopeChips: $("scopeChips"),
+    scopeFrom: $("scopeFrom"),
+    scopeTo: $("scopeTo"),
+    applyScopeBtn: $("applyScopeBtn"),
+    clearScopeBtn: $("clearScopeBtn"),
+    stats: $("stats"),
 
-  const bulkStageSelect = $("bulkStageSelect");
-  const bulkTargetType = $("bulkTargetType");
-  const bulkFrom = $("bulkFrom");
-  const bulkTo = $("bulkTo");
-  const bulkYesBtn = $("bulkYesBtn");
-  const bulkNoBtn = $("bulkNoBtn");
-  const bulkPreview = $("bulkPreview");
+    modeBtn: $("modeBtn"),
+    toggleSummaryBtn: $("toggleSummaryBtn"),
+    resetStageBtn: $("resetStageBtn"),
+    resetAllStagesBtn: $("resetAllStagesBtn"),
 
-  const statsOverallEl = $("statsOverall");
-  const statsStageEl = $("statsStage");
-  const resetStageBtn = $("resetStageBtn");
-  const resetOverallBtn = $("resetOverallBtn");
+    jumpInput: $("jumpInput"),
+    jumpBtn: $("jumpBtn"),
+    clearJumpBtn: $("clearJumpBtn"),
 
-  const reportScopeType = $("reportScopeType");
-  const reportFrom = $("reportFrom");
-  const reportTo = $("reportTo");
-  const reportStageSelect = $("reportStageSelect");
-  const reportApplyBtn = $("reportApplyBtn");
-  const statsReportEl = $("statsReport");
+    roomGrid: $("roomGrid"),
 
-  const overviewAcc = $("overviewAcc");
-  const overviewTable = $("overviewTable");
-
-  const roomGrid = $("roomGrid");
-
-  const modeBtn = $("modeBtn");
-  const jumpInput = $("jumpInput");
-  const jumpBtn = $("jumpBtn");
-  const clearJumpBtn = $("clearJumpBtn");
-
-  const regenRoomsBtn = $("regenRoomsBtn");
-
-  // Modal
-  const overlay = $("overlay");
-  const modalTitle = $("modalTitle");
-  const workDate = $("workDate");
-  const workDateText = $("workDateText");
-  const workerName = $("workerName");
-  const damachoSel = $("damachoSel");
-  const roomNote = $("roomNote");
-  const modalCancelBtn = $("modalCancelBtn");
-  const modalSaveBtn = $("modalSaveBtn");
-
-  const REPAIR_OPTIONS = ["木枠","建具","額縁","枕棚","家具","床","サッシ","キッチン家具","洗面家具","見切り"];
-
-  const DEFAULT_STAGES = [
-    { key:"self",  label:"自主検査" },
-    { key:"in",    label:"社内検査" },
-    { key:"design",label:"設計検査" },
-    { key:"owner", label:"施主検査" },
-    { key:"open",  label:"内覧会" },
-    { key:"reopen",label:"再内覧" },
-  ];
-
-  function defaultSurvey(){
-    return {
-      repairSupervisors: [{ name:"", phone:"" }],
-      genManagerName:"", genManagerPhone:"",
-      genSupervisorName:"", genSupervisorPhone:"",
-      morningTime:"8:00〜", morningPlace:"", morningNote:"",
-      lunchTime:"13:00〜", lunchHas:"あり", lunchPlace:"",
-      kyHas:"あり", kyPlace:"",
-      newEntryHas:"あり",
-      myRepairItems:[],
-      otherVendorItems:[],
-      damechoHas:"あり",
-      progressDir:"下階より上へ",
-      progressNote:"",
-      tapeState:"なし",
-      tapeNote:"",
-      toiletSite:"",
-      toiletNearby:"",
-      overtime:"可",
-      holidaysFixed:"日曜、祝日",
-      holidaysExtra:[""]
-    };
-  }
-
-  function defaultReport(){
-    return { scopeType:"all", from:1, to:1, stageKey:"in" };
-  }
+    overlay: $("overlay"),
+    closeModalBtn: $("closeModalBtn"),
+    roomModalTitle: $("roomModalTitle"),
+    modalAssignee: $("modalAssignee"),
+    modalWorkDate: $("modalWorkDate"),
+    modalDamechoBtn: $("modalDamechoBtn"),
+    modalCycleBtn: $("modalCycleBtn"),
+    modalSaveBtn: $("modalSaveBtn"),
+    modalCancelBtn: $("modalCancelBtn"),
+  };
 
   function loadState(){
     try{
       const raw = localStorage.getItem(STORAGE_KEY);
-      if(!raw) return { sites:[], currentSiteId:null, ui:{ filter:"all", inputMode:false, currentStageKey:"in", report: defaultReport() }};
-      const st = JSON.parse(raw);
-      if(!st || !Array.isArray(st.sites)) throw new Error("invalid");
-      if(!st.ui) st.ui = { filter:"all", inputMode:false, currentStageKey:"in", report: defaultReport() };
-      if(!st.ui.filter) st.ui.filter="all";
-      if(typeof st.ui.inputMode !== "boolean") st.ui.inputMode=false;
-      if(!st.ui.currentStageKey) st.ui.currentStageKey="in";
-      if(!st.ui.report) st.ui.report = defaultReport();
-      return st;
+      if(!raw) return { sites:[], currentSiteId:null, ui:{ filter:"all", inputMode:false, highlightRoomId:null, summaryMode:false, scope:{mode:"all", from:null, to:null} } };
+      const s = JSON.parse(raw);
+      if(!s.ui) s.ui = { filter:"all", inputMode:false, highlightRoomId:null, summaryMode:false, scope:{mode:"all", from:null, to:null} };
+      if(!s.ui.scope) s.ui.scope = {mode:"all", from:null, to:null};
+      return s;
     }catch{
-      return { sites:[], currentSiteId:null, ui:{ filter:"all", inputMode:false, currentStageKey:"in", report: defaultReport() }};
+      return { sites:[], currentSiteId:null, ui:{ filter:"all", inputMode:false, highlightRoomId:null, summaryMode:false, scope:{mode:"all", from:null, to:null} } };
     }
   }
   function saveState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
 
   function parseFloorSpec(spec){
-    const s = (spec||"").trim();
+    const s = (spec || "").trim();
     if(!s) return [];
     const parts = s.split(",").map(x=>x.trim()).filter(Boolean);
     const out = [];
     for(const p of parts){
-      const [lhs, rhs] = p.split(":").map(x=>(x||"").trim());
+      const [lhs,rhs] = p.split(":").map(x=>(x||"").trim());
       const roomsPerFloor = Number(rhs);
       if(!lhs || !Number.isFinite(roomsPerFloor) || roomsPerFloor<=0) throw new Error(`入力形式エラー: "${p}"`);
       if(lhs.includes("-")){
         const [a,b] = lhs.split("-").map(x=>Number(x.trim()));
         if(!Number.isInteger(a)||!Number.isInteger(b)||a<=0||b<=0||a>b) throw new Error(`階範囲エラー: "${lhs}"`);
-        out.push({ from:a, to:b, roomsPerFloor });
+        out.push({from:a,to:b,roomsPerFloor});
       }else{
         const f = Number(lhs);
         if(!Number.isInteger(f)||f<=0) throw new Error(`階エラー: "${lhs}"`);
-        out.push({ from:f, to:f, roomsPerFloor });
+        out.push({from:f,to:f,roomsPerFloor});
       }
     }
     const used = new Set();
@@ -725,36 +544,146 @@
     return out;
   }
 
-  function generateRoomsFromSpec(spec, stages){
+  function generateRoomsFromSpec(spec){
     const ranges = parseFloorSpec(spec);
     const rooms = [];
-
     for(const r of ranges){
       for(let f=r.from; f<=r.to; f++){
         for(let i=1; i<=r.roomsPerFloor; i++){
-          const label = String(f*100+i);
-
-          const dam = {};
-          const prog = {};
-          for(const stg of stages){
-            dam[stg.key] = "none";
-            prog[stg.key] = "todo";
-          }
-
-          rooms.push({
-            id: uid(),
-            label,
-            floor:f,
-            idx:i,
-            overallStatus: "todo",
-            progressByStage: prog,
-            meta: { date:"", worker:"", note:"", damacho: dam }
-          });
+          const label = String(f*100 + i);
+          rooms.push({ id: uid(), label, floor:f, idx:i });
         }
       }
     }
-    rooms.sort((a,b)=>a.floor-b.floor||a.idx-b.idx);
+    rooms.sort((a,b)=>a.floor-b.floor || a.idx-b.idx);
     return rooms;
+  }
+
+  function defaultStages(){
+    // 最低限（現場に全段階があるとは限らないので、編集で増減）
+    return [
+      {id: uid(), name:"自主検査"},
+      {id: uid(), name:"社内検査"},
+      {id: uid(), name:"設計検査"},
+      {id: uid(), name:"施主検査"},
+      {id: uid(), name:"内覧"},
+      {id: uid(), name:"再内覧"},
+    ];
+  }
+
+  function defaultSurvey(){
+    return {
+      repairSupervisors: [{ name:"", phone:"" }], // 複数追加OK
+
+      manager: { name:"", phone:"" },             // 所長（基本1人）
+      supervisors: [{ name:"", phone:"" }],        // 監督（追加できる・名前＋電話セット）
+
+      morningTime:"8:00〜", morningPlace:"", morningNote:"",
+      lunchTime:"13:00〜", lunchHas:"あり", lunchPlace:"",
+      kyHas:"あり", kyPlace:"",
+      newEntryHas:"あり",
+
+      myRepairItems:[],
+      otherVendorItems:[],
+
+      damechoHas:"あり",
+
+      progressDir:"下階より上へ",
+      progressNote:"",
+
+      tapeState:"なし",
+      tapeNote:"",
+
+      toiletSite:"",
+      toiletNearby:"",
+
+      overtime:"可",
+
+      holidaysFixed:"日曜、祝日",
+      holidaysExtra:[""]
+    };
+  }
+
+  function defaultStageData(){
+    return {
+      roomStates: {}, // filled after rooms exist
+      schedule: { segments:[], correctionStart:"", correctionEnd:"" },
+    };
+  }
+
+  function ensureSiteIntegrity(site){
+    if(!site.gc) site.gc = "";
+    if(!site.memo) site.memo = "";
+
+    // stages
+    if(!Array.isArray(site.stages) || site.stages.length===0){
+      site.stages = defaultStages();
+      site.currentStageId = site.stages[1]?.id || site.stages[0].id;
+    }else{
+      if(!site.currentStageId || !site.stages.find(x=>x.id===site.currentStageId)){
+        site.currentStageId = site.stages[0].id;
+      }
+    }
+
+    // survey
+    if(!site.survey) site.survey = defaultSurvey();
+
+    // migrate old fields if any
+    if(!site.survey.manager) site.survey.manager = {name:"",phone:""};
+    if(!Array.isArray(site.survey.supervisors) || site.survey.supervisors.length===0) site.survey.supervisors = [{name:"",phone:""}];
+    if(!Array.isArray(site.survey.repairSupervisors) || site.survey.repairSupervisors.length===0) site.survey.repairSupervisors = [{name:"",phone:""}];
+
+    // stageData
+    if(!site.stageData) site.stageData = {};
+    for(const st of site.stages){
+      if(!site.stageData[st.id]) site.stageData[st.id] = defaultStageData();
+      if(!site.stageData[st.id].schedule) site.stageData[st.id].schedule = {segments:[], correctionStart:"", correctionEnd:""};
+      if(!Array.isArray(site.stageData[st.id].schedule.segments)) site.stageData[st.id].schedule.segments = [];
+      if(!site.stageData[st.id].roomStates) site.stageData[st.id].roomStates = {};
+    }
+
+    // rooms
+    if(!Array.isArray(site.rooms) || site.rooms.length===0){
+      site.rooms = generateRoomsFromSpec(site.floorSpec || "1:4,2-11:5");
+    }
+    // initialize room states per stage
+    for(const st of site.stages){
+      const rs = site.stageData[st.id].roomStates;
+      for(const r of site.rooms){
+        if(!rs[r.id]){
+          rs[r.id] = { status:"todo", damecho:false, assignee:"", workDate:"" };
+        }
+      }
+    }
+  }
+
+  function createNewSite(name){
+    const s = {
+      id: uid(),
+      name: name || `新規現場 ${state.sites.length+1}`,
+      gc: "",
+      building: "",
+      floorSpec: "1:4,2-11:5",
+      memo: "",
+      rooms: [],
+      stages: [],
+      currentStageId: null,
+      stageData: {},
+      survey: defaultSurvey(),
+      createdAt: now(),
+      updatedAt: now(),
+    };
+    s.rooms = generateRoomsFromSpec(s.floorSpec);
+    s.stages = defaultStages();
+    s.currentStageId = s.stages[1]?.id || s.stages[0].id;
+    // init stageData
+    for(const st of s.stages){
+      s.stageData[st.id] = defaultStageData();
+      for(const r of s.rooms){
+        s.stageData[st.id].roomStates[r.id] = { status:"todo", damecho:false, assignee:"", workDate:"" };
+      }
+    }
+    return s;
   }
 
   let state = loadState();
@@ -763,1381 +692,1247 @@
     if(!state.currentSiteId) return null;
     return state.sites.find(s=>s.id===state.currentSiteId) || null;
   }
+  function getCurrentStage(site){
+    if(!site) return null;
+    return site.stages.find(s=>s.id===site.currentStageId) || null;
+  }
+  function getStageData(site, stageId){
+    return site.stageData[stageId];
+  }
 
-  function ensureInitialSite(){
+  function boot(){
     if(state.sites.length===0){
-      const s = {
-        id: uid(),
-        name:"サンプル現場",
-        gc:"",
-        building:"",
-        floorSpec:"1:4,2-11:5",
-        memo:"",
-        rooms:[],
-        stages: JSON.parse(JSON.stringify(DEFAULT_STAGES)),
-        schedules:{},
-        survey: defaultSurvey(),
-        createdAt: now(),
-        updatedAt: now(),
-      };
-      s.rooms = generateRoomsFromSpec(s.floorSpec, s.stages);
-      for(const stg of s.stages){ s.schedules[stg.key] = []; }
+      const s = createNewSite("サンプル現場");
       state.sites.push(s);
       state.currentSiteId = s.id;
-      state.ui.currentStageKey = "in";
-      state.ui.report = state.ui.report || defaultReport();
       saveState();
-    }else if(!state.currentSiteId || !getCurrentSite()){
+    }
+    // integrity
+    for(const s of state.sites) ensureSiteIntegrity(s);
+    if(!state.currentSiteId || !getCurrentSite()){
       state.currentSiteId = state.sites[0].id;
+    }
+    saveState();
+    wireUI();
+    renderAll();
+  }
+
+  // ------- UI wiring -------
+  let regenTimer = null;
+  let regenArmedUntil = 0;
+
+  const scopeModes = [
+    {key:"all", label:"全体"},
+    {key:"range", label:"階範囲"},
+    {key:"damecho_all", label:"ダメ帳あり（全体）"},
+    {key:"damecho_range", label:"ダメ帳あり（階範囲）"},
+  ];
+
+  function wireUI(){
+    els.newSiteBtn.addEventListener("click", ()=>{
+      const s = createNewSite();
+      state.sites.push(s);
+      state.currentSiteId = s.id;
+      saveState();
+      renderAll();
+    });
+
+    els.siteSelect.addEventListener("change", ()=>{
+      state.currentSiteId = els.siteSelect.value;
+      saveState();
+      renderAll();
+    });
+
+    els.stageSelect.addEventListener("change", ()=>{
+      const site = getCurrentSite(); if(!site) return;
+      site.currentStageId = els.stageSelect.value;
+      site.updatedAt = now();
+      saveState();
+      renderAll();
+    });
+
+    els.saveSiteBtn.addEventListener("click", ()=>{
+      const site = getCurrentSite(); if(!site) return;
+      const name = els.siteName.value.trim() || "無題の現場";
+      const gc = els.gcName.value.trim();
+      const bld = els.buildingName.value.trim();
+      const spec = els.floorSpec.value.trim();
+      try{ parseFloorSpec(spec); }catch(e){ alert(e.message || String(e)); return; }
+
+      site.name = name;
+      site.gc = gc;
+      site.building = bld;
+      site.floorSpec = spec;
+      site.memo = els.siteMemo.value || "";
+      site.updatedAt = now();
+      saveState();
+      renderAll();
+    });
+
+    els.deleteSiteBtn.addEventListener("click", ()=>{
+      const site = getCurrentSite(); if(!site) return;
+      const ok = confirm(`現場「${site.name}」を削除しますか？（元に戻せません）`);
+      if(!ok) return;
+      state.sites = state.sites.filter(s=>s.id!==site.id);
+      state.currentSiteId = state.sites[0]?.id || null;
+      saveState();
+      renderAll();
+    });
+
+    // schedule collapse
+    els.scheduleToggle.addEventListener("click", ()=>{
+      const open = els.scheduleBody.style.display !== "none";
+      els.scheduleBody.style.display = open ? "none" : "block";
+      els.scheduleChev.textContent = open ? "▼" : "▲";
+    });
+    // schedule tabs
+    els.schedTabInput.addEventListener("click", ()=>{
+      setTab("sched","input");
+      renderScheduleAreas();
+    });
+    els.schedTabList.addEventListener("click", ()=>{
+      setTab("sched","list");
+      renderScheduleAreas();
+    });
+
+    // survey collapse
+    els.surveyToggle.addEventListener("click", ()=>{
+      const open = els.surveyBody.style.display !== "none";
+      els.surveyBody.style.display = open ? "none" : "block";
+      els.surveyChev.textContent = open ? "▼" : "▲";
+    });
+    // survey tabs
+    els.surveyTabInput.addEventListener("click", ()=>{
+      setTab("survey","input");
+      renderSurveyAreas();
+    });
+    els.surveyTabList.addEventListener("click", ()=>{
+      setTab("survey","list");
+      renderSurveyAreas();
+    });
+
+    // regen safety
+    els.regenArmBtn.addEventListener("click", ()=>{
+      regenArmedUntil = Date.now() + 5000;
+      els.regenGoBtn.disabled = false;
+      els.regenArmBtn.textContent = "再生成を有効化済み（5秒以内に実行）";
+      if(regenTimer) clearInterval(regenTimer);
+      regenTimer = setInterval(()=>{
+        const left = regenArmedUntil - Date.now();
+        if(left <= 0){
+          clearInterval(regenTimer); regenTimer=null;
+          els.regenGoBtn.disabled = true;
+          els.regenArmBtn.textContent = "再生成を有効化（1回目）";
+        }else{
+          els.regenArmBtn.textContent = `再生成を有効化済み（あと${Math.ceil(left/1000)}秒）`;
+        }
+      }, 200);
+    });
+
+    els.regenGoBtn.addEventListener("click", ()=>{
+      if(Date.now() > regenArmedUntil) return;
+      const site = getCurrentSite(); if(!site) return;
+      const ok = confirm("本当に部屋を再生成しますか？（進捗・ダメ帳・作業日・担当者が初期化されます）");
+      if(!ok) return;
+
+      try{
+        const newRooms = generateRoomsFromSpec(site.floorSpec);
+        site.rooms = newRooms;
+
+        // reset per-stage roomStates
+        for(const st of site.stages){
+          site.stageData[st.id].roomStates = {};
+          for(const r of site.rooms){
+            site.stageData[st.id].roomStates[r.id] = { status:"todo", damecho:false, assignee:"", workDate:"" };
+          }
+        }
+        site.updatedAt = now();
+        saveState();
+        renderAll();
+
+        // disarm
+        regenArmedUntil = 0;
+        els.regenGoBtn.disabled = true;
+        els.regenArmBtn.textContent = "再生成を有効化（1回目）";
+      }catch(e){
+        alert(e.message || String(e));
+      }
+    });
+
+    // filter
+    document.querySelectorAll("[data-filter]").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        const f = btn.getAttribute("data-filter");
+        state.ui.filter = f;
+        saveState();
+        renderRooms();
+        renderStats();
+      });
+    });
+
+    // input mode
+    els.modeBtn.addEventListener("click", ()=>{
+      state.ui.inputMode = !state.ui.inputMode;
+      saveState();
+      renderAll();
+    });
+
+    // summary mode
+    els.toggleSummaryBtn.addEventListener("click", ()=>{
+      state.ui.summaryMode = !state.ui.summaryMode;
+      saveState();
+      renderAll();
+    });
+
+    // jump
+    els.jumpBtn.addEventListener("click", ()=> jumpToRoom());
+    els.jumpInput.addEventListener("keydown", (e)=>{ if(e.key==="Enter") jumpToRoom(); });
+    els.clearJumpBtn.addEventListener("click", ()=>{
+      state.ui.highlightRoomId = null;
+      els.jumpInput.value = "";
+      saveState();
+      renderRooms();
+    });
+
+    // reset buttons
+    els.resetStageBtn.addEventListener("click", ()=>{
+      const site = getCurrentSite(); if(!site) return;
+      const st = getCurrentStage(site); if(!st) return;
+      const ok = confirm(`「${st.name}」段階だけ、全て未着手に戻しますか？（他段階には影響しません）`);
+      if(!ok) return;
+      const rs = site.stageData[st.id].roomStates;
+      for(const k of Object.keys(rs)){
+        rs[k].status = "todo";
+      }
+      site.updatedAt = now();
+      saveState();
+      renderAll();
+    });
+
+    els.resetAllStagesBtn.addEventListener("click", ()=>{
+      const site = getCurrentSite(); if(!site) return;
+      const ok = confirm("全段階の進捗を未着手に戻しますか？（すべての段階に影響します）");
+      if(!ok) return;
+      for(const st of site.stages){
+        const rs = site.stageData[st.id].roomStates;
+        for(const k of Object.keys(rs)){
+          rs[k].status = "todo";
+        }
+      }
+      site.updatedAt = now();
+      saveState();
+      renderAll();
+    });
+
+    // scope chips
+    els.scopeChips.innerHTML = "";
+    for(const m of scopeModes){
+      const chip = document.createElement("div");
+      chip.className = "chip";
+      chip.textContent = m.label;
+      chip.dataset.scope = m.key;
+      chip.addEventListener("click", ()=>{
+        state.ui.scope.mode = m.key;
+        saveState();
+        renderScopeChips();
+        renderStats();
+      });
+      els.scopeChips.appendChild(chip);
+    }
+    els.applyScopeBtn.addEventListener("click", ()=>{
+      const from = parseInt((els.scopeFrom.value||"").trim(),10);
+      const to = parseInt((els.scopeTo.value||"").trim(),10);
+      if(!Number.isInteger(from) || !Number.isInteger(to) || from<=0 || to<=0 || from>to){
+        alert("階範囲は「開始階 <= 終了階」で入力してください");
+        return;
+      }
+      state.ui.scope.from = from;
+      state.ui.scope.to = to;
+      saveState();
+      renderStats();
+    });
+    els.clearScopeBtn.addEventListener("click", ()=>{
+      state.ui.scope.from = null;
+      state.ui.scope.to = null;
+      els.scopeFrom.value = "";
+      els.scopeTo.value = "";
+      saveState();
+      renderStats();
+    });
+
+    // stage editor (simple)
+    els.editStagesBtn.addEventListener("click", ()=>{
+      const site = getCurrentSite(); if(!site) return;
+      const text = site.stages.map(s=>s.name).join("\n");
+      const input = prompt(
+`段階を編集します（1行=1段階）
+・行を増やす=追加
+・行を消す=削除
+・順番を入れ替える=並び替え
+
+現在：`, text);
+      if(input === null) return;
+      const names = input.split("\n").map(x=>x.trim()).filter(Boolean);
+      if(names.length===0){ alert("段階は1つ以上必要です"); return; }
+
+      // build new stages preserving ids if same name exists (best effort)
+      const old = site.stages.slice();
+      const newStages = [];
+      for(const nm of names){
+        const hit = old.find(o=>o.name===nm);
+        if(hit) newStages.push(hit);
+        else newStages.push({id: uid(), name:nm});
+      }
+
+      // ensure stageData for new ones
+      for(const st of newStages){
+        if(!site.stageData[st.id]) site.stageData[st.id] = defaultStageData();
+        // init roomStates for all rooms (new stage starts all todo)
+        if(!site.stageData[st.id].roomStates) site.stageData[st.id].roomStates = {};
+        const rs = site.stageData[st.id].roomStates;
+        for(const r of site.rooms){
+          if(!rs[r.id]) rs[r.id] = { status:"todo", damecho:false, assignee:"", workDate:"" };
+        }
+      }
+
+      // remove stageData for deleted? keep to avoid accidental data loss; but not used.
+      site.stages = newStages;
+      if(!newStages.find(x=>x.id===site.currentStageId)){
+        site.currentStageId = newStages[0].id;
+      }
+      site.updatedAt = now();
+      saveState();
+      renderAll();
+    });
+
+    // modal
+    els.closeModalBtn.addEventListener("click", closeModal);
+    els.modalCancelBtn.addEventListener("click", closeModal);
+    els.overlay.addEventListener("click", (e)=>{ if(e.target===els.overlay) closeModal(); });
+
+    els.modalDamechoBtn.addEventListener("click", ()=>{
+      modalState.damecho = !modalState.damecho;
+      renderModal();
+    });
+    els.modalCycleBtn.addEventListener("click", ()=>{
+      modalState.status = nextStatus(modalState.status);
+      renderModal();
+    });
+    els.modalSaveBtn.addEventListener("click", saveModal);
+  }
+
+  function setTab(area, which){
+    if(area==="sched"){
+      state.ui.schedTab = which;
+      saveState();
+    }else{
+      state.ui.surveyTab = which;
       saveState();
     }
-
-    // migrate/normalize
-    for(const s of state.sites){
-      if(!s.stages || !Array.isArray(s.stages) || s.stages.length===0) s.stages = JSON.parse(JSON.stringify(DEFAULT_STAGES));
-
-      if(!s.schedules) s.schedules = {};
-      for(const stg of s.stages){
-        if(!Array.isArray(s.schedules[stg.key])) s.schedules[stg.key] = [];
-        s.schedules[stg.key] = s.schedules[stg.key].map(row => {
-          if(row && typeof row === "object" && ("inspectStart" in row || "fixStart" in row)) return row;
-
-          const fromFloor = Number(row?.fromFloor ?? 1) || 1;
-          const toFloor = Number(row?.toFloor ?? fromFloor) || fromFloor;
-          const start = String(row?.start ?? "").trim();
-          const end = String(row?.end ?? "").trim();
-          const note = String(row?.note ?? "").trim();
-
-          return {
-            id: row?.id || uid(),
-            fromFloor,
-            toFloor,
-            inspectStart: start,
-            inspectEnd: end,
-            fixStart: "",
-            fixEnd: "",
-            note,
-          };
-        });
-      }
-
-      if(!s.survey) s.survey = defaultSurvey();
-
-      if(Array.isArray(s.survey.repairSupervisors)){
-        const arr = s.survey.repairSupervisors;
-        if(arr.length && typeof arr[0] === "string"){
-          s.survey.repairSupervisors = arr.map(n => ({ name:String(n||""), phone:"" }));
-        }else if(arr.length && typeof arr[0] === "object"){
-          s.survey.repairSupervisors = arr.map(x => ({ name:String(x?.name||""), phone:String(x?.phone||"") }));
-        }else{
-          s.survey.repairSupervisors = [{ name:"", phone:"" }];
-        }
-      }else{
-        s.survey.repairSupervisors = [{ name:"", phone:"" }];
-      }
-
-      if(typeof s.memo !== "string") s.memo = "";
-      if(typeof s.gc !== "string") s.gc = "";
-      if(!Array.isArray(s.rooms)) s.rooms = [];
-
-      for(const r of s.rooms){
-        if(!r.meta) r.meta = { date:"", worker:"", note:"", damacho:{} };
-        if(!r.meta.damacho) r.meta.damacho = {};
-        if(!r.overallStatus) r.overallStatus = "todo";
-        if(!r.progressByStage) r.progressByStage = {};
-        for(const stg of s.stages){
-          if(!r.meta.damacho[stg.key]) r.meta.damacho[stg.key] = "none";
-          if(!r.progressByStage[stg.key]) r.progressByStage[stg.key] = "todo";
-        }
-      }
-    }
-
-    if(!state.ui.report) state.ui.report = defaultReport();
   }
 
-  function statusLabel(st){
-    if(st==="todo") return "未着手";
-    if(st==="doing") return "途中";
-    return "完了";
-  }
-  function nextStatus(st){
-    if(st==="todo") return "doing";
-    if(st==="doing") return "done";
-    return "todo";
-  }
-
-  function stageLabel(site, key){
-    const hit = site.stages.find(x=>x.key===key);
-    return hit ? hit.label : key;
+  // ------- Rendering -------
+  function renderAll(){
+    renderSiteSelect();
+    renderStageSelect();
+    renderSiteForm();
+    renderScopeChips();
+    renderStats();
+    renderControls();
+    renderRooms();
+    renderScheduleAreas();
+    renderSurveyAreas();
   }
 
-  function stageChipText(label){
-    const s = String(label||"");
-    if(s.includes("自主")) return "自";
-    if(s.includes("社内")) return "社";
-    if(s.includes("設計")) return "設";
-    if(s.includes("施主")) return "施";
-    if(s.includes("内覧") && s.includes("再")) return "再";
-    if(s.includes("再内覧")) return "再";
-    if(s.includes("内覧")) return "内";
-    return s.trim().slice(0,1) || "?";
+  function renderControls(){
+    els.modeBtn.classList.toggle("on", !!state.ui.inputMode);
+    els.modeBtn.textContent = `入力モード: ${state.ui.inputMode ? "ON" : "OFF"}`;
+
+    els.toggleSummaryBtn.classList.toggle("on", !!state.ui.summaryMode);
+    els.toggleSummaryBtn.textContent = `表示: ${state.ui.summaryMode ? "全段階サマリ" : "現在段階"}`;
   }
 
-  function computeStatsFromStatusList(statuses){
-    let todo=0, doing=0, done=0;
-    for(const st of statuses){
-      if(st==="todo") todo++;
-      else if(st==="doing") doing++;
-      else done++;
-    }
-    return { total: statuses.length, todo, doing, done };
-  }
-
-  function computeOverallStats(site){
-    return computeStatsFromStatusList(site.rooms.map(r => r.overallStatus || "todo"));
-  }
-
-  function computeStageStats(site, stageKey, roomsSubset=null){
-    const list = (roomsSubset || site.rooms).map(r => (r.progressByStage?.[stageKey] || "todo"));
-    return computeStatsFromStatusList(list);
-  }
-
-  function roomsInRange(site, scopeType, from, to){
-    const a = Number(from||0), b = Number(to||0);
-    const lo = Math.min(a,b), hi = Math.max(a,b);
-
-    if(scopeType==="all") return site.rooms;
-
-    if(scopeType==="floors"){
-      if(!Number.isInteger(lo) || !Number.isInteger(hi) || lo<=0 || hi<=0) return [];
-      return site.rooms.filter(r => r.floor>=lo && r.floor<=hi);
-    }
-
-    if(scopeType==="rooms"){
-      if(!Number.isFinite(lo) || !Number.isFinite(hi)) return [];
-      return site.rooms.filter(r => {
-        const n = Number(r.label);
-        return Number.isFinite(n) && n>=lo && n<=hi;
-      });
-    }
-
-    return site.rooms;
-  }
-
-  function damachoYes(room, stageKey){
-    const v = room.meta?.damacho?.[stageKey] || "none";
-    return v === "yes";
-  }
-
-  function mkPill(label, val){
-    const d = document.createElement("div");
-    d.className="pill";
-    d.textContent = `${label}: ${val}`;
-    return d;
-  }
-
-  function escapeHtml(str){
-    return String(str)
-      .replaceAll("&","&amp;")
-      .replaceAll("<","&lt;")
-      .replaceAll(">","&gt;")
-      .replaceAll('"',"&quot;")
-      .replaceAll("'","&#039;");
-  }
-
-  // ✅ 日付を「単日 or 期間」に整形
-  function formatOneOrRange(a, b){
-    const s = (a || "").trim();
-    const e = (b || "").trim();
-    if(!s && !e) return "";
-    if(s && (!e || s === e)) return s;   // 単日
-    if(!s && e) return e;
-    return `${s}〜${e}`;
-  }
-
-  // ✅ 是正期間を「段階内で1本」にまとめる（複数あれば複数表示）
-  function summarizeFixPeriods(list){
-    const ranges = list
-      .map(r => formatOneOrRange(r.fixStart, r.fixEnd))
-      .filter(Boolean);
-
-    if(ranges.length === 0) return [];
-    const count = new Map();
-    for(const x of ranges) count.set(x, (count.get(x) || 0) + 1);
-
-    // 頻度順に並べる（よく使われている期間を上）
-    const sorted = Array.from(count.entries()).sort((a,b)=>b[1]-a[1]);
-    return sorted.map(([range])=>range);
-  }
-
-  // --- UI rendering ---
   function renderSiteSelect(){
-    siteSelect.innerHTML = "";
+    els.siteSelect.innerHTML = "";
     for(const s of state.sites){
       const opt = document.createElement("option");
       opt.value = s.id;
       opt.textContent = s.building ? `${s.name}（${s.building}）` : s.name;
-      siteSelect.appendChild(opt);
+      els.siteSelect.appendChild(opt);
     }
-    if(state.currentSiteId) siteSelect.value = state.currentSiteId;
+    if(state.currentSiteId) els.siteSelect.value = state.currentSiteId;
   }
 
-  function renderStageSelects(){
+  function renderStageSelect(){
     const site = getCurrentSite(); if(!site) return;
-
-    stageSelect.innerHTML = "";
-    bulkStageSelect.innerHTML = "";
-    scheduleStageSelect.innerHTML = "";
-    reportStageSelect.innerHTML = "";
-
-    for(const stg of site.stages){
-      const opt1 = document.createElement("option"); opt1.value = stg.key; opt1.textContent = stg.label; stageSelect.appendChild(opt1);
-      const opt2 = document.createElement("option"); opt2.value = stg.key; opt2.textContent = stg.label; bulkStageSelect.appendChild(opt2);
-      const opt3 = document.createElement("option"); opt3.value = stg.key; opt3.textContent = stg.label; scheduleStageSelect.appendChild(opt3);
-      const opt4 = document.createElement("option"); opt4.value = stg.key; opt4.textContent = stg.label; reportStageSelect.appendChild(opt4);
+    els.stageSelect.innerHTML = "";
+    for(const st of site.stages){
+      const opt = document.createElement("option");
+      opt.value = st.id;
+      opt.textContent = st.name;
+      els.stageSelect.appendChild(opt);
     }
-
-    if(!site.stages.find(s=>s.key===state.ui.currentStageKey)){
-      state.ui.currentStageKey = site.stages[0]?.key || "in";
-    }
-    stageSelect.value = state.ui.currentStageKey;
-
-    if(!state.ui.report?.stageKey || !site.stages.find(s=>s.key===state.ui.report.stageKey)){
-      state.ui.report.stageKey = state.ui.currentStageKey;
-      saveState();
-    }
-    reportStageSelect.value = state.ui.report.stageKey;
-
-    bulkStageSelect.value = state.ui.currentStageKey;
-    scheduleStageSelect.value = state.ui.currentStageKey;
+    els.stageSelect.value = site.currentStageId;
   }
 
   function renderSiteForm(){
     const site = getCurrentSite(); if(!site) return;
-    siteName.value = site.name || "";
-    gcName.value = site.gc || "";
-    buildingName.value = site.building || "";
-    floorSpec.value = site.floorSpec || "";
-    siteMemo.value = site.memo || "";
+    els.siteName.value = site.name || "";
+    els.gcName.value = site.gc || "";
+    els.buildingName.value = site.building || "";
+    els.floorSpec.value = site.floorSpec || "";
+    els.siteMemo.value = site.memo || "";
 
+    const st = getCurrentStage(site);
     const updated = new Date(site.updatedAt).toLocaleString("ja-JP");
-    siteMeta.textContent = `部屋数: ${site.rooms.length} / 段階: ${stageLabel(site, state.ui.currentStageKey)} / 最終更新: ${updated}`;
+    els.siteMeta.textContent = `部屋数: ${site.rooms.length} / 段階: ${st?.name || "-"} / 最終更新: ${updated}`;
   }
 
-  function renderOverallStats(){
-    const site = getCurrentSite(); if(!site) return;
-    const st = computeOverallStats(site);
-    statsOverallEl.innerHTML = "";
-    statsOverallEl.appendChild(mkPill("合計", st.total));
-    statsOverallEl.appendChild(mkPill("未着手", st.todo));
-    statsOverallEl.appendChild(mkPill("途中", st.doing));
-    statsOverallEl.appendChild(mkPill("完了", st.done));
-  }
-
-  function renderStageStats(){
-    const site = getCurrentSite(); if(!site) return;
-    const stageKey = state.ui.currentStageKey;
-    const st = computeStageStats(site, stageKey);
-    statsStageEl.innerHTML = "";
-    statsStageEl.appendChild(mkPill("段階", stageLabel(site, stageKey)));
-    statsStageEl.appendChild(mkPill("合計", st.total));
-    statsStageEl.appendChild(mkPill("未着手", st.todo));
-    statsStageEl.appendChild(mkPill("途中", st.doing));
-    statsStageEl.appendChild(mkPill("完了", st.done));
-  }
-
-  function normalizeReportInputsUI(){
-    const t = reportScopeType.value;
-    const show = (t==="floors" || t==="rooms");
-    reportFrom.style.display = show ? "inline-block" : "none";
-    reportTo.style.display = show ? "inline-block" : "none";
-  }
-
-  function renderReportStats(){
-    const site = getCurrentSite(); if(!site) return;
-    const rep = state.ui.report || defaultReport();
-
-    const base = roomsInRange(site, rep.scopeType, rep.from, rep.to);
-
-    const stageKey = rep.stageKey || state.ui.currentStageKey;
-    const target = base.filter(r => damachoYes(r, stageKey));
-
-    const st = computeStageStats(site, stageKey, target);
-
-    let scopeLabel = "全部屋";
-    if(rep.scopeType==="floors") scopeLabel = `${Math.min(rep.from, rep.to)}〜${Math.max(rep.from, rep.to)}階`;
-    if(rep.scopeType==="rooms") scopeLabel = `${Math.min(rep.from, rep.to)}〜${Math.max(rep.from, rep.to)}号室`;
-
-    statsReportEl.innerHTML = "";
-    statsReportEl.appendChild(mkPill("範囲", scopeLabel));
-    statsReportEl.appendChild(mkPill("段階", stageLabel(site, stageKey)));
-    statsReportEl.appendChild(mkPill("ダメ帳あり（対象）", st.total));
-    statsReportEl.appendChild(mkPill("未着手", st.todo));
-    statsReportEl.appendChild(mkPill("途中", st.doing));
-    statsReportEl.appendChild(mkPill("完了", st.done));
-  }
-
-  function renderOverviewTable(){
-    const site = getCurrentSite(); if(!site) return;
-    const rep = state.ui.report || defaultReport();
-    const base = roomsInRange(site, rep.scopeType, rep.from, rep.to);
-
-    const rows = site.stages.map(stg => {
-      const target = base.filter(r => damachoYes(r, stg.key));
-      const st = computeStageStats(site, stg.key, target);
-      return { stageLabel: stg.label, total: st.total, todo: st.todo, doing: st.doing, done: st.done };
+  function renderScopeChips(){
+    const mode = state.ui.scope.mode || "all";
+    [...els.scopeChips.querySelectorAll(".chip")].forEach(ch=>{
+      ch.classList.toggle("on", ch.dataset.scope===mode);
     });
-
-    const html = `
-      <table>
-        <thead>
-          <tr>
-            <th style="width:34%;">段階</th>
-            <th>ダメ帳あり</th>
-            <th>未着手</th>
-            <th>途中</th>
-            <th>完了</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${rows.map(r => `
-            <tr>
-              <td><b>${escapeHtml(r.stageLabel)}</b></td>
-              <td>${r.total}</td>
-              <td>${r.todo}</td>
-              <td>${r.doing}</td>
-              <td>${r.done}</td>
-            </tr>
-          `).join("")}
-        </tbody>
-      </table>
-    `;
-    overviewTable.innerHTML = html;
+    // show/hide range inputs hint
   }
 
-  // --- Schedule (B案：フォーム＋一覧＋編集) ---
-  function getScheduleList(site, stageKey){
-    if(!site.schedules) site.schedules = {};
-    if(!Array.isArray(site.schedules[stageKey])) site.schedules[stageKey] = [];
-    return site.schedules[stageKey];
+  function statusLabel(status){
+    if(status==="todo") return "未着手";
+    if(status==="doing") return "途中";
+    return "完了";
+  }
+  function nextStatus(status){
+    if(status==="todo") return "doing";
+    if(status==="doing") return "done";
+    return "todo";
   }
 
-  function renderSchedule(){
-    const site = getCurrentSite(); if(!site) return;
-    const stageKey = scheduleStageSelect.value || state.ui.currentStageKey;
-    const list = getScheduleList(site, stageKey);
+  function inFloorRange(room, from, to){
+    if(from==null || to==null) return true;
+    return room.floor >= from && room.floor <= to;
+  }
 
-    scheduleList.innerHTML = "";
+  function computeStats(){
+    const site = getCurrentSite(); if(!site) return {total:0,todo:0,doing:0,done:0,damecho:0};
+    const st = getCurrentStage(site); if(!st) return {total:0,todo:0,doing:0,done:0,damecho:0};
+    const rs = site.stageData[st.id].roomStates;
 
-    if(list.length===0){
-      const empty = document.createElement("div");
-      empty.className="help";
-      empty.textContent = "まだ行がありません。［＋ 行を追加］から追加できます。";
-      scheduleList.appendChild(empty);
-      return;
+    const mode = state.ui.scope.mode || "all";
+    const from = state.ui.scope.from ?? null;
+    const to = state.ui.scope.to ?? null;
+
+    let todo=0, doing=0, done=0, total=0, damecho=0;
+
+    for(const room of site.rooms){
+      const rstate = rs[room.id];
+      if(!rstate) continue;
+
+      // scope filters
+      const inRange = (mode==="range" || mode==="damecho_range") ? inFloorRange(room, from, to) : true;
+      if(!inRange) continue;
+
+      const needDamecho = (mode==="damecho_all" || mode==="damecho_range");
+      if(needDamecho && !rstate.damecho) continue;
+
+      total++;
+      if(rstate.damecho) damecho++;
+      if(rstate.status==="todo") todo++;
+      else if(rstate.status==="doing") doing++;
+      else done++;
     }
-
-    list
-      .slice()
-      .sort((a,b) => (a.fromFloor-b.fromFloor) || (a.toFloor-b.toFloor))
-      .forEach((row) => {
-        const box = document.createElement("div");
-        box.className="schedRow";
-
-        const head = document.createElement("div");
-        head.className="schedRowHead";
-
-        const title = document.createElement("div");
-        title.className="schedTitle";
-        title.textContent = `${stageLabel(site, stageKey)}：${row.fromFloor}階〜${row.toFloor}階`;
-        head.appendChild(title);
-
-        const actions = document.createElement("div");
-        actions.className="schedActions";
-
-        const del = document.createElement("button");
-        del.className="small danger";
-        del.textContent="削除";
-        del.onclick = () => {
-          if(!confirm("この行を削除しますか？")) return;
-          site.schedules[stageKey] = getScheduleList(site, stageKey).filter(x => x.id !== row.id);
-          site.updatedAt = now();
-          saveState();
-          renderSchedule();
-          renderScheduleSummaryAll();
-          renderSiteForm();
-        };
-
-        actions.appendChild(del);
-        head.appendChild(actions);
-
-        box.appendChild(head);
-
-        const grid = document.createElement("div");
-        grid.className="schedGrid";
-
-        const rangeBox = document.createElement("div");
-        rangeBox.innerHTML = `
-          <label class="schedLbl">階範囲（開始 / 終了）</label>
-          <div class="row">
-            <input class="small" inputmode="numeric" placeholder="開始階" style="max-width:120px;" value="${row.fromFloor}">
-            <input class="small" inputmode="numeric" placeholder="終了階" style="max-width:120px;" value="${row.toFloor}">
-          </div>
-        `;
-        const [fromInp, toInp] = rangeBox.querySelectorAll("input");
-
-        const inspBox = document.createElement("div");
-        inspBox.innerHTML = `
-          <label class="schedLbl">検査日/検査期間（開始〜終了）</label>
-          <div class="row">
-            <input type="date" class="small" style="max-width:180px;" value="${row.inspectStart || ""}">
-            <input type="date" class="small" style="max-width:180px;" value="${row.inspectEnd || ""}">
-          </div>
-        `;
-        const [inspStart, inspEnd] = inspBox.querySelectorAll("input");
-
-        const fixBox = document.createElement("div");
-        fixBox.innerHTML = `
-          <label class="schedLbl">是正期間（開始〜終了）</label>
-          <div class="row">
-            <input type="date" class="small" style="max-width:180px;" value="${row.fixStart || ""}">
-            <input type="date" class="small" style="max-width:180px;" value="${row.fixEnd || ""}">
-          </div>
-        `;
-        const [fixStart, fixEnd] = fixBox.querySelectorAll("input");
-
-        const noteBox = document.createElement("div");
-        noteBox.innerHTML = `
-          <label class="schedLbl">メモ（任意）</label>
-          <input class="small" placeholder="例：2部制/3部制、注意事項など" value="${escapeHtml(row.note || "")}">
-        `;
-        const noteInp = noteBox.querySelector("input");
-
-        const saveInline = () => {
-          const a = Number(fromInp.value || row.fromFloor);
-          const b = Number(toInp.value || row.toFloor);
-          if(!Number.isInteger(a) || !Number.isInteger(b) || a<=0 || b<=0 || a>b){
-            return;
-          }
-
-          row.fromFloor = a;
-          row.toFloor = b;
-
-          row.inspectStart = (inspStart.value || "").trim();
-          row.inspectEnd = (inspEnd.value || "").trim();
-          row.fixStart = (fixStart.value || "").trim();
-          row.fixEnd = (fixEnd.value || "").trim();
-          row.note = (noteInp.value || "").trim();
-
-          site.updatedAt = now();
-          saveState();
-          renderSchedule();
-          renderScheduleSummaryAll();
-          renderSiteForm();
-        };
-
-        [fromInp,toInp,inspStart,inspEnd,fixStart,fixEnd,noteInp].forEach(el => {
-          el.addEventListener("change", saveInline);
-          el.addEventListener("blur", saveInline);
-        });
-
-        grid.appendChild(rangeBox);
-        grid.appendChild(inspBox);
-        grid.appendChild(fixBox);
-        grid.appendChild(noteBox);
-
-        box.appendChild(grid);
-
-        const hint = document.createElement("div");
-        hint.className="help";
-        hint.style.marginTop="6px";
-        hint.textContent = "※ 各項目は変更すると自動で保存されます。";
-        box.appendChild(hint);
-
-        scheduleList.appendChild(box);
-      });
+    return {total,todo,doing,done,damecho};
   }
 
-  function addScheduleRow(stageKey){
-    const site = getCurrentSite(); if(!site) return;
-    const list = getScheduleList(site, stageKey);
-    list.push({
-      id: uid(),
-      fromFloor: 1,
-      toFloor: 1,
-      inspectStart: "",
-      inspectEnd: "",
-      fixStart: "",
-      fixEnd: "",
-      note: "",
-    });
-    site.updatedAt = now();
-    saveState();
-    renderSchedule();
-    renderScheduleSummaryAll();
-    renderSiteForm();
-  }
+  function renderStats(){
+    const st = computeStats();
+    els.stats.innerHTML = "";
 
-  // ✅ あなたの希望形式：段階ごとに全部並べる一覧
-  function renderScheduleSummaryAll(){
-    const site = getCurrentSite(); if(!site) return;
-    scheduleSummaryAll.innerHTML = "";
-
-    const any = site.stages.some(stg => (site.schedules?.[stg.key] || []).length > 0);
-    if(!any){
-      const empty = document.createElement("div");
-      empty.className = "help";
-      empty.textContent = "まだスケジュール行がありません。［編集（段階別）］で追加してください。";
-      scheduleSummaryAll.appendChild(empty);
-      return;
-    }
-
-    for(const stg of site.stages){
-      const list = (site.schedules?.[stg.key] || []).slice()
-        .sort((a,b)=>(a.fromFloor-b.fromFloor)||(a.toFloor-b.toFloor));
-
-      if(list.length===0) continue;
-
-      const block = document.createElement("div");
-      block.className = "schedSummaryBlock";
-
-      const h = document.createElement("h3");
-      h.textContent = `● ${stg.label}`;
-      block.appendChild(h);
-
-      // 検査：階範囲ごとに「単日」表示を優先（開始=終了なら単日）
-      const inspectLines = [];
-      for(const row of list){
-        const when = formatOneOrRange(row.inspectStart, row.inspectEnd);
-        if(!when) continue;
-        inspectLines.push(`${row.fromFloor}階〜${row.toFloor}階　${when}`);
-      }
-
-      if(inspectLines.length){
-        for(const line of inspectLines){
-          const div = document.createElement("div");
-          div.className = "schedSummaryLine";
-          div.textContent = line;
-          block.appendChild(div);
-        }
-      }else{
-        const div = document.createElement("div");
-        div.className = "schedSummaryLine muted";
-        div.textContent = "（検査日/検査期間 未入力）";
-        block.appendChild(div);
-      }
-
-      const fixRanges = summarizeFixPeriods(list);
-      if(fixRanges.length){
-        // 1つならあなたの理想どおり1本
-        if(fixRanges.length === 1){
-          const div = document.createElement("div");
-          div.className = "schedSummaryLine";
-          div.textContent = `是正期間　${fixRanges[0]}`;
-          block.appendChild(div);
-        }else{
-          // 複数あった場合だけ複数表示（現場事情でズレる時用）
-          fixRanges.forEach((r,i) => {
-            const div = document.createElement("div");
-            div.className = "schedSummaryLine";
-            div.textContent = `是正期間${i+1}　${r}`;
-            block.appendChild(div);
-          });
-        }
-      }else{
-        const div = document.createElement("div");
-        div.className = "schedSummaryLine muted";
-        div.textContent = "（是正期間 未入力）";
-        block.appendChild(div);
-      }
-
-      scheduleSummaryAll.appendChild(block);
-    }
-  }
-
-  // --- Survey ---
-  function renderSurvey(){
-    const site = getCurrentSite(); if(!site) return;
-    if(!site.survey) site.survey = defaultSurvey();
-    const s = site.survey;
-
-    const joinClean = (arr) => (arr||[]).map(x=>String(x||"").trim()).filter(Boolean).join("、");
-
-    surveyTabEdit.onclick = () => {
-      surveyEdit.style.display="";
-      surveyView.style.display="none";
-      surveyTabEdit.classList.add("secondary");
-      surveyTabView.classList.remove("secondary");
+    const mk = (label, val) => {
+      const d = document.createElement("div");
+      d.className = "pillLabel";
+      d.textContent = `${label}: ${val}`;
+      return d;
     };
-    surveyTabView.onclick = () => {
-      surveyEdit.style.display="none";
-      surveyView.style.display="";
-      surveyTabView.classList.add("secondary");
-      surveyTabEdit.classList.remove("secondary");
-      renderSurveyView();
-    };
-
-    function mkText(label, key, placeholder=""){
-      const wrap = document.createElement("div");
-      wrap.className="cardMini";
-      const h = document.createElement("h3"); h.textContent = label;
-      const inp = document.createElement("input");
-      inp.placeholder = placeholder;
-      inp.value = s[key] || "";
-      inp.oninput = () => { s[key] = inp.value; site.updatedAt=now(); saveState(); };
-      wrap.appendChild(h); wrap.appendChild(inp);
-      return wrap;
-    }
-
-    function mkArea(label, key, placeholder=""){
-      const wrap = document.createElement("div");
-      wrap.className="cardMini";
-      const h = document.createElement("h3"); h.textContent = label;
-      const ta = document.createElement("textarea");
-      ta.placeholder = placeholder;
-      ta.value = s[key] || "";
-      ta.oninput = () => { s[key] = ta.value; site.updatedAt=now(); saveState(); };
-      wrap.appendChild(h); wrap.appendChild(ta);
-      return wrap;
-    }
-
-    function mkSelect(label, key, options){
-      const wrap = document.createElement("div");
-      wrap.className="cardMini";
-      const h = document.createElement("h3"); h.textContent = label;
-      const sel = document.createElement("select");
-      for(const o of options){ const op=document.createElement("option"); op.value=o; op.textContent=o; sel.appendChild(op); }
-      sel.value = s[key] || options[0];
-      sel.onchange = () => { s[key]=sel.value; site.updatedAt=now(); saveState(); };
-      wrap.appendChild(h); wrap.appendChild(sel);
-      return wrap;
-    }
-
-    function mkChecklist(label, arrKey){
-      const wrap = document.createElement("div");
-      wrap.className="cardMini";
-      const h = document.createElement("h3"); h.textContent = label;
-      wrap.appendChild(h);
-      const grid = document.createElement("div"); grid.className="checkgrid";
-      const set = new Set(s[arrKey] || []);
-      for(const opt of REPAIR_OPTIONS){
-        const lab = document.createElement("label");
-        lab.style.display="flex"; lab.style.alignItems="center"; lab.style.gap="8px"; lab.style.fontSize="13px"; lab.style.color="var(--text)";
-        const cb = document.createElement("input");
-        cb.type="checkbox";
-        cb.checked = set.has(opt);
-        cb.onchange = () => {
-          const arr = new Set(s[arrKey] || []);
-          if(cb.checked) arr.add(opt); else arr.delete(opt);
-          s[arrKey] = Array.from(arr);
-          site.updatedAt=now(); saveState();
-        };
-        const span = document.createElement("span"); span.textContent = opt;
-        lab.appendChild(cb); lab.appendChild(span);
-        grid.appendChild(lab);
-      }
-      wrap.appendChild(grid);
-      return wrap;
-    }
-
-    function mkSupervisors(){
-      const wrap = document.createElement("div");
-      wrap.className="cardMini";
-
-      const h = document.createElement("h3");
-      h.textContent = "補修の担当監督（複数追加OK・電話番号あり）";
-      wrap.appendChild(h);
-
-      const help = document.createElement("div");
-      help.className="help";
-      help.textContent = "名前と電話番号を入力してください。行は＋で追加できます。";
-      wrap.appendChild(help);
-
-      if(!Array.isArray(s.repairSupervisors) || s.repairSupervisors.length===0){
-        s.repairSupervisors = [{ name:"", phone:"" }];
-      }
-
-      const list = document.createElement("div");
-      list.style.marginTop="8px";
-
-      const renderRows = () => {
-        list.innerHTML = "";
-        s.repairSupervisors.forEach((sp, idx) => {
-          const row = document.createElement("div");
-          row.className="row";
-
-          const nameInp = document.createElement("input");
-          nameInp.placeholder = "例：田中監督";
-          nameInp.value = sp.name || "";
-          nameInp.oninput = () => { sp.name = nameInp.value; site.updatedAt=now(); saveState(); };
-
-          const phoneInp = document.createElement("input");
-          phoneInp.placeholder = "例：090-xxxx-xxxx";
-          phoneInp.value = sp.phone || "";
-          phoneInp.inputMode = "tel";
-          phoneInp.oninput = () => { sp.phone = phoneInp.value; site.updatedAt=now(); saveState(); };
-
-          const del = document.createElement("button");
-          del.className="small danger";
-          del.textContent = "削除";
-          del.onclick = () => {
-            if(s.repairSupervisors.length===1){
-              sp.name=""; sp.phone="";
-              site.updatedAt=now(); saveState();
-              renderRows();
-              return;
-            }
-            s.repairSupervisors.splice(idx,1);
-            site.updatedAt=now(); saveState();
-            renderRows();
-          };
-
-          row.appendChild(nameInp);
-          row.appendChild(phoneInp);
-          row.appendChild(del);
-          list.appendChild(row);
-        });
-      };
-
-      const addBtn = document.createElement("button");
-      addBtn.className="small primary";
-      addBtn.textContent="＋ 監督を追加";
-      addBtn.onclick = () => {
-        s.repairSupervisors.push({ name:"", phone:"" });
-        site.updatedAt=now(); saveState();
-        renderRows();
-      };
-
-      wrap.appendChild(addBtn);
-      wrap.appendChild(list);
-
-      renderRows();
-      return wrap;
-    }
-
-    surveyEdit.innerHTML = "";
-    surveyEdit.appendChild(mkSupervisors());
-    surveyEdit.appendChild(mkText("○○所長　名前（任意）", "genManagerName", "例：山本所長"));
-    surveyEdit.appendChild(mkText("○○所長　電話番号", "genManagerPhone", "例：090-xxxx-xxxx"));
-    surveyEdit.appendChild(mkText("○○監督　名前（任意）", "genSupervisorName", "例：佐々木監督"));
-    surveyEdit.appendChild(mkText("○○監督　電話番号", "genSupervisorPhone", "例：090-xxxx-xxxx"));
-    surveyEdit.appendChild(mkText("朝礼 時間（自由入力）", "morningTime", "例：8:15〜"));
-    surveyEdit.appendChild(mkArea("朝礼 場所/補足（自由入力）", "morningPlace", "例：建物外広場…／ラジオ体操あり"));
-    surveyEdit.appendChild(mkText("昼礼 時間（自由入力）", "lunchTime", "例：11:40〜"));
-    surveyEdit.appendChild(mkSelect("昼礼 あり/なし", "lunchHas", ["あり","なし"]));
-    surveyEdit.appendChild(mkArea("昼礼 場所（自由入力）", "lunchPlace", "例：建物内ホール…"));
-    surveyEdit.appendChild(mkChecklist("担当補修箇所（チェック）", "myRepairItems"));
-    surveyEdit.appendChild(mkChecklist("他業者に振り分ける箇所（チェック）", "otherVendorItems"));
-
-    function renderSurveyView(){
-      surveyView.innerHTML = "";
-
-      const mk = (title, htmlLines) => {
-        const box = document.createElement("div");
-        box.className="cardMini";
-        const h = document.createElement("h3"); h.textContent = title;
-        box.appendChild(h);
-        const p = document.createElement("p");
-        p.innerHTML = htmlLines.join("<br/>");
-        box.appendChild(p);
-        surveyView.appendChild(box);
-      };
-
-      const sp = (s.repairSupervisors || [])
-        .map(x => {
-          const name = (x?.name||"").trim();
-          const phone = (x?.phone||"").trim();
-          if(!name && !phone) return null;
-          if(name && phone) return `${escapeHtml(name)}（${escapeHtml(phone)}）`;
-          return escapeHtml(name || phone);
-        })
-        .filter(Boolean);
-
-      mk("補修の担当監督（一覧）", [ sp.length ? sp.map(x=>`・${x}`).join("<br/>") : "（未入力）" ]);
-      mk("担当補修箇所（チェック内容）", [ joinClean(s.myRepairItems) ? `・${escapeHtml(joinClean(s.myRepairItems))}` : "（チェックなし）" ]);
-      mk("他業者に振り分ける箇所（チェック内容）", [ joinClean(s.otherVendorItems) ? `・${escapeHtml(joinClean(s.otherVendorItems))}` : "（チェックなし）" ]);
-    }
-
-    surveyEdit.style.display = "";
-    surveyView.style.display = "none";
-    surveyTabEdit.classList.add("secondary");
-    surveyTabView.classList.remove("secondary");
-  }
-
-  // --- Rooms render ---
-  let highlightedRoomId = null;
-  let editingRoomId = null;
-
-  function getRoomStageStatus(room, stageKey){
-    return room.progressByStage?.[stageKey] || "todo";
-  }
-  function setRoomStageStatus(room, stageKey, st){
-    if(!room.progressByStage) room.progressByStage = {};
-    room.progressByStage[stageKey] = st;
+    els.stats.appendChild(mk("合計", st.total));
+    els.stats.appendChild(mk("未着手", st.todo));
+    els.stats.appendChild(mk("途中", st.doing));
+    els.stats.appendChild(mk("完了", st.done));
+    els.stats.appendChild(mk("ダメ帳あり", st.damecho));
   }
 
   function renderRooms(){
     const site = getCurrentSite(); if(!site) return;
-    const filter = state.ui.filter;
-    const curStage = state.ui.currentStageKey;
+    const st = getCurrentStage(site); if(!st) return;
+    const rs = site.stageData[st.id].roomStates;
 
-    const rooms = (filter==="all")
-      ? site.rooms
-      : site.rooms.filter(r => getRoomStageStatus(r, curStage) === filter);
+    const filter = state.ui.filter || "all";
 
-    roomGrid.innerHTML = "";
+    // build list for current view
+    let rooms = site.rooms.slice();
+
+    // filter by status (current stage only)
+    if(filter!=="all"){
+      rooms = rooms.filter(r => rs[r.id]?.status === filter);
+    }
+
+    els.roomGrid.innerHTML = "";
     let lastFloor = null;
 
-    for(const r of rooms){
-      if(lastFloor !== r.floor){
+    for(const room of rooms){
+      if(lastFloor !== room.floor){
         const header = document.createElement("div");
-        header.className="floorHeader";
-        header.textContent = `${r.floor}階`;
-        roomGrid.appendChild(header);
-        lastFloor = r.floor;
+        header.className = "floorHeader";
+        header.textContent = `${room.floor}階`;
+        els.roomGrid.appendChild(header);
+        lastFloor = room.floor;
       }
 
-      const prog = getRoomStageStatus(r, curStage);
-
+      const rstate = rs[room.id];
       const card = document.createElement("div");
-      card.className = `room ${prog}`;
-      card.dataset.roomId = r.id;
-      if(r.id===highlightedRoomId) card.classList.add("highlight");
+      card.className = `room ${rstate?.status || "todo"}`;
+      card.dataset.roomId = room.id;
 
-      const chips = document.createElement("div");
-      chips.className = "stageChips";
-      for(const stg of site.stages){
-        if(damachoYes(r, stg.key)){
-          const c = document.createElement("span");
-          c.className = "sChip";
-          c.textContent = stageChipText(stg.label);
-          chips.appendChild(c);
-        }
-      }
-      if(chips.childElementCount>0) card.appendChild(chips);
+      if(state.ui.highlightRoomId === room.id) card.classList.add("highlight");
 
       const num = document.createElement("div");
-      num.className="num";
-      num.textContent = r.label;
+      num.className = "num";
+      num.textContent = room.label;
 
-      const st = document.createElement("div");
-      st.className="st";
-      st.textContent = statusLabel(prog);
-
-      const sub = document.createElement("div");
-      sub.className="sub";
-      const d = (r.meta?.date||"");
-      const w = (r.meta?.worker||"");
-      const dam = (r.meta?.damacho?.[curStage] || "none");
-      const damLabel = dam==="yes" ? "ダメ帳:あり" : dam==="no" ? "ダメ帳:なし" : "";
-      sub.textContent = [d, w, damLabel].filter(Boolean).join(" / ");
+      const stEl = document.createElement("div");
+      stEl.className = "st";
+      stEl.textContent = statusLabel(rstate?.status || "todo");
 
       card.appendChild(num);
-      card.appendChild(st);
-      card.appendChild(sub);
+      card.appendChild(stEl);
 
-      card.addEventListener("click", () => {
+      // damecho badge
+      if(rstate?.damecho){
+        const b = document.createElement("div");
+        b.className = "badge";
+        b.textContent = "ダメ帳";
+        card.appendChild(b);
+      }
+
+      // summary mode indicator
+      if(state.ui.summaryMode){
+        const b2 = document.createElement("div");
+        b2.className = "badge2";
+        b2.textContent = "全段階";
+        card.appendChild(b2);
+
+        // show compact stage statuses
+        const sub = document.createElement("div");
+        sub.className = "sub";
+        sub.textContent = site.stages.map(s=>{
+          const srs = site.stageData[s.id].roomStates[room.id];
+          const c = srs?.status==="done" ? "完" : (srs?.status==="doing" ? "途" : "未");
+          return `${s.name}:${c}`;
+        }).join(" / ");
+        card.appendChild(sub);
+      }else{
+        // show assignee/date in current stage
+        const lines = [];
+        if(rstate?.assignee) lines.push(`担当:${rstate.assignee}`);
+        if(rstate?.workDate) lines.push(`日付:${rstate.workDate}`);
+        if(lines.length){
+          const sub = document.createElement("div");
+          sub.className = "sub";
+          sub.textContent = lines.join(" / ");
+          card.appendChild(sub);
+        }
+      }
+
+      card.addEventListener("click", ()=>{
         const site2 = getCurrentSite(); if(!site2) return;
-        const room = site2.rooms.find(x=>x.id===r.id); if(!room) return;
+        const st2 = getCurrentStage(site2); if(!st2) return;
 
         if(state.ui.inputMode){
-          openRoomModal(room);
+          openModal(site2, st2, room.id);
           return;
         }
 
-        const current = getRoomStageStatus(room, curStage);
-        setRoomStageStatus(room, curStage, nextStatus(current));
-
+        // normal: cycle status (current stage only)
+        const r2 = site2.stageData[st2.id].roomStates[room.id];
+        r2.status = nextStatus(r2.status);
         site2.updatedAt = now();
         saveState();
-        renderAllStatsAndOverview();
+        renderStats();
         renderRooms();
         renderSiteForm();
       });
 
-      roomGrid.appendChild(card);
+      els.roomGrid.appendChild(card);
     }
   }
 
-  function openRoomModal(room){
+  function jumpToRoom(){
     const site = getCurrentSite(); if(!site) return;
-    editingRoomId = room.id;
+    const v = (els.jumpInput.value||"").trim();
+    if(!v) return;
 
-    modalTitle.textContent = `部屋 ${room.label}（${stageLabel(site, state.ui.currentStageKey)}）`;
-    workDate.value = room.meta?.date || "";
-    workDateText.value = room.meta?.date || "";
-    workerName.value = room.meta?.worker || "山田";
-    roomNote.value = room.meta?.note || "";
-
-    const dam = room.meta?.damacho?.[state.ui.currentStageKey] || "none";
-    damachoSel.value = dam;
-
-    overlay.style.display = "flex";
-  }
-
-  function closeRoomModal(){
-    overlay.style.display = "none";
-    editingRoomId = null;
-  }
-
-  modalCancelBtn.addEventListener("click", () => closeRoomModal());
-
-  modalSaveBtn.addEventListener("click", () => {
-    const site = getCurrentSite(); if(!site) return;
-    const room = site.rooms.find(r=>r.id===editingRoomId);
-    if(!room) return;
-
-    const d = (workDate.value || workDateText.value || "").trim();
-    const w = (workerName.value || "").trim();
-    const n = (roomNote.value || "").trim();
-    const dam = damachoSel.value || "none";
-
-    room.meta.date = d;
-    room.meta.worker = w;
-    room.meta.note = n;
-    if(!room.meta.damacho) room.meta.damacho = {};
-    room.meta.damacho[state.ui.currentStageKey] = dam;
-
-    site.updatedAt = now();
-    saveState();
-    closeRoomModal();
-    renderAllStatsAndOverview();
-    renderRooms();
-    renderSiteForm();
-  });
-
-  workDate.addEventListener("change", () => { workDateText.value = workDate.value; });
-
-  // Jump
-  function jumpToRoom(label){
-    const site = getCurrentSite(); if(!site) return;
-    const target = site.rooms.find(r=>r.label===String(label));
-    if(!target){ alert(`部屋が見つかりません: ${label}`); return; }
+    const target = site.rooms.find(r => r.label === String(v));
+    if(!target){ alert(`部屋が見つかりません: ${v}`); return; }
 
     state.ui.filter = "all";
-    highlightedRoomId = target.id;
+    state.ui.highlightRoomId = target.id;
     saveState();
-
     renderRooms();
-    requestAnimationFrame(() => {
+    requestAnimationFrame(()=>{
       const el = document.querySelector(`[data-room-id="${target.id}"]`);
-      if(el) el.scrollIntoView({ behavior:"smooth", block:"center" });
+      if(el) el.scrollIntoView({behavior:"smooth", block:"center"});
     });
   }
 
-  jumpBtn.addEventListener("click", () => {
-    const v = (jumpInput.value||"").trim();
-    if(!v) return;
-    jumpToRoom(v);
-  });
-  jumpInput.addEventListener("keydown", (e) => {
-    if(e.key==="Enter"){
-      const v = (jumpInput.value||"").trim();
-      if(!v) return;
-      jumpToRoom(v);
-    }
-  });
-  clearJumpBtn.addEventListener("click", () => {
-    highlightedRoomId = null;
-    jumpInput.value = "";
-    renderRooms();
-  });
-
-  // Bulk damacho
-  function bulkPreviewText(){
-    const site = getCurrentSite(); if(!site) return "";
-    const stageKey = bulkStageSelect.value || state.ui.currentStageKey;
-    const type = bulkTargetType.value;
-    const from = Number(bulkFrom.value);
-    const to = Number(bulkTo.value);
-
-    if(!Number.isFinite(from) || !Number.isFinite(to)) return "開始/終了を入力してください。";
-
-    const base = roomsInRange(site, type==="floors" ? "floors" : "rooms", from, to);
-    const label = type==="floors"
-      ? `${Math.min(from,to)}〜${Math.max(from,to)}階`
-      : `${Math.min(from,to)}〜${Math.max(from,to)}号室`;
-
-    return `対象：${stageLabel(site, stageKey)} / ${label}（${base.length}室）`;
-  }
-
-  function applyBulkDamacho(valueYes){
+  // ------- Schedule -------
+  function renderScheduleAreas(){
     const site = getCurrentSite(); if(!site) return;
-    const stageKey = bulkStageSelect.value || state.ui.currentStageKey;
-    const type = bulkTargetType.value;
-    const from = Number(bulkFrom.value);
-    const to = Number(bulkTo.value);
+    const st = getCurrentStage(site); if(!st) return;
+    const sd = site.stageData[st.id].schedule;
 
-    if(!Number.isFinite(from) || !Number.isFinite(to)){
-      alert("開始/終了を数値で入力してください");
-      return;
-    }
+    const tab = state.ui.schedTab || "input";
+    els.schedTabInput.classList.toggle("active", tab==="input");
+    els.schedTabList.classList.toggle("active", tab==="list");
+    els.schedInputArea.style.display = tab==="input" ? "block" : "none";
+    els.schedListArea.style.display = tab==="list" ? "block" : "none";
 
-    const scopeType = type==="floors" ? "floors" : "rooms";
-    const base = roomsInRange(site, scopeType, from, to);
+    // input view
+    els.schedInputArea.innerHTML = "";
+    els.schedListArea.innerHTML = "";
 
-    const label = type==="floors"
-      ? `${Math.min(from,to)}〜${Math.max(from,to)}階`
-      : `${Math.min(from,to)}〜${Math.max(from,to)}号室`;
+    if(tab==="input"){
+      const wrap = document.createElement("div");
 
-    const nextVal = valueYes ? "yes" : "no";
-    const ok = confirm(`${stageLabel(site, stageKey)} / ${label} の ${base.length}室 を「${valueYes ? "ダメ帳あり" : "ダメ帳なし"}」にしますか？`);
-    if(!ok) return;
+      // segments list
+      const title = document.createElement("div");
+      title.className = "help";
+      title.style.fontWeight="800";
+      title.style.color="#374151";
+      title.textContent = `「${st.name}」の検査日（範囲別）`;
+      wrap.appendChild(title);
 
-    for(const r of base){
-      if(!r.meta) r.meta = { date:"", worker:"", note:"", damacho:{} };
-      if(!r.meta.damacho) r.meta.damacho = {};
-      r.meta.damacho[stageKey] = nextVal;
-    }
+      sd.segments.forEach((seg, idx)=>{
+        const row = document.createElement("div");
+        row.className = "schedRow";
 
-    site.updatedAt = now();
-    saveState();
-    renderAllStatsAndOverview();
-    renderRooms();
-    renderSiteForm();
-  }
+        const top = document.createElement("div");
+        top.className = "top";
+        top.textContent = `範囲 ${idx+1}`;
+        const del = document.createElement("button");
+        del.className = "small danger";
+        del.textContent = "削除";
+        del.addEventListener("click", ()=>{
+          if(!confirm("この行を削除しますか？")) return;
+          sd.segments = sd.segments.filter(x=>x.id!==seg.id);
+          site.updatedAt = now();
+          saveState();
+          renderScheduleAreas();
+        });
+        top.appendChild(del);
+        row.appendChild(top);
 
-  bulkFrom.addEventListener("input", () => bulkPreview.textContent = bulkPreviewText());
-  bulkTo.addEventListener("input", () => bulkPreview.textContent = bulkPreviewText());
-  bulkTargetType.addEventListener("change", () => bulkPreview.textContent = bulkPreviewText());
-  bulkStageSelect.addEventListener("change", () => bulkPreview.textContent = bulkPreviewText());
+        const g = document.createElement("div");
+        g.className = "grid3";
 
-  bulkYesBtn.addEventListener("click", () => applyBulkDamacho(true));
-  bulkNoBtn.addEventListener("click", () => applyBulkDamacho(false));
+        const from = document.createElement("input");
+        from.placeholder = "開始階";
+        from.inputMode = "numeric";
+        from.value = seg.from ?? "";
+        from.addEventListener("input", ()=>{ seg.from = parseInt(from.value||"",10)||""; site.updatedAt=now(); saveState(); });
 
-  // Report scope
-  function syncReportUi(){
-    const rep = state.ui.report || defaultReport();
-    reportScopeType.value = rep.scopeType || "all";
-    reportFrom.value = String(rep.from ?? "");
-    reportTo.value = String(rep.to ?? "");
-    reportStageSelect.value = rep.stageKey || state.ui.currentStageKey;
-    normalizeReportInputsUI();
-  }
+        const to = document.createElement("input");
+        to.placeholder = "終了階";
+        to.inputMode = "numeric";
+        to.value = seg.to ?? "";
+        to.addEventListener("input", ()=>{ seg.to = parseInt(to.value||"",10)||""; site.updatedAt=now(); saveState(); });
 
-  reportScopeType.addEventListener("change", () => {
-    state.ui.report.scopeType = reportScopeType.value;
-    saveState();
-    syncReportUi();
-  });
+        const start = document.createElement("input");
+        start.type = "date";
+        start.value = seg.start || "";
+        start.addEventListener("input", ()=>{ seg.start = start.value; site.updatedAt=now(); saveState(); });
 
-  reportApplyBtn.addEventListener("click", () => {
-    const rep = state.ui.report || defaultReport();
-    rep.scopeType = reportScopeType.value;
-    rep.stageKey = reportStageSelect.value;
+        const end = document.createElement("input");
+        end.type = "date";
+        end.value = seg.end || "";
+        end.addEventListener("input", ()=>{ seg.end = end.value; site.updatedAt=now(); saveState(); });
 
-    if(rep.scopeType==="floors" || rep.scopeType==="rooms"){
-      rep.from = Number(reportFrom.value || 1);
-      rep.to = Number(reportTo.value || rep.from || 1);
-    }else{
-      rep.from = 1; rep.to = 1;
-    }
+        const label1 = document.createElement("div");
+        label1.className = "help";
+        label1.textContent = "階範囲";
 
-    state.ui.report = rep;
-    saveState();
-    renderAllStatsAndOverview();
-  });
+        const box1 = document.createElement("div");
+        box1.appendChild(label1);
+        box1.appendChild(from);
+        box1.appendChild(document.createElement("div")).style.height="8px";
+        box1.appendChild(to);
 
-  reportStageSelect.addEventListener("change", () => {
-    state.ui.report.stageKey = reportStageSelect.value;
-    saveState();
-    renderAllStatsAndOverview();
-  });
+        const box2 = document.createElement("div");
+        const label2 = document.createElement("div");
+        label2.className="help"; label2.textContent="開始日";
+        box2.appendChild(label2); box2.appendChild(start);
 
-  // Mode btn
-  function renderModeBtn(){
-    if(state.ui.inputMode){
-      modeBtn.textContent = "入力モード: ON";
-      modeBtn.classList.add("primary");
-    }else{
-      modeBtn.textContent = "入力モード: OFF";
-      modeBtn.classList.remove("primary");
-    }
-  }
-  modeBtn.addEventListener("click", () => {
-    state.ui.inputMode = !state.ui.inputMode;
-    saveState();
-    renderModeBtn();
-  });
+        const box3 = document.createElement("div");
+        const label3 = document.createElement("div");
+        label3.className="help"; label3.textContent="終了日（同日なら空でもOK）";
+        box3.appendChild(label3); box3.appendChild(end);
 
-  // Filter buttons
-  document.querySelectorAll("[data-filter]").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const f = btn.getAttribute("data-filter");
-      if(f==="all"||f==="todo"||f==="doing"||f==="done"){
-        state.ui.filter = f;
+        g.appendChild(box1);
+        g.appendChild(box2);
+        g.appendChild(box3);
+
+        row.appendChild(g);
+        wrap.appendChild(row);
+      });
+
+      const add = document.createElement("button");
+      add.className = "soft addRowBtn";
+      add.textContent = "＋ 範囲（日付）を追加";
+      add.addEventListener("click", ()=>{
+        sd.segments.push({ id: uid(), from:"", to:"", start:"", end:"" });
+        site.updatedAt = now();
         saveState();
-        renderRooms();
-      }
-    });
-  });
+        renderScheduleAreas();
+      });
+      wrap.appendChild(add);
 
-  // Resets
-  resetStageBtn.addEventListener("click", () => {
-    const site = getCurrentSite(); if(!site) return;
-    const stageKey = state.ui.currentStageKey;
-    if(!confirm(`【${stageLabel(site, stageKey)}】の進捗を全て未着手に戻しますか？（他段階には影響しません）`)) return;
+      // correction period
+      const corr = document.createElement("div");
+      corr.className = "schedRow";
+      const top2 = document.createElement("div");
+      top2.className="top";
+      top2.textContent="是正期間（開始〜終了）";
+      corr.appendChild(top2);
 
-    for(const r of site.rooms){
-      if(!r.progressByStage) r.progressByStage = {};
-      r.progressByStage[stageKey] = "todo";
-    }
-    site.updatedAt = now();
-    saveState();
-    renderAllStatsAndOverview();
-    renderRooms();
-    renderSiteForm();
-  });
+      const grid2 = document.createElement("div");
+      grid2.className="grid2";
 
-  resetOverallBtn.addEventListener("click", () => {
-    const site = getCurrentSite(); if(!site) return;
-    if(!confirm("【総合】の進捗を全て未着手に戻しますか？（長期把握用。段階とは別）")) return;
+      const cStart = document.createElement("input");
+      cStart.type="date"; cStart.value = sd.correctionStart || "";
+      cStart.addEventListener("input", ()=>{ sd.correctionStart = cStart.value; site.updatedAt=now(); saveState(); });
 
-    for(const r of site.rooms) r.overallStatus = "todo";
-    site.updatedAt = now();
-    saveState();
-    renderAllStatsAndOverview();
-    renderRooms();
-    renderSiteForm();
-  });
+      const cEnd = document.createElement("input");
+      cEnd.type="date"; cEnd.value = sd.correctionEnd || "";
+      cEnd.addEventListener("input", ()=>{ sd.correctionEnd = cEnd.value; site.updatedAt=now(); saveState(); });
 
-  // Site switching
-  siteSelect.addEventListener("change", () => {
-    state.currentSiteId = siteSelect.value;
-    const site = getCurrentSite();
-    if(site && !site.stages.find(s=>s.key===state.ui.currentStageKey)){
-      state.ui.currentStageKey = site.stages[0]?.key || "in";
-    }
-    if(site && (!state.ui.report?.stageKey || !site.stages.find(s=>s.key===state.ui.report.stageKey))){
-      state.ui.report.stageKey = state.ui.currentStageKey;
-    }
-    saveState();
-    renderAll();
-  });
+      const b1 = document.createElement("div");
+      const l1 = document.createElement("div"); l1.className="help"; l1.textContent="開始";
+      b1.appendChild(l1); b1.appendChild(cStart);
 
-  stageSelect.addEventListener("change", () => {
-    state.ui.currentStageKey = stageSelect.value;
-    bulkStageSelect.value = state.ui.currentStageKey;
-    scheduleStageSelect.value = state.ui.currentStageKey;
+      const b2 = document.createElement("div");
+      const l2 = document.createElement("div"); l2.className="help"; l2.textContent="終了";
+      b2.appendChild(l2); b2.appendChild(cEnd);
 
-    saveState();
-    renderRooms();
-    renderAllStatsAndOverview();
-    renderSiteForm();
-    renderSchedule();
-    renderScheduleSummaryAll();
-  });
+      grid2.appendChild(b1); grid2.appendChild(b2);
+      corr.appendChild(grid2);
 
-  // Stage manage (simple slash edit)
-  stageManageBtn.addEventListener("click", () => {
-    const site = getCurrentSite(); if(!site) return;
-    const current = site.stages.map(s=>s.label).join(" / ");
-    const input = prompt(
-      "検査段階を編集（スラッシュ区切り）\n例：自主検査/社内検査/施主検査/内覧会\n\n現在：\n" + current,
-      current
-    );
-    if(input===null) return;
-    const labels = input.split("/").map(x=>x.trim()).filter(Boolean);
-    if(labels.length===0){ alert("1つ以上必要です"); return; }
+      wrap.appendChild(corr);
 
-    const newStages = labels.map((lb,i)=>({ key: "st"+(i+1), label: lb }));
-    site.stages = newStages;
+      const note = document.createElement("div");
+      note.className="help";
+      note.style.marginTop="10px";
+      note.innerHTML = "日付入力は <b>カレンダー</b>から選べます。直接入力もOKです。";
+      wrap.appendChild(note);
 
-    const newSchedules = {};
-    for(const stg of newStages){ newSchedules[stg.key] = []; }
-    site.schedules = newSchedules;
-
-    for(const r of site.rooms){
-      if(!r.meta) r.meta = { date:"", worker:"", note:"", damacho:{} };
-      r.meta.damacho = {};
-      r.progressByStage = {};
-      for(const stg of newStages){
-        r.meta.damacho[stg.key] = "none";
-        r.progressByStage[stg.key] = "todo";
-      }
-    }
-
-    state.ui.currentStageKey = newStages[0].key;
-    state.ui.report.stageKey = newStages[0].key;
-
-    site.updatedAt = now();
-    saveState();
-    renderAll();
-  });
-
-  // Schedule controls
-  scheduleStageSelect.addEventListener("change", () => renderSchedule());
-  addScheduleBtn.addEventListener("click", () => addScheduleRow(scheduleStageSelect.value));
-
-  // ✅ Schedule tab switching
-  function setScheduleTab(which){
-    if(which === "edit"){
-      scheduleEditWrap.style.display = "";
-      scheduleAllWrap.style.display = "none";
-      scheduleTabEdit.classList.add("secondary");
-      scheduleTabAll.classList.remove("secondary");
-    }else{
-      scheduleEditWrap.style.display = "none";
-      scheduleAllWrap.style.display = "";
-      scheduleTabAll.classList.add("secondary");
-      scheduleTabEdit.classList.remove("secondary");
-      renderScheduleSummaryAll();
-    }
-  }
-  scheduleTabEdit.addEventListener("click", () => setScheduleTab("edit"));
-  scheduleTabAll.addEventListener("click", () => setScheduleTab("all"));
-
-  // Site create / delete / save
-  newSiteBtn.addEventListener("click", () => {
-    const s = {
-      id: uid(),
-      name: `新規現場 ${state.sites.length + 1}`,
-      gc:"",
-      building:"",
-      floorSpec:"1:4,2-11:5",
-      memo:"",
-      rooms:[],
-      stages: JSON.parse(JSON.stringify(DEFAULT_STAGES)),
-      schedules:{},
-      survey: defaultSurvey(),
-      createdAt: now(),
-      updatedAt: now(),
-    };
-    s.rooms = generateRoomsFromSpec(s.floorSpec, s.stages);
-    for(const stg of s.stages){ s.schedules[stg.key] = []; }
-
-    state.sites.push(s);
-    state.currentSiteId = s.id;
-    state.ui.currentStageKey = "in";
-    state.ui.report.stageKey = "in";
-    state.ui.report.scopeType = "all";
-    saveState();
-    renderAll();
-  });
-
-  saveSiteBtn.addEventListener("click", () => {
-    const site = getCurrentSite(); if(!site) return;
-
-    const name = siteName.value.trim() || "無題の現場";
-    const gc = gcName.value.trim();
-    const bld = buildingName.value.trim();
-    const spec = floorSpec.value.trim();
-    const memo = siteMemo.value || "";
-
-    try{ parseFloorSpec(spec); }catch(e){ alert(e.message || String(e)); return; }
-
-    site.name = name;
-    site.gc = gc;
-    site.building = bld;
-    site.floorSpec = spec;
-    site.memo = memo;
-    site.updatedAt = now();
-    saveState();
-    renderSiteForm();
-  });
-
-  deleteSiteBtn.addEventListener("click", () => {
-    const site = getCurrentSite(); if(!site) return;
-    if(!confirm(`現場「${site.name}」を削除しますか？（元に戻せません）`)) return;
-    state.sites = state.sites.filter(s=>s.id!==site.id);
-    state.currentSiteId = state.sites.length ? state.sites[0].id : null;
-    saveState();
-    ensureInitialSite();
-    renderAll();
-  });
-
-  manageBtn.addEventListener("click", () => {
-    alert(
-`【使い方メモ】
-・部屋タップ：未着手→途中→完了→未着手（選択中段階に対して）
-・入力モードON：部屋タップで作業日/担当者/ダメ帳（この段階）を入力
-・段階の進捗：社内/設計/施主…は別々に管理
-・総合の進捗：長期把握用（段階とは別）
-・報告用：ダメ帳あり範囲の未/途/完（段階ごと）
-・スケジュール一覧（全段階）：あなたの希望形式で並べて表示
-・危険：部屋を再生成は最下部・二段階`
-    );
-  });
-
-  // Regen safety
-  let regenArmed = false;
-  let regenTimer = null;
-
-  function disarmRegen(){
-    regenArmed = false;
-    regenRoomsBtn.classList.remove("armed");
-    regenRoomsBtn.textContent = "二段階：タップして準備";
-    if(regenTimer) clearTimeout(regenTimer);
-    regenTimer = null;
-  }
-
-  regenRoomsBtn.addEventListener("click", () => {
-    const site = getCurrentSite(); if(!site) return;
-
-    if(!regenArmed){
-      regenArmed = true;
-      regenRoomsBtn.classList.add("armed");
-      regenRoomsBtn.textContent = "二段階：もう一度タップで再生成";
-      regenTimer = setTimeout(() => disarmRegen(), 5000);
+      els.schedInputArea.appendChild(wrap);
       return;
     }
 
-    disarmRegen();
-    if(!confirm("本当に部屋を再生成しますか？（段階/総合の進捗・作業日・担当者・ダメ帳が初期化されます）")) return;
+    // list view
+    const list = document.createElement("div");
+    list.className = "listCard";
+    const h = document.createElement("h3");
+    h.textContent = `● ${st.name}`;
+    list.appendChild(h);
 
-    try{
-      site.rooms = generateRoomsFromSpec(site.floorSpec, site.stages);
+    if(sd.segments.length===0 && !sd.correctionStart && !sd.correctionEnd){
+      const p = document.createElement("div");
+      p.className="help";
+      p.textContent="未入力です（入力タブで追加できます）";
+      list.appendChild(p);
+    }else{
+      // segments lines
+      sd.segments.forEach(seg=>{
+        if(!seg.from || !seg.to || !seg.start) return;
+        const end = seg.end || seg.start;
+        const line = document.createElement("div");
+        line.className="kv";
+        const k = document.createElement("div"); k.className="k"; k.textContent = `${seg.from}階〜${seg.to}階`;
+        const v = document.createElement("div"); v.className="v"; v.textContent = `${seg.start} 〜 ${end}`;
+        line.appendChild(k); line.appendChild(v);
+        list.appendChild(line);
+      });
+
+      const hr = document.createElement("div"); hr.className="hr"; list.appendChild(hr);
+
+      const corrLine = document.createElement("div");
+      corrLine.className="kv";
+      const k2 = document.createElement("div"); k2.className="k"; k2.textContent="是正期間";
+      const v2 = document.createElement("div"); v2.className="v";
+      if(sd.correctionStart || sd.correctionEnd){
+        v2.textContent = `${sd.correctionStart || "?"} 〜 ${sd.correctionEnd || "?"}`;
+      }else{
+        v2.textContent = "未入力";
+      }
+      corrLine.appendChild(k2); corrLine.appendChild(v2);
+      list.appendChild(corrLine);
+    }
+
+    els.schedListArea.appendChild(list);
+  }
+
+  // ------- Survey (アンケート) -------
+  const REPAIR_ITEMS = ["木枠","建具","額縁","枕棚","家具","床","サッシ","キッチン家具","洗面家具","見切り"];
+
+  function renderSurveyAreas(){
+    const site = getCurrentSite(); if(!site) return;
+    const sv = site.survey || defaultSurvey();
+
+    const tab = state.ui.surveyTab || "input";
+    els.surveyTabInput.classList.toggle("active", tab==="input");
+    els.surveyTabList.classList.toggle("active", tab==="list");
+    els.surveyInputArea.style.display = tab==="input" ? "block" : "none";
+    els.surveyListArea.style.display = tab==="list" ? "block" : "none";
+
+    els.surveyInputArea.innerHTML = "";
+    els.surveyListArea.innerHTML = "";
+
+    if(tab==="input"){
+      const wrap = document.createElement("div");
+
+      // 補修担当監督（複数・名前＋電話セット）
+      wrap.appendChild(blockTitle("補修の担当監督（複数追加OK・電話番号あり）", "名前と電話番号を入力。行は「＋」で追加できます。"));
+      wrap.appendChild(pairListEditor(site, sv.repairSupervisors, "例：田中監督", "例：090-xxxx-xxxx", () => { site.updatedAt=now(); saveState(); }));
+
+      // 所長（1人）
+      wrap.appendChild(blockTitle("所長", "基本1人想定。"));
+      wrap.appendChild(pairSingleEditor(site, sv.manager, "例：山本所長", "例：090-xxxx-xxxx", ()=>{ site.updatedAt=now(); saveState(); }));
+
+      // 監督（追加できる・名前＋電話セット）
+      wrap.appendChild(blockTitle("監督（追加OK）", "必要なら複数追加できます（名前＋電話番号セット）。"));
+      wrap.appendChild(pairListEditor(site, sv.supervisors, "例：佐々木監督", "例：090-xxxx-xxxx", () => { site.updatedAt=now(); saveState(); }));
+
+      wrap.appendChild(divider());
+
+      // 朝礼
+      wrap.appendChild(blockTitle("朝礼", "時間・場所は自由入力です。"));
+      wrap.appendChild(textRow("時間", sv, "morningTime", "例：8:15〜", site));
+      wrap.appendChild(textRow("場所", sv, "morningPlace", "例：建物外広場（仮設トイレがある道路側）", site));
+      wrap.appendChild(textRow("補足", sv, "morningNote", "例：8時ちょっと過ぎからラジオ体操あり", site));
+
+      wrap.appendChild(divider());
+
+      // 昼礼
+      wrap.appendChild(blockTitle("昼礼", "時間は自由入力。参加は「あり/なし」選択。"));
+      wrap.appendChild(textRow("時間", sv, "lunchTime", "例：11:40〜", site));
+      wrap.appendChild(selectRow("あり/なし", sv, "lunchHas", ["あり","なし"], site));
+      wrap.appendChild(textRow("場所", sv, "lunchPlace", "例：建物内ホール（エレベーター左側奥…）", site));
+
+      wrap.appendChild(divider());
+
+      // KY
+      wrap.appendChild(blockTitle("新規用紙・KY用紙", ""));
+      wrap.appendChild(selectRow("あり/なし", sv, "kyHas", ["あり","なし"], site));
+      wrap.appendChild(textRow("場所", sv, "kyPlace", "例：建物内ホール（ホワイトボード右の茶色の長机上の引き出し）", site));
+
+      wrap.appendChild(divider());
+
+      // 新規入場説明
+      wrap.appendChild(blockTitle("新規入場説明", ""));
+      wrap.appendChild(selectRow("あり/なし", sv, "newEntryHas", ["あり","なし"], site));
+
+      wrap.appendChild(divider());
+
+      // 担当補修箇所
+      wrap.appendChild(blockTitle("担当補修箇所", "チェックした項目が一覧に表示されます。"));
+      wrap.appendChild(checkListEditor(site, sv, "myRepairItems"));
+
+      // 他業者
+      wrap.appendChild(blockTitle("他業者に振り分ける箇所（業者違い）", "チェックした項目が一覧に表示されます。"));
+      wrap.appendChild(checkListEditor(site, sv, "otherVendorItems"));
+
+      wrap.appendChild(divider());
+
+      // ダメ帳（現場としての有無）
+      wrap.appendChild(blockTitle("ダメ帳（現場として）", ""));
+      wrap.appendChild(selectRow("あり/なし", sv, "damechoHas", ["あり","なし"], site));
+
+      wrap.appendChild(divider());
+
+      // 進行
+      wrap.appendChild(blockTitle("進行（方向）", "必要なら補足も入れられます。"));
+      wrap.appendChild(selectRow("方向", sv, "progressDir", ["下階より上へ","上階より下へ"], site));
+      wrap.appendChild(textRow("補足", sv, "progressNote", "例：12/15は1階101から、12/16は2階から…", site));
+
+      wrap.appendChild(divider());
+
+      // 指摘テープ
+      wrap.appendChild(blockTitle("指摘テープ", ""));
+      wrap.appendChild(selectRow("状態", sv, "tapeState", ["なし","あり（剥がす）","あり（レチェック残し）","たまに薄紫テープ"], site));
+      wrap.appendChild(textRow("補足", sv, "tapeNote", "例：薄紫テープが混ざることあり", site));
+
+      wrap.appendChild(divider());
+
+      // トイレ
+      wrap.appendChild(blockTitle("トイレ", ""));
+      wrap.appendChild(textRow("現場トイレ", sv, "toiletSite", "例：仮設トイレ、管理人室", site));
+      wrap.appendChild(textRow("近隣トイレ", sv, "toiletNearby", "例：コンビニ、公園", site));
+
+      wrap.appendChild(divider());
+
+      // 残業
+      wrap.appendChild(blockTitle("残業", ""));
+      wrap.appendChild(selectRow("可否", sv, "overtime", ["可（昼礼にて要申請）","不可","可"], site));
+
+      wrap.appendChild(divider());
+
+      // 休業日
+      wrap.appendChild(blockTitle("現場の休業日", "基本（固定）＋追記（自由）"));
+      wrap.appendChild(textRow("基本", sv, "holidaysFixed", "例：日曜、祝日", site));
+      wrap.appendChild(extraLinesEditor(site, sv, "holidaysExtra", "例：1/15は入れない（現場都合）"));
+
+      els.surveyInputArea.appendChild(wrap);
+      return;
+    }
+
+    // list view
+    const list = document.createElement("div");
+    list.className = "listCard";
+    const h = document.createElement("h3");
+    h.textContent = "現場基本情報（一覧）";
+    list.appendChild(h);
+
+    list.appendChild(kvLine("補修担当監督", sv.repairSupervisors.filter(x=>x.name||x.phone).map(x=>`${x.name||"（無名）"} / ${x.phone||"電話なし"}`).join("、") || "未入力"));
+    list.appendChild(kvLine("所長", `${sv.manager?.name||"未入力"} / ${sv.manager?.phone||"未入力"}`));
+    list.appendChild(kvLine("監督", sv.supervisors.filter(x=>x.name||x.phone).map(x=>`${x.name||"（無名）"} / ${x.phone||"電話なし"}`).join("、") || "未入力"));
+
+    list.appendChild(divider());
+
+    list.appendChild(kvLine("朝礼", `${sv.morningTime||""} / ${sv.morningPlace||""}`.trim() || "未入力"));
+    if(sv.morningNote) list.appendChild(kvLine("朝礼補足", sv.morningNote));
+
+    list.appendChild(kvLine("昼礼", `${sv.lunchTime||""} / ${sv.lunchHas||""} / ${sv.lunchPlace||""}`.trim() || "未入力"));
+    list.appendChild(kvLine("新規用紙・KY用紙", `${sv.kyHas||""} / ${sv.kyPlace||""}`.trim() || "未入力"));
+    list.appendChild(kvLine("新規入場説明", sv.newEntryHas || "未入力"));
+
+    list.appendChild(divider());
+
+    list.appendChild(kvLine("担当補修箇所", sv.myRepairItems?.length ? sv.myRepairItems.join("、") : "なし"));
+    list.appendChild(kvLine("他業者に振り分ける箇所", sv.otherVendorItems?.length ? sv.otherVendorItems.join("、") : "なし"));
+    list.appendChild(kvLine("ダメ帳（現場として）", sv.damechoHas || "未入力"));
+
+    list.appendChild(divider());
+
+    list.appendChild(kvLine("進行（方向）", sv.progressDir || "未入力"));
+    if(sv.progressNote) list.appendChild(kvLine("進行補足", sv.progressNote));
+
+    list.appendChild(kvLine("指摘テープ", sv.tapeState || "未入力"));
+    if(sv.tapeNote) list.appendChild(kvLine("テープ補足", sv.tapeNote));
+
+    list.appendChild(divider());
+
+    list.appendChild(kvLine("トイレ（現場）", sv.toiletSite || "未入力"));
+    list.appendChild(kvLine("トイレ（近隣）", sv.toiletNearby || "未入力"));
+
+    list.appendChild(divider());
+
+    list.appendChild(kvLine("残業", sv.overtime || "未入力"));
+    list.appendChild(kvLine("休業日（基本）", sv.holidaysFixed || "未入力"));
+    const extras = (sv.holidaysExtra||[]).map(x=>x.trim()).filter(Boolean);
+    list.appendChild(kvLine("休業日（追記）", extras.length ? extras.join("、") : "なし"));
+
+    els.surveyListArea.appendChild(list);
+  }
+
+  function blockTitle(title, desc){
+    const w = document.createElement("div");
+    w.style.marginTop = "10px";
+    const t = document.createElement("div");
+    t.className = "help";
+    t.style.fontWeight="900";
+    t.style.color="#374151";
+    t.textContent = title;
+    w.appendChild(t);
+    if(desc){
+      const d = document.createElement("div");
+      d.className = "help";
+      d.textContent = desc;
+      w.appendChild(d);
+    }
+    return w;
+  }
+  function divider(){
+    const d = document.createElement("div");
+    d.className = "hr";
+    return d;
+  }
+  function kvLine(k, v){
+    const line = document.createElement("div");
+    line.className = "kv";
+    const kk = document.createElement("div"); kk.className="k"; kk.textContent = k;
+    const vv = document.createElement("div"); vv.className="v"; vv.textContent = v;
+    line.appendChild(kk); line.appendChild(vv);
+    return line;
+  }
+
+  function textRow(siteLabel, obj, key, placeholder, site){
+    const row = document.createElement("div");
+    row.className="row";
+    const l = document.createElement("div");
+    l.className="help";
+    l.style.minWidth="120px";
+    l.style.fontWeight="800";
+    l.style.color="#374151";
+    l.textContent = siteLabel;
+
+    const input = document.createElement("input");
+    input.placeholder = placeholder;
+    input.value = obj[key] || "";
+    input.addEventListener("input", ()=>{
+      obj[key] = input.value;
       site.updatedAt = now();
       saveState();
-      highlightedRoomId = null;
-      renderAll();
-    }catch(e){
-      alert(e.message || String(e));
+    });
+
+    row.appendChild(l);
+    row.appendChild(input);
+    return row;
+  }
+
+  function selectRow(label, obj, key, options, site){
+    const row = document.createElement("div");
+    row.className="row";
+    const l = document.createElement("div");
+    l.className="help";
+    l.style.minWidth="120px";
+    l.style.fontWeight="800";
+    l.style.color="#374151";
+    l.textContent = label;
+
+    const sel = document.createElement("select");
+    for(const op of options){
+      const o = document.createElement("option");
+      o.value = op; o.textContent = op;
+      sel.appendChild(o);
     }
-  });
+    sel.value = obj[key] || options[0];
+    sel.addEventListener("change", ()=>{
+      obj[key] = sel.value;
+      site.updatedAt = now();
+      saveState();
+    });
 
-  // Overview render
-  function renderAllStatsAndOverview(){
-    renderOverallStats();
-    renderStageStats();
-    renderReportStats();
-    if(overviewAcc.open) renderOverviewTable();
+    row.appendChild(l);
+    row.appendChild(sel);
+    return row;
   }
 
-  overviewAcc.addEventListener("toggle", () => {
-    if(overviewAcc.open) renderOverviewTable();
-  });
+  function pairListEditor(site, arr, namePh, phonePh, onChange){
+    const wrap = document.createElement("div");
+    arr.forEach((rowObj, idx)=>{
+      const card = document.createElement("div");
+      card.className="schedRow";
 
-  // Report init
-  function initReport(){
-    normalizeReportInputsUI();
+      const top = document.createElement("div");
+      top.className="top";
+      top.textContent = `行 ${idx+1}`;
+
+      const del = document.createElement("button");
+      del.className="small danger";
+      del.textContent="削除";
+      del.addEventListener("click", ()=>{
+        if(arr.length===1){ alert("最低1行は残します"); return; }
+        if(!confirm("この行を削除しますか？")) return;
+        arr.splice(idx,1);
+        site.updatedAt = now(); saveState();
+        onChange();
+        renderSurveyAreas();
+      });
+      top.appendChild(del);
+      card.appendChild(top);
+
+      const r = document.createElement("div");
+      r.className="grid2";
+
+      const name = document.createElement("input");
+      name.placeholder = namePh;
+      name.value = rowObj.name || "";
+      name.addEventListener("input", ()=>{
+        rowObj.name = name.value;
+        site.updatedAt=now(); saveState(); onChange();
+      });
+
+      const phone = document.createElement("input");
+      phone.placeholder = phonePh;
+      phone.inputMode="tel";
+      phone.value = rowObj.phone || "";
+      phone.addEventListener("input", ()=>{
+        rowObj.phone = phone.value;
+        site.updatedAt=now(); saveState(); onChange();
+      });
+
+      r.appendChild(name);
+      r.appendChild(phone);
+      card.appendChild(r);
+      wrap.appendChild(card);
+    });
+
+    const add = document.createElement("button");
+    add.className="soft addRowBtn";
+    add.textContent="＋ 追加";
+    add.addEventListener("click", ()=>{
+      arr.push({name:"",phone:""});
+      site.updatedAt=now(); saveState(); onChange();
+      renderSurveyAreas();
+    });
+    wrap.appendChild(add);
+    return wrap;
   }
 
-  // Boot
-  function renderAll(){
-    renderSiteSelect();
-    renderStageSelects();
-    renderSiteForm();
+  function pairSingleEditor(site, obj, namePh, phonePh, onChange){
+    const card = document.createElement("div");
+    card.className="schedRow";
+    const r = document.createElement("div");
+    r.className="grid2";
 
-    bulkPreview.textContent = bulkPreviewText();
-    syncReportUi();
+    const name = document.createElement("input");
+    name.placeholder = namePh;
+    name.value = obj.name || "";
+    name.addEventListener("input", ()=>{ obj.name=name.value; site.updatedAt=now(); saveState(); onChange(); });
 
-    renderSchedule();
-    renderScheduleSummaryAll();
-    renderSurvey();
+    const phone = document.createElement("input");
+    phone.placeholder = phonePh;
+    phone.inputMode="tel";
+    phone.value = obj.phone || "";
+    phone.addEventListener("input", ()=>{ obj.phone=phone.value; site.updatedAt=now(); saveState(); onChange(); });
 
-    renderModeBtn();
-    renderRooms();
-    renderAllStatsAndOverview();
-
-    // スケジュールは初期は「編集（段階別）」にしておく
-    setScheduleTab("edit");
+    r.appendChild(name);
+    r.appendChild(phone);
+    card.appendChild(r);
+    return card;
   }
 
-  ensureInitialSite();
-  initReport();
-  renderAll();
+  function checkListEditor(site, sv, key){
+    const wrap = document.createElement("div");
+    const grid = document.createElement("div");
+    grid.className="checkGrid";
+    const set = new Set(sv[key] || []);
+    for(const item of REPAIR_ITEMS){
+      const label = document.createElement("label");
+      const cb = document.createElement("input");
+      cb.type="checkbox";
+      cb.checked = set.has(item);
+      cb.addEventListener("change", ()=>{
+        if(cb.checked) set.add(item);
+        else set.delete(item);
+        sv[key] = [...set];
+        site.updatedAt=now(); saveState();
+      });
+      const txt = document.createElement("span");
+      txt.textContent = item;
+      label.appendChild(cb);
+      label.appendChild(txt);
+      grid.appendChild(label);
+    }
+    wrap.appendChild(grid);
+    return wrap;
+  }
 
+  function extraLinesEditor(site, sv, key, ph){
+    const wrap = document.createElement("div");
+    const arr = sv[key] || (sv[key]=[""]);
+    arr.forEach((val, idx)=>{
+      const row = document.createElement("div");
+      row.className="row";
+
+      const input = document.createElement("input");
+      input.placeholder = ph;
+      input.value = val || "";
+      input.addEventListener("input", ()=>{
+        arr[idx] = input.value;
+        site.updatedAt=now(); saveState();
+      });
+
+      const del = document.createElement("button");
+      del.className="small danger";
+      del.textContent="削除";
+      del.addEventListener("click", ()=>{
+        if(arr.length===1){ arr[0]=""; site.updatedAt=now(); saveState(); renderSurveyAreas(); return; }
+        arr.splice(idx,1);
+        site.updatedAt=now(); saveState();
+        renderSurveyAreas();
+      });
+
+      row.appendChild(input);
+      row.appendChild(del);
+      wrap.appendChild(row);
+    });
+
+    const add = document.createElement("button");
+    add.className="soft addRowBtn";
+    add.textContent="＋ 追記を追加";
+    add.addEventListener("click", ()=>{
+      arr.push("");
+      site.updatedAt=now(); saveState();
+      renderSurveyAreas();
+    });
+    wrap.appendChild(add);
+    return wrap;
+  }
+
+  // ------- Modal for room input -------
+  let modalState = { open:false, siteId:null, stageId:null, roomId:null, status:"todo", damecho:false };
+
+  function openModal(site, stage, roomId){
+    const r = site.rooms.find(x=>x.id===roomId);
+    const rs = site.stageData[stage.id].roomStates[roomId];
+
+    modalState.open = true;
+    modalState.siteId = site.id;
+    modalState.stageId = stage.id;
+    modalState.roomId = roomId;
+    modalState.status = rs.status;
+    modalState.damecho = !!rs.damecho;
+
+    els.roomModalTitle.textContent = `${r.label}（${stage.name}）`;
+    els.modalAssignee.value = rs.assignee || "";
+    els.modalWorkDate.value = rs.workDate || "";
+
+    renderModal();
+    els.overlay.style.display = "flex";
+  }
+
+  function renderModal(){
+    els.modalDamechoBtn.classList.toggle("on", modalState.damecho);
+    els.modalDamechoBtn.textContent = `ダメ帳: ${modalState.damecho ? "あり" : "なし"}`;
+    els.modalCycleBtn.textContent = `進捗を1つ進める（今：${statusLabel(modalState.status)}）`;
+  }
+
+  function closeModal(){
+    modalState.open = false;
+    els.overlay.style.display = "none";
+  }
+
+  function saveModal(){
+    const site = getCurrentSite();
+    if(!site || site.id !== modalState.siteId) { closeModal(); return; }
+    const stage = site.stages.find(s=>s.id===modalState.stageId);
+    if(!stage) { closeModal(); return; }
+
+    const rs = site.stageData[stage.id].roomStates[modalState.roomId];
+    rs.assignee = (els.modalAssignee.value||"").trim();
+    rs.workDate = els.modalWorkDate.value || "";
+    rs.damecho = !!modalState.damecho;
+
+    // status doesn't auto change here unless user pressed cycle
+    rs.status = modalState.status;
+
+    site.updatedAt = now();
+    saveState();
+    closeModal();
+    renderAll();
+  }
+
+  // ------- Boot -------
+  boot();
 })();
 </script>
 </body>
