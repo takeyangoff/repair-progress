@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>リペア進捗管理 v1（段階別・ダメ帳・集計）</title>
+  <title>リペア進捗管理 v1.1（段階ヘッダー＋色分け）</title>
   <style>
     :root{
       --blue:#2563eb;
@@ -24,6 +24,11 @@
       --doneTx:#065f46;
 
       --shadow:0 1px 0 rgba(0,0,0,.03);
+
+      /* phase banner defaults (will be overridden in JS) */
+      --phaseBg:#eaf1ff;
+      --phaseBd:#cfe0ff;
+      --phaseTx:#1d4ed8;
     }
     *{ box-sizing:border-box; }
     body{
@@ -53,7 +58,7 @@
     }
     button.primary{ background:var(--blue); color:#fff; border-color:var(--blue); }
     button.primary:active{ background:var(--blue2); border-color:var(--blue2); }
-    button.soft{ background:#eaf1ff; border-color:#cfe0ff; color:var(--blue2); font-weight:700; }
+    button.soft{ background:#eaf1ff; border-color:#cfe0ff; color:#1d4ed8; font-weight:800; }
     button.danger{ border-color:var(--danger); color:var(--danger); background:#fff; }
     button.pill{ border-radius:999px; padding:8px 12px; }
     button.on{ background:var(--blue); border-color:var(--blue); color:#fff; }
@@ -84,6 +89,41 @@
       box-shadow: var(--shadow);
     }
 
+    /* Phase banner (A案) */
+    .phaseBanner{
+      margin-top:10px;
+      border-radius:16px;
+      border:1px solid var(--phaseBd);
+      background:var(--phaseBg);
+      color:var(--phaseTx);
+      padding:12px 12px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      cursor:pointer;
+      user-select:none;
+      box-shadow: var(--shadow);
+    }
+    .phaseBanner .left{
+      display:flex; flex-direction:column; gap:2px;
+    }
+    .phaseBanner .label{
+      font-weight:1000;
+      font-size:20px;
+      letter-spacing:.02em;
+      line-height:1.1;
+    }
+    .phaseBanner .sub{
+      font-size:12px;
+      opacity:.85;
+    }
+    .phaseBanner .right{
+      font-size:18px;
+      font-weight:900;
+      opacity:.85;
+    }
+
     .grid{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
     @media(min-width:560px){ .grid{ grid-template-columns:repeat(6,minmax(0,1fr)); } }
     .floorHeader{
@@ -92,7 +132,7 @@
       border:1px solid var(--bd);
       border-radius:12px;
       padding:8px 10px;
-      font-weight:800;
+      font-weight:900;
     }
 
     .room{
@@ -112,7 +152,7 @@
     .room.doing{ background:var(--doingBg); }
     .room.done{ background:var(--doneBg); }
 
-    .room .num{ font-weight:900; font-size:14px; }
+    .room .num{ font-weight:1000; font-size:14px; }
     .room .st{
       font-size:12px;
       padding:2px 8px;
@@ -133,7 +173,7 @@
       font-size:10px; padding:2px 6px; border-radius:999px;
       border:1px solid rgba(239,68,68,.35);
       background:#fff5f5; color:#b91c1c;
-      font-weight:800;
+      font-weight:900;
     }
 
     /* bottom danger */
@@ -144,11 +184,11 @@
       padding:12px;
       margin:16px 0;
     }
-    .dangerBox .title{ font-weight:900; color:#b91c1c; }
+    .dangerBox .title{ font-weight:1000; color:#b91c1c; }
     .dangerBox .desc{ color:#b91c1c; font-size:12px; margin-top:6px; line-height:1.45; }
     .primaryDanger{ background:#ef4444; border-color:#ef4444; color:#fff; }
 
-    /* modal */
+    /* overlays */
     .overlay{
       position:fixed; inset:0;
       background:rgba(0,0,0,.35);
@@ -172,12 +212,34 @@
     .miniNote{ font-size:12px; color:var(--muted); margin-top:8px; }
     .actions{ display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
     .actions button{ flex:1; min-width:120px; }
+
+    /* phase picker list */
+    .phaseList{ display:flex; flex-direction:column; gap:8px; margin-top:10px; }
+    .phaseItem{
+      border-radius:14px;
+      border:1px solid var(--bd);
+      background:#fff;
+      padding:12px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      cursor:pointer;
+      box-shadow: var(--shadow);
+    }
+    .phaseItem .name{ font-weight:900; }
+    .phaseItem.active{ outline:3px solid var(--blue); outline-offset:2px; }
+    .phaseSwatch{
+      width:18px; height:18px; border-radius:6px;
+      border:1px solid rgba(0,0,0,.08);
+      flex:none;
+    }
   </style>
 </head>
 
 <body>
 <header>
-  <h1>リペア進捗管理 v1（段階別・ダメ帳・集計）</h1>
+  <h1>リペア進捗管理 v1.1（段階ヘッダー＋色分け）</h1>
 
   <div class="row">
     <select id="siteSelect"></select>
@@ -185,10 +247,13 @@
     <button id="deleteSiteBtn" class="danger">現場削除</button>
   </div>
 
-  <div class="row" style="margin-top:8px;">
-    <span class="pillLabel" style="background:#eaf1ff;border-color:#cfe0ff;color:#1d4ed8;font-weight:900;">検査段階</span>
-    <select id="phaseSelect"></select>
-    <button id="editPhasesBtn" class="soft">段階を編集</button>
+  <!-- A案：大きい段階ヘッダー -->
+  <div id="phaseBanner" class="phaseBanner" role="button" aria-label="検査段階を切り替える">
+    <div class="left">
+      <div class="label" id="phaseBannerLabel">社内検査</div>
+      <div class="sub" id="phaseBannerSub">タップして段階を切り替え</div>
+    </div>
+    <div class="right">›</div>
   </div>
 
   <div class="meta" id="siteMeta"></div>
@@ -283,7 +348,7 @@
 </main>
 
 <!-- 入力モード用モーダル -->
-<div class="overlay" id="overlay">
+<div class="overlay" id="overlayRoom">
   <div class="sheet">
     <div class="head">
       <h3 id="modalTitle">部屋</h3>
@@ -311,11 +376,22 @@
   </div>
 </div>
 
+<!-- 段階切替用モーダル（A案ヘッダーのタップで開く） -->
+<div class="overlay" id="overlayPhase">
+  <div class="sheet">
+    <div class="head">
+      <h3>検査段階を選択</h3>
+      <button class="ghost" id="closePhaseBtn">✕</button>
+    </div>
+    <div class="miniNote">ここで切り替えるのは「表示する段階」だけです（編集/追加はv2以降で管理画面へ）。</div>
+    <div id="phaseList" class="phaseList"></div>
+  </div>
+</div>
+
 <script>
 (() => {
-  const STORAGE_KEY = "repair_v1_state";
+  const STORAGE_KEY = "repair_v1_state"; // v1と同じキーで引き継ぐ
 
-  /** ---------- Utils ---------- */
   const uid = () => Math.random().toString(36).slice(2,10) + "-" + Date.now().toString(36);
   const now = () => Date.now();
   const $ = (id) => document.getElementById(id);
@@ -323,11 +399,15 @@
   const statusLabel = (s) => s==="todo" ? "未着手" : (s==="doing" ? "途中" : "完了");
   const nextStatus = (s) => s==="todo" ? "doing" : (s==="doing" ? "done" : "todo");
 
-  /** ---------- Data model ---------- */
-  // Room = {id,label,floor,idx, progressByPhase:{[key]:status}, damachoByPhase:{[key]:bool}, assigneeByPhase:{}, workDateByPhase:{}}
-  // Phase = {key,label,order}
-  // Site = {id,name,gcName,buildingName,floorSpec, phases:Phase[], rooms:Room[], createdAt, updatedAt}
-  // State = {sites:Site[], currentSiteId, ui:{phaseKey, filterStatus, range:{from,to}, onlyDamacho, inputMode, highlightRoomId}}
+  // 段階色パレット（order順に割り当て）
+  const PHASE_PALETTE = [
+    { bg:"#eaf1ff", bd:"#cfe0ff", tx:"#1d4ed8" }, // blue
+    { bg:"#ecfdf5", bd:"#bbf7d0", tx:"#065f46" }, // green
+    { bg:"#fff7ed", bd:"#fed7aa", tx:"#9a3412" }, // orange
+    { bg:"#fdf4ff", bd:"#f5d0fe", tx:"#86198f" }, // purple
+    { bg:"#fef2f2", bd:"#fecaca", tx:"#991b1b" }, // red
+    { bg:"#f3f4f6", bd:"#e5e7eb", tx:"#111827" }, // gray
+  ];
 
   function defaultPhases() {
     const labels = ["自主検査","社内検査","設計検査","施主検査","内覧","再内覧"];
@@ -357,7 +437,6 @@
         out.push({ from: f, to: f, roomsPerFloor });
       }
     }
-    // overlap check
     const used = new Set();
     for (const r of out) {
       for (let f = r.from; f <= r.to; f++) {
@@ -435,7 +514,7 @@
           sites: [s],
           currentSiteId: s.id,
           ui: {
-            phaseKey: s.phases[1]?.key || s.phases[0].key, // 社内検査寄りでスタート
+            phaseKey: s.phases[1]?.key || s.phases[0].key,
             filterStatus: "all",
             range: { from: null, to: null },
             onlyDamacho: false,
@@ -453,7 +532,6 @@
       if (typeof st.ui.inputMode !== "boolean") st.ui.inputMode = false;
       if (!("highlightRoomId" in st.ui)) st.ui.highlightRoomId = null;
 
-      // migrate/ensure
       for (const site of st.sites) {
         if (!Array.isArray(site.phases) || site.phases.length===0) site.phases = defaultPhases();
         if (!Array.isArray(site.rooms)) site.rooms = [];
@@ -493,18 +571,20 @@
   function getCurrentSite() {
     return state.sites.find(s=>s.id===state.currentSiteId) || null;
   }
-
   function getCurrentPhase(site) {
     return site.phases.find(p=>p.key===state.ui.phaseKey) || null;
   }
 
-  /** ---------- DOM ---------- */
+  // DOM
   const els = {
     siteSelect: $("siteSelect"),
     newSiteBtn: $("newSiteBtn"),
     deleteSiteBtn: $("deleteSiteBtn"),
-    phaseSelect: $("phaseSelect"),
-    editPhasesBtn: $("editPhasesBtn"),
+
+    phaseBanner: $("phaseBanner"),
+    phaseBannerLabel: $("phaseBannerLabel"),
+    phaseBannerSub: $("phaseBannerSub"),
+
     siteMeta: $("siteMeta"),
 
     siteName: $("siteName"),
@@ -532,7 +612,7 @@
     regenArmBtn: $("regenArmBtn"),
     regenGoBtn: $("regenGoBtn"),
 
-    overlay: $("overlay"),
+    overlayRoom: $("overlayRoom"),
     modalTitle: $("modalTitle"),
     closeModalBtn: $("closeModalBtn"),
     modalAssignee: $("modalAssignee"),
@@ -541,43 +621,11 @@
     modalCycleBtn: $("modalCycleBtn"),
     modalSaveBtn: $("modalSaveBtn"),
     modalCancelBtn: $("modalCancelBtn"),
+
+    overlayPhase: $("overlayPhase"),
+    closePhaseBtn: $("closePhaseBtn"),
+    phaseList: $("phaseList"),
   };
-
-  /** ---------- Rendering ---------- */
-  function renderSiteSelect() {
-    els.siteSelect.innerHTML = "";
-    for (const s of state.sites) {
-      const opt = document.createElement("option");
-      opt.value = s.id;
-      opt.textContent = s.buildingName ? `${s.name}（${s.buildingName}）` : s.name;
-      els.siteSelect.appendChild(opt);
-    }
-    if (state.currentSiteId) els.siteSelect.value = state.currentSiteId;
-  }
-
-  function renderPhaseSelect() {
-    const site = getCurrentSite(); if (!site) return;
-    els.phaseSelect.innerHTML = "";
-    for (const p of site.phases.slice().sort((a,b)=>a.order-b.order)) {
-      const opt = document.createElement("option");
-      opt.value = p.key;
-      opt.textContent = p.label;
-      els.phaseSelect.appendChild(opt);
-    }
-    els.phaseSelect.value = state.ui.phaseKey;
-  }
-
-  function renderSiteForm() {
-    const site = getCurrentSite(); if (!site) return;
-    els.siteName.value = site.name || "";
-    els.gcName.value = site.gcName || "";
-    els.buildingName.value = site.buildingName || "";
-    els.floorSpec.value = site.floorSpec || "";
-
-    const ph = getCurrentPhase(site);
-    const updated = new Date(site.updatedAt).toLocaleString("ja-JP");
-    els.siteMeta.textContent = `部屋数: ${site.rooms.length} / 段階: ${ph?.label || "-"} / 最終更新: ${updated}`;
-  }
 
   function roomInRange(room, from, to) {
     if (from==null || to==null) return true;
@@ -610,6 +658,47 @@
     return { total, todo, doing, done, damacho };
   }
 
+  function applyPhaseTheme(phase) {
+    const idx = (typeof phase?.order === "number") ? phase.order : 0;
+    const c = PHASE_PALETTE[idx % PHASE_PALETTE.length];
+    document.documentElement.style.setProperty("--phaseBg", c.bg);
+    document.documentElement.style.setProperty("--phaseBd", c.bd);
+    document.documentElement.style.setProperty("--phaseTx", c.tx);
+  }
+
+  function renderSiteSelect() {
+    els.siteSelect.innerHTML = "";
+    for (const s of state.sites) {
+      const opt = document.createElement("option");
+      opt.value = s.id;
+      opt.textContent = s.buildingName ? `${s.name}（${s.buildingName}）` : s.name;
+      els.siteSelect.appendChild(opt);
+    }
+    if (state.currentSiteId) els.siteSelect.value = state.currentSiteId;
+  }
+
+  function renderSiteForm() {
+    const site = getCurrentSite(); if (!site) return;
+    els.siteName.value = site.name || "";
+    els.gcName.value = site.gcName || "";
+    els.buildingName.value = site.buildingName || "";
+    els.floorSpec.value = site.floorSpec || "";
+
+    const ph = getCurrentPhase(site);
+    const updated = new Date(site.updatedAt).toLocaleString("ja-JP");
+    els.siteMeta.textContent = `部屋数: ${site.rooms.length} / 最終更新: ${updated}`;
+    els.phaseBannerLabel.textContent = ph?.label || "-";
+    applyPhaseTheme(ph);
+  }
+
+  function renderModeButtons() {
+    els.modeBtn.classList.toggle("on", state.ui.inputMode);
+    els.modeBtn.textContent = `入力モード: ${state.ui.inputMode ? "ON" : "OFF"}`;
+
+    els.onlyDamachoBtn.classList.toggle("on", state.ui.onlyDamacho);
+    els.onlyDamachoBtn.textContent = `ダメ帳ありのみ: ${state.ui.onlyDamacho ? "ON" : "OFF"}`;
+  }
+
   function renderStats() {
     const st = computeStats();
     els.stats.innerHTML = "";
@@ -626,23 +715,12 @@
     els.stats.appendChild(mk("ダメ帳あり", st.damacho));
   }
 
-  function renderModeButtons() {
-    els.modeBtn.classList.toggle("on", state.ui.inputMode);
-    els.modeBtn.textContent = `入力モード: ${state.ui.inputMode ? "ON" : "OFF"}`;
-
-    els.onlyDamachoBtn.classList.toggle("on", state.ui.onlyDamacho);
-    els.onlyDamachoBtn.textContent = `ダメ帳ありのみ: ${state.ui.onlyDamacho ? "ON" : "OFF"}`;
-  }
-
   function renderRooms() {
     const site = getCurrentSite(); if (!site) return;
     const ph = getCurrentPhase(site); if (!ph) return;
 
     const filter = state.ui.filterStatus || "all";
-
     let rooms = site.rooms.slice();
-
-    // status filter (current phase)
     if (filter !== "all") {
       rooms = rooms.filter(r => (r.progressByPhase[ph.key] || "todo") === filter);
     }
@@ -684,7 +762,6 @@
         card.appendChild(b);
       }
 
-      // show assignee/date in current phase (compact)
       const lines = [];
       const a = (r.assigneeByPhase[ph.key] || "").trim();
       const d = (r.workDateByPhase[ph.key] || "").trim();
@@ -703,11 +780,10 @@
         const room = site2.rooms.find(x=>x.id===r.id); if (!room) return;
 
         if (state.ui.inputMode) {
-          openModal(site2, ph2, room);
+          openRoomModal(site2, ph2, room);
           return;
         }
 
-        // normal mode: cycle progress (current phase only)
         room.progressByPhase[ph2.key] = nextStatus(room.progressByPhase[ph2.key] || "todo");
         site2.updatedAt = now();
         saveState();
@@ -720,19 +796,68 @@
     }
   }
 
+  function renderPhasePicker() {
+    const site = getCurrentSite(); if (!site) return;
+    const phases = site.phases.slice().sort((a,b)=>a.order-b.order);
+    els.phaseList.innerHTML = "";
+
+    for (const ph of phases) {
+      const idx = (typeof ph.order === "number") ? ph.order : 0;
+      const c = PHASE_PALETTE[idx % PHASE_PALETTE.length];
+
+      const item = document.createElement("div");
+      item.className = "phaseItem";
+      if (ph.key === state.ui.phaseKey) item.classList.add("active");
+
+      const left = document.createElement("div");
+      left.style.display = "flex";
+      left.style.alignItems = "center";
+      left.style.gap = "10px";
+
+      const sw = document.createElement("div");
+      sw.className = "phaseSwatch";
+      sw.style.background = c.bg;
+      sw.style.borderColor = c.bd;
+
+      const name = document.createElement("div");
+      name.className = "name";
+      name.textContent = ph.label;
+
+      left.appendChild(sw);
+      left.appendChild(name);
+
+      const right = document.createElement("div");
+      right.textContent = (ph.key === state.ui.phaseKey) ? "表示中" : "選択";
+      right.style.color = (ph.key === state.ui.phaseKey) ? "#111827" : "#6b7280";
+      right.style.fontSize = "12px";
+      right.style.fontWeight = "800";
+
+      item.appendChild(left);
+      item.appendChild(right);
+
+      item.addEventListener("click", () => {
+        state.ui.phaseKey = ph.key;
+        saveState();
+        closePhaseModal();
+        renderAll();
+      });
+
+      els.phaseList.appendChild(item);
+    }
+  }
+
   function renderAll() {
     const site = getCurrentSite();
     if (site) ensureRoomPhaseDefaults(site);
+
     renderSiteSelect();
-    renderPhaseSelect();
     renderSiteForm();
     renderModeButtons();
     renderStats();
     renderRooms();
   }
 
-  /** ---------- Actions ---------- */
-  // site switching
+  // actions: site
   els.siteSelect.addEventListener("change", () => {
     state.currentSiteId = els.siteSelect.value;
     const site = getCurrentSite();
@@ -743,7 +868,6 @@
     renderAll();
   });
 
-  // new site
   els.newSiteBtn.addEventListener("click", () => {
     const s = createSite(`新規現場 ${state.sites.length + 1}`);
     state.sites.push(s);
@@ -753,7 +877,6 @@
     renderAll();
   });
 
-  // delete site
   els.deleteSiteBtn.addEventListener("click", () => {
     const site = getCurrentSite(); if (!site) return;
     const ok = confirm(`現場「${site.name}」を削除しますか？（元に戻せません）`);
@@ -764,59 +887,6 @@
       const s2 = getCurrentSite();
       state.ui.phaseKey = s2?.phases[0]?.key || state.ui.phaseKey;
     }
-    saveState();
-    renderAll();
-  });
-
-  // phase switching
-  els.phaseSelect.addEventListener("change", () => {
-    state.ui.phaseKey = els.phaseSelect.value;
-    saveState();
-    renderAll();
-  });
-
-  // edit phases (prompt)
-  els.editPhasesBtn.addEventListener("click", () => {
-    const site = getCurrentSite(); if (!site) return;
-
-    const current = site.phases
-      .slice()
-      .sort((a,b)=>a.order-b.order)
-      .map(p => p.label)
-      .join("\n");
-
-    const input = prompt(
-`段階を編集します（1行=1段階）
-・行を増やす=追加
-・行を消す=削除
-・順番を入れ替える=並び替え
-
-現在：`, current
-    );
-    if (input === null) return;
-    const labels = input.split("\n").map(x=>x.trim()).filter(Boolean);
-    if (labels.length === 0) { alert("段階は1つ以上必要です"); return; }
-
-    // preserve existing phase keys by label if possible
-    const old = site.phases.slice();
-    const newPhases = [];
-    for (let i=0;i<labels.length;i++){
-      const label = labels[i];
-      const hit = old.find(p=>p.label===label);
-      if (hit) newPhases.push({ ...hit, order:i });
-      else newPhases.push({ key: uid(), label, order:i });
-    }
-    site.phases = newPhases;
-
-    // ensure room defaults for new phases
-    ensureRoomPhaseDefaults(site);
-
-    // fix selected phase if removed
-    if (!site.phases.find(p=>p.key===state.ui.phaseKey)) {
-      state.ui.phaseKey = site.phases[0].key;
-    }
-
-    site.updatedAt = now();
     saveState();
     renderAll();
   });
@@ -844,8 +914,7 @@
   // filter buttons
   document.querySelectorAll("[data-filter]").forEach(btn => {
     btn.addEventListener("click", () => {
-      const f = btn.getAttribute("data-filter");
-      state.ui.filterStatus = f;
+      state.ui.filterStatus = btn.getAttribute("data-filter");
       saveState();
       renderRooms();
       renderStats();
@@ -867,8 +936,6 @@
     if (!ok) return;
     for (const r of site.rooms) {
       r.progressByPhase[ph.key] = "todo";
-      // ダメ帳は残す（現場運用的に残したいことが多いので）
-      // もし「ダメ帳も消したい」運用なら、ここで false にできる
     }
     site.updatedAt = now();
     saveState();
@@ -911,7 +978,6 @@
     const site = getCurrentSite(); if (!site) return;
     const v = (els.jumpInput.value||"").trim();
     if (!v) return;
-
     const target = site.rooms.find(r=>r.label===String(v));
     if (!target) { alert(`部屋が見つかりません: ${v}`); return; }
 
@@ -933,7 +999,7 @@
     renderRooms();
   });
 
-  /** ---------- Regen (safe) ---------- */
+  // regen safe
   let regenArmedUntil = 0;
   let regenTimer = null;
 
@@ -957,14 +1023,11 @@
   els.regenGoBtn.addEventListener("click", () => {
     if (Date.now() > regenArmedUntil) return;
     const site = getCurrentSite(); if (!site) return;
-
     const ok = confirm("本当に部屋を再生成しますか？（全段階の進捗・ダメ帳・入力が初期化されます）");
     if (!ok) return;
 
     try {
-      // regenerate rooms
       const newRooms = generateRoomsFromSpec(site.floorSpec);
-      // init phase defaults for all phases
       for (const r of newRooms) {
         for (const ph of site.phases) {
           r.progressByPhase[ph.key] = "todo";
@@ -978,7 +1041,6 @@
       saveState();
       renderAll();
 
-      // disarm
       regenArmedUntil = 0;
       els.regenGoBtn.disabled = true;
       els.regenArmBtn.textContent = "再生成を有効化（1回目）";
@@ -987,10 +1049,10 @@
     }
   });
 
-  /** ---------- Modal (input mode) ---------- */
+  // room modal
   let modal = { open:false, roomId:null, phaseKey:null, status:"todo", damacho:false };
 
-  function openModal(site, phase, room) {
+  function openRoomModal(site, phase, room) {
     modal.open = true;
     modal.roomId = room.id;
     modal.phaseKey = phase.key;
@@ -1000,34 +1062,33 @@
     els.modalTitle.textContent = `${room.label}（${phase.label}）`;
     els.modalAssignee.value = room.assigneeByPhase[phase.key] || "";
     els.modalWorkDate.value = room.workDateByPhase[phase.key] || "";
-
-    renderModalButtons();
-    els.overlay.style.display = "flex";
+    renderRoomModalButtons();
+    els.overlayRoom.style.display = "flex";
   }
 
-  function closeModal() {
+  function closeRoomModal() {
     modal.open = false;
-    els.overlay.style.display = "none";
+    els.overlayRoom.style.display = "none";
   }
 
-  function renderModalButtons() {
+  function renderRoomModalButtons() {
     els.modalDamachoBtn.classList.toggle("on", modal.damacho);
     els.modalDamachoBtn.textContent = `ダメ帳: ${modal.damacho ? "あり" : "なし"}`;
     els.modalCycleBtn.textContent = `進捗を1つ進める（今：${statusLabel(modal.status)}）`;
   }
 
-  els.closeModalBtn.addEventListener("click", closeModal);
-  els.modalCancelBtn.addEventListener("click", closeModal);
-  els.overlay.addEventListener("click", (e)=>{ if (e.target===els.overlay) closeModal(); });
+  els.closeModalBtn.addEventListener("click", closeRoomModal);
+  els.modalCancelBtn.addEventListener("click", closeRoomModal);
+  els.overlayRoom.addEventListener("click", (e)=>{ if (e.target===els.overlayRoom) closeRoomModal(); });
 
   els.modalDamachoBtn.addEventListener("click", ()=>{
     modal.damacho = !modal.damacho;
-    renderModalButtons();
+    renderRoomModalButtons();
   });
 
   els.modalCycleBtn.addEventListener("click", ()=>{
     modal.status = nextStatus(modal.status);
-    renderModalButtons();
+    renderRoomModalButtons();
   });
 
   els.modalSaveBtn.addEventListener("click", ()=>{
@@ -1043,12 +1104,24 @@
 
     site.updatedAt = now();
     saveState();
-    closeModal();
+    closeRoomModal();
     renderAll();
   });
 
-  /** ---------- Boot ---------- */
-  // initial render
+  // phase modal
+  function openPhaseModal() {
+    renderPhasePicker();
+    els.overlayPhase.style.display = "flex";
+  }
+  function closePhaseModal() {
+    els.overlayPhase.style.display = "none";
+  }
+
+  els.phaseBanner.addEventListener("click", openPhaseModal);
+  els.closePhaseBtn.addEventListener("click", closePhaseModal);
+  els.overlayPhase.addEventListener("click", (e)=>{ if (e.target===els.overlayPhase) closePhaseModal(); });
+
+  // Boot
   renderAll();
 })();
 </script>
