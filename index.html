@@ -71,7 +71,6 @@
       font-weight: 800;
     }
 
-    /* Room card */
     .room{
       border-radius: 12px;
       padding: 10px 8px;
@@ -89,10 +88,8 @@
     .room .num{ font-weight: 900; font-size: 14px; text-align:center; }
     .room .st{ font-size: 12px; padding: 2px 8px; border-radius: 999px; display:inline-block; margin:6px auto 0; background:#fff; border:1px solid rgba(0,0,0,0.06); text-align:center; }
     .room .sub{ font-size: 11px; color: var(--muted); line-height: 1.25; margin-top:6px; text-align:center; }
-
     .room.highlight { outline: 3px solid var(--blue); outline-offset: 2px; }
 
-    /* stage chips (damacho present) */
     .stageChips{
       position:absolute; top:6px; right:6px;
       display:flex; gap:4px; flex-wrap:wrap;
@@ -132,8 +129,6 @@
     }
     .cardMini h3{ margin:0 0 6px; font-size:13px; }
     .cardMini p{ margin:0; font-size:12px; color:var(--muted); line-height:1.55; }
-    .kv { display:flex; gap:8px; flex-wrap:wrap; }
-    .kv > div { flex:1; min-width: 220px; }
 
     .checkgrid{
       display:grid;
@@ -142,7 +137,6 @@
     }
     @media (max-width:480px){ .checkgrid{ grid-template-columns: 1fr; } }
 
-    /* Danger zone */
     .dangerZone{
       border: 2px solid rgba(239,68,68,.5);
       background: #fff;
@@ -205,6 +199,40 @@
     }
     th{ background:#f9fafb; font-weight: 900; }
     tr:last-child td{ border-bottom:none; }
+
+    /* Schedule form */
+    .schedGrid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:8px;
+    }
+    @media (max-width: 720px){
+      .schedGrid{ grid-template-columns: 1fr; }
+    }
+    .schedRow{
+      border:1px solid var(--line);
+      border-radius: 14px;
+      padding: 10px;
+      background:#fff;
+      margin: 8px 0;
+    }
+    .schedRowHead{
+      display:flex; gap:8px; flex-wrap:wrap; align-items:center; justify-content:space-between;
+      margin-bottom: 8px;
+    }
+    .schedTitle{
+      font-weight: 900;
+      font-size: 13px;
+    }
+    .schedActions{
+      display:flex; gap:8px; flex-wrap:wrap;
+    }
+    .schedLbl{
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 4px;
+      display:block;
+    }
   </style>
 </head>
 
@@ -263,13 +291,14 @@
         <summary>検査・内覧スケジュール（タップで開閉）</summary>
         <div class="accBody">
           <div class="help" style="margin-bottom:8px;">
-            ※ 各段階ごとに「<b>何階〜何階</b>：<b>開始〜終了</b>」を複数追加できます。<br/>
-            日付はカレンダーから選ぶ／手入力（YYYY-MM-DD）どちらでもOKです。
+            ※ 段階ごとに「<b>何階〜何階</b>」の行を複数追加できます。<br/>
+            日付はカレンダー（date）から選ぶ／手入力どちらでもOK（iPhoneはdateが一番ラクです）。
           </div>
 
           <div class="row" style="margin-bottom:8px;">
+            <span class="chip blue">段階</span>
             <select id="scheduleStageSelect"></select>
-            <button id="addScheduleBtn" class="small primary">＋ 期間を追加</button>
+            <button id="addScheduleBtn" class="small primary">＋ 行を追加</button>
           </div>
 
           <div id="scheduleList"></div>
@@ -485,7 +514,7 @@
 
 <script>
 (() => {
-  const STORAGE_KEY = "repair_progress_complete_v4_stage_overall";
+  const STORAGE_KEY = "repair_progress_complete_v5_schedule_form";
 
   const uid = () => Math.random().toString(36).slice(2, 10) + "-" + Date.now().toString(36);
   const now = () => Date.now();
@@ -573,7 +602,9 @@
 
   function defaultSurvey(){
     return {
-      repairSupervisors: [""],
+      // ✅ 監督（複数）を「名前＋電話」で持つ
+      repairSupervisors: [{ name:"", phone:"" }],
+
       genManagerName:"", genManagerPhone:"",
       genSupervisorName:"", genSupervisorPhone:"",
       morningTime:"8:00〜", morningPlace:"", morningNote:"",
@@ -668,13 +699,8 @@
             label,
             floor:f,
             idx:i,
-
-            // ✅ 長期把握用（総合）
             overallStatus: "todo",
-
-            // ✅ 段階ごと（報告用）
             progressByStage: prog,
-
             meta: { date:"", worker:"", note:"", damacho: dam }
           });
         }
@@ -702,7 +728,7 @@
         memo:"",
         rooms:[],
         stages: JSON.parse(JSON.stringify(DEFAULT_STAGES)),
-        schedules:{},
+        schedules:{}, // stageKey -> ScheduleRow[]
         survey: defaultSurvey(),
         createdAt: now(),
         updatedAt: now(),
@@ -722,11 +748,52 @@
     // migrate/normalize
     for(const s of state.sites){
       if(!s.stages || !Array.isArray(s.stages) || s.stages.length===0) s.stages = JSON.parse(JSON.stringify(DEFAULT_STAGES));
+
+      // schedules: normalize + convert old {start,end} into inspectStart/inspectEnd
       if(!s.schedules) s.schedules = {};
       for(const stg of s.stages){
         if(!Array.isArray(s.schedules[stg.key])) s.schedules[stg.key] = [];
+        s.schedules[stg.key] = s.schedules[stg.key].map(row => {
+          // already new
+          if(row && typeof row === "object" && ("inspectStart" in row || "fixStart" in row)) return row;
+
+          // old style conversion
+          const fromFloor = Number(row?.fromFloor ?? 1) || 1;
+          const toFloor = Number(row?.toFloor ?? fromFloor) || fromFloor;
+          const start = String(row?.start ?? "").trim();
+          const end = String(row?.end ?? "").trim();
+          const note = String(row?.note ?? "").trim();
+
+          return {
+            id: row?.id || uid(),
+            fromFloor,
+            toFloor,
+            inspectStart: start,
+            inspectEnd: end,
+            fixStart: "",
+            fixEnd: "",
+            note,
+          };
+        });
       }
+
       if(!s.survey) s.survey = defaultSurvey();
+
+      // survey migrate: old repairSupervisors: [""] -> [{name,phone}]
+      if(Array.isArray(s.survey.repairSupervisors)){
+        const arr = s.survey.repairSupervisors;
+        if(arr.length && typeof arr[0] === "string"){
+          s.survey.repairSupervisors = arr.map(n => ({ name:String(n||""), phone:"" }));
+        }else if(arr.length && typeof arr[0] === "object"){
+          // ensure shape
+          s.survey.repairSupervisors = arr.map(x => ({ name:String(x?.name||""), phone:String(x?.phone||"") }));
+        }else{
+          s.survey.repairSupervisors = [{ name:"", phone:"" }];
+        }
+      }else{
+        s.survey.repairSupervisors = [{ name:"", phone:"" }];
+      }
+
       if(typeof s.memo !== "string") s.memo = "";
       if(typeof s.gc !== "string") s.gc = "";
       if(!Array.isArray(s.rooms)) s.rooms = [];
@@ -734,11 +801,7 @@
       for(const r of s.rooms){
         if(!r.meta) r.meta = { date:"", worker:"", note:"", damacho:{} };
         if(!r.meta.damacho) r.meta.damacho = {};
-
-        // ✅ 総合が無い場合は未着手で追加
         if(!r.overallStatus) r.overallStatus = "todo";
-
-        // ✅ 段階進捗が無い場合は段階分作る（全部未着手）
         if(!r.progressByStage) r.progressByStage = {};
         for(const stg of s.stages){
           if(!r.meta.damacho[stg.key]) r.meta.damacho[stg.key] = "none";
@@ -856,15 +919,15 @@
     const site = getCurrentSite(); if(!site) return;
 
     stageSelect.innerHTML = "";
-    $("bulkStageSelect").innerHTML = "";
+    bulkStageSelect.innerHTML = "";
     scheduleStageSelect.innerHTML = "";
-    $("reportStageSelect").innerHTML = "";
+    reportStageSelect.innerHTML = "";
 
     for(const stg of site.stages){
       const opt1 = document.createElement("option"); opt1.value = stg.key; opt1.textContent = stg.label; stageSelect.appendChild(opt1);
-      const opt2 = document.createElement("option"); opt2.value = stg.key; opt2.textContent = stg.label; $("bulkStageSelect").appendChild(opt2);
+      const opt2 = document.createElement("option"); opt2.value = stg.key; opt2.textContent = stg.label; bulkStageSelect.appendChild(opt2);
       const opt3 = document.createElement("option"); opt3.value = stg.key; opt3.textContent = stg.label; scheduleStageSelect.appendChild(opt3);
-      const opt4 = document.createElement("option"); opt4.value = stg.key; opt4.textContent = stg.label; $("reportStageSelect").appendChild(opt4);
+      const opt4 = document.createElement("option"); opt4.value = stg.key; opt4.textContent = stg.label; reportStageSelect.appendChild(opt4);
     }
 
     if(!site.stages.find(s=>s.key===state.ui.currentStageKey)){
@@ -876,9 +939,9 @@
       state.ui.report.stageKey = state.ui.currentStageKey;
       saveState();
     }
-    $("reportStageSelect").value = state.ui.report.stageKey;
+    reportStageSelect.value = state.ui.report.stageKey;
 
-    $("bulkStageSelect").value = state.ui.currentStageKey;
+    bulkStageSelect.value = state.ui.currentStageKey;
     scheduleStageSelect.value = state.ui.currentStageKey;
   }
 
@@ -985,78 +1048,176 @@
     overviewTable.innerHTML = html;
   }
 
-  // --- Schedule (簡易版：前回と同等) ---
+  // --- ✅ Schedule (B案：フォーム＋一覧＋編集) ---
+  function getScheduleList(site, stageKey){
+    if(!site.schedules) site.schedules = {};
+    if(!Array.isArray(site.schedules[stageKey])) site.schedules[stageKey] = [];
+    return site.schedules[stageKey];
+  }
+
   function renderSchedule(){
     const site = getCurrentSite(); if(!site) return;
     const stageKey = scheduleStageSelect.value || state.ui.currentStageKey;
-    const list = site.schedules[stageKey] || [];
+    const list = getScheduleList(site, stageKey);
+
     scheduleList.innerHTML = "";
 
     if(list.length===0){
       const empty = document.createElement("div");
       empty.className="help";
-      empty.textContent = "まだ期間がありません。［＋ 期間を追加］から追加できます。";
+      empty.textContent = "まだ行がありません。［＋ 行を追加］から追加できます。";
       scheduleList.appendChild(empty);
       return;
     }
 
-    list.forEach((it, idx) => {
-      const box = document.createElement("div");
-      box.className="cardMini";
+    list
+      .slice()
+      .sort((a,b) => (a.fromFloor-b.fromFloor) || (a.toFloor-b.toFloor))
+      .forEach((row) => {
+        const box = document.createElement("div");
+        box.className="schedRow";
 
-      const h = document.createElement("h3");
-      h.textContent = `${stageLabel(site, stageKey)}：${it.fromFloor}階〜${it.toFloor}階`;
-      box.appendChild(h);
+        const head = document.createElement("div");
+        head.className="schedRowHead";
 
-      const p = document.createElement("p");
-      p.textContent = `期間：${it.start || "（未設定）"} 〜 ${it.end || "（未設定）"}${it.note ? " / " + it.note : ""}`;
-      box.appendChild(p);
+        const title = document.createElement("div");
+        title.className="schedTitle";
+        title.textContent = `${stageLabel(site, stageKey)}：${row.fromFloor}階〜${row.toFloor}階`;
+        head.appendChild(title);
 
-      const row = document.createElement("div");
-      row.className="row";
-      row.style.marginTop="8px";
+        const actions = document.createElement("div");
+        actions.className="schedActions";
 
-      const del = document.createElement("button");
-      del.className="small danger";
-      del.textContent="削除";
-      del.onclick = () => {
-        if(!confirm("この期間を削除しますか？")) return;
-        list.splice(idx,1);
-        site.updatedAt = now();
-        saveState();
-        renderSchedule();
-        renderSiteForm();
-      };
+        const del = document.createElement("button");
+        del.className="small danger";
+        del.textContent="削除";
+        del.onclick = () => {
+          if(!confirm("この行を削除しますか？")) return;
+          site.schedules[stageKey] = getScheduleList(site, stageKey).filter(x => x.id !== row.id);
+          site.updatedAt = now();
+          saveState();
+          renderSchedule();
+          renderSiteForm();
+        };
 
-      row.appendChild(del);
-      box.appendChild(row);
-      scheduleList.appendChild(box);
-    });
+        actions.appendChild(del);
+        head.appendChild(actions);
+
+        box.appendChild(head);
+
+        const grid = document.createElement("div");
+        grid.className="schedGrid";
+
+        // range
+        const rangeBox = document.createElement("div");
+        rangeBox.innerHTML = `
+          <label class="schedLbl">階範囲（開始 / 終了）</label>
+          <div class="row">
+            <input class="small" inputmode="numeric" placeholder="開始階" style="max-width:120px;" value="${row.fromFloor}">
+            <input class="small" inputmode="numeric" placeholder="終了階" style="max-width:120px;" value="${row.toFloor}">
+          </div>
+        `;
+        const [fromInp, toInp] = rangeBox.querySelectorAll("input");
+
+        // inspect
+        const inspBox = document.createElement("div");
+        inspBox.innerHTML = `
+          <label class="schedLbl">検査期間（開始〜終了）</label>
+          <div class="row">
+            <input type="date" class="small" style="max-width:180px;" value="${row.inspectStart || ""}">
+            <input type="date" class="small" style="max-width:180px;" value="${row.inspectEnd || ""}">
+          </div>
+        `;
+        const [inspStart, inspEnd] = inspBox.querySelectorAll("input");
+
+        // fix
+        const fixBox = document.createElement("div");
+        fixBox.innerHTML = `
+          <label class="schedLbl">是正期間（開始〜終了）</label>
+          <div class="row">
+            <input type="date" class="small" style="max-width:180px;" value="${row.fixStart || ""}">
+            <input type="date" class="small" style="max-width:180px;" value="${row.fixEnd || ""}">
+          </div>
+        `;
+        const [fixStart, fixEnd] = fixBox.querySelectorAll("input");
+
+        // note
+        const noteBox = document.createElement("div");
+        noteBox.innerHTML = `
+          <label class="schedLbl">メモ（任意）</label>
+          <input class="small" placeholder="例：2部制/3部制、注意事項など" value="${escapeHtml(row.note || "")}">
+        `;
+        const noteInp = noteBox.querySelector("input");
+
+        const saveInline = () => {
+          // validate floors loosely
+          const a = Number(fromInp.value || row.fromFloor);
+          const b = Number(toInp.value || row.toFloor);
+
+          if(!Number.isInteger(a) || !Number.isInteger(b) || a<=0 || b<=0 || a>b){
+            // 入力途中にうるさくしないため、確定時に戻す
+            return;
+          }
+
+          row.fromFloor = a;
+          row.toFloor = b;
+
+          row.inspectStart = (inspStart.value || "").trim();
+          row.inspectEnd = (inspEnd.value || "").trim();
+          row.fixStart = (fixStart.value || "").trim();
+          row.fixEnd = (fixEnd.value || "").trim();
+          row.note = (noteInp.value || "").trim();
+
+          site.updatedAt = now();
+          saveState();
+          // 見出し（階範囲）が変わるので再描画（入力中のカレンダーが閉じるのが嫌なら外してもOK）
+          renderSchedule();
+          renderSiteForm();
+        };
+
+        // events
+        [fromInp,toInp,inspStart,inspEnd,fixStart,fixEnd,noteInp].forEach(el => {
+          el.addEventListener("change", saveInline);
+          el.addEventListener("blur", saveInline);
+        });
+
+        grid.appendChild(rangeBox);
+        grid.appendChild(inspBox);
+        grid.appendChild(fixBox);
+        grid.appendChild(noteBox);
+
+        box.appendChild(grid);
+
+        const hint = document.createElement("div");
+        hint.className="help";
+        hint.style.marginTop="6px";
+        hint.textContent = "※ 各項目は変更すると自動で保存されます。";
+        box.appendChild(hint);
+
+        scheduleList.appendChild(box);
+      });
   }
 
-  function addScheduleItem(stageKey){
+  function addScheduleRow(stageKey){
     const site = getCurrentSite(); if(!site) return;
-    if(!Array.isArray(site.schedules[stageKey])) site.schedules[stageKey] = [];
-    const from = prompt("開始階（例：1）", "1");
-    if(from===null) return;
-    const to = prompt("終了階（例：6）", "6");
-    if(to===null) return;
-    const start = prompt("開始日（例：2026-01-07）", "");
-    if(start===null) return;
-    const end = prompt("終了日（例：2026-01-12）", "");
-    if(end===null) return;
-
-    const a = Number(from), b = Number(to);
-    if(!Number.isInteger(a)||!Number.isInteger(b)||a<=0||b<=0||a>b){ alert("階の入力が不正です"); return; }
-
-    site.schedules[stageKey].push({ stageKey, fromFloor:a, toFloor:b, start:start.trim(), end:end.trim(), note:"" });
+    const list = getScheduleList(site, stageKey);
+    list.push({
+      id: uid(),
+      fromFloor: 1,
+      toFloor: 1,
+      inspectStart: "",
+      inspectEnd: "",
+      fixStart: "",
+      fixEnd: "",
+      note: "",
+    });
     site.updatedAt = now();
     saveState();
     renderSchedule();
     renderSiteForm();
   }
 
-  // --- Survey (一覧表示でチェック内容も出る簡易版) ---
+  // --- Survey ---
   function renderSurvey(){
     const site = getCurrentSite(); if(!site) return;
     if(!site.survey) site.survey = defaultSurvey();
@@ -1064,8 +1225,19 @@
 
     const joinClean = (arr) => (arr||[]).map(x=>String(x||"").trim()).filter(Boolean).join("、");
 
-    surveyTabEdit.onclick = () => { surveyEdit.style.display=""; surveyView.style.display="none"; surveyTabEdit.classList.add("secondary"); surveyTabView.classList.remove("secondary"); };
-    surveyTabView.onclick = () => { surveyEdit.style.display="none"; surveyView.style.display=""; surveyTabView.classList.add("secondary"); surveyTabEdit.classList.remove("secondary"); renderSurveyView(); };
+    surveyTabEdit.onclick = () => {
+      surveyEdit.style.display="";
+      surveyView.style.display="none";
+      surveyTabEdit.classList.add("secondary");
+      surveyTabView.classList.remove("secondary");
+    };
+    surveyTabView.onclick = () => {
+      surveyEdit.style.display="none";
+      surveyView.style.display="";
+      surveyTabView.classList.add("secondary");
+      surveyTabEdit.classList.remove("secondary");
+      renderSurveyView();
+    };
 
     function mkText(label, key, placeholder=""){
       const wrap = document.createElement("div");
@@ -1130,10 +1302,88 @@
       return wrap;
     }
 
+    // ✅ 監督（名前＋電話、複数）
+    function mkSupervisors(){
+      const wrap = document.createElement("div");
+      wrap.className="cardMini";
+
+      const h = document.createElement("h3");
+      h.textContent = "補修の担当監督（複数追加OK）";
+      wrap.appendChild(h);
+
+      const help = document.createElement("div");
+      help.className="help";
+      help.textContent = "名前と電話番号を入力してください。行は＋で追加できます。";
+      wrap.appendChild(help);
+
+      if(!Array.isArray(s.repairSupervisors) || s.repairSupervisors.length===0){
+        s.repairSupervisors = [{ name:"", phone:"" }];
+      }
+
+      const list = document.createElement("div");
+      list.style.marginTop="8px";
+
+      const renderRows = () => {
+        list.innerHTML = "";
+        s.repairSupervisors.forEach((sp, idx) => {
+          const row = document.createElement("div");
+          row.className="row";
+
+          const nameInp = document.createElement("input");
+          nameInp.placeholder = "例：田中監督";
+          nameInp.value = sp.name || "";
+          nameInp.oninput = () => { sp.name = nameInp.value; site.updatedAt=now(); saveState(); };
+
+          const phoneInp = document.createElement("input");
+          phoneInp.placeholder = "例：090-xxxx-xxxx";
+          phoneInp.value = sp.phone || "";
+          phoneInp.inputMode = "tel";
+          phoneInp.oninput = () => { sp.phone = phoneInp.value; site.updatedAt=now(); saveState(); };
+
+          const del = document.createElement("button");
+          del.className="small danger";
+          del.textContent = "削除";
+          del.onclick = () => {
+            if(s.repairSupervisors.length===1){
+              sp.name=""; sp.phone="";
+              site.updatedAt=now(); saveState();
+              renderRows();
+              return;
+            }
+            s.repairSupervisors.splice(idx,1);
+            site.updatedAt=now(); saveState();
+            renderRows();
+          };
+
+          row.appendChild(nameInp);
+          row.appendChild(phoneInp);
+          row.appendChild(del);
+          list.appendChild(row);
+        });
+      };
+
+      const addBtn = document.createElement("button");
+      addBtn.className="small primary";
+      addBtn.textContent="＋ 監督を追加";
+      addBtn.onclick = () => {
+        s.repairSupervisors.push({ name:"", phone:"" });
+        site.updatedAt=now(); saveState();
+        renderRows();
+      };
+
+      wrap.appendChild(addBtn);
+      wrap.appendChild(list);
+
+      renderRows();
+      return wrap;
+    }
+
     surveyEdit.innerHTML = "";
-    surveyEdit.appendChild(mkText("補修の担当監督（例：〇〇監督）", "repairSupervisors0", "例：田中監督"));
-    surveyEdit.appendChild(mkText("○○所長 電話番号", "genManagerPhone", "例：090-xxxx-xxxx"));
-    surveyEdit.appendChild(mkText("○○監督 電話番号", "genSupervisorPhone", "例：090-xxxx-xxxx"));
+    surveyEdit.appendChild(mkSupervisors());
+    surveyEdit.appendChild(mkText("○○所長　名前（任意）", "genManagerName", "例：山本所長"));
+    surveyEdit.appendChild(mkText("○○所長　電話番号", "genManagerPhone", "例：090-xxxx-xxxx"));
+    surveyEdit.appendChild(mkText("○○監督　名前（任意）", "genSupervisorName", "例：佐々木監督"));
+    surveyEdit.appendChild(mkText("○○監督　電話番号", "genSupervisorPhone", "例：090-xxxx-xxxx"));
     surveyEdit.appendChild(mkText("朝礼 時間（自由入力）", "morningTime", "例：8:15〜"));
     surveyEdit.appendChild(mkArea("朝礼 場所/補足（自由入力）", "morningPlace", "例：建物外広場…／ラジオ体操あり"));
     surveyEdit.appendChild(mkText("昼礼 時間（自由入力）", "lunchTime", "例：11:40〜"));
@@ -1142,21 +1392,33 @@
     surveyEdit.appendChild(mkChecklist("担当補修箇所（チェック）", "myRepairItems"));
     surveyEdit.appendChild(mkChecklist("他業者に振り分ける箇所（チェック）", "otherVendorItems"));
 
-    surveyView.innerHTML = "";
     function renderSurveyView(){
       surveyView.innerHTML = "";
-      const mk = (title, lines) => {
+
+      const mk = (title, htmlLines) => {
         const box = document.createElement("div");
         box.className="cardMini";
         const h = document.createElement("h3"); h.textContent = title;
         box.appendChild(h);
         const p = document.createElement("p");
-        p.innerHTML = lines.map(x=>`・${escapeHtml(x)}`).join("<br/>");
+        p.innerHTML = htmlLines.join("<br/>");
         box.appendChild(p);
         surveyView.appendChild(box);
       };
-      mk("担当補修箇所（チェック内容）", [ joinClean(s.myRepairItems) ? joinClean(s.myRepairItems) : "（チェックなし）" ]);
-      mk("他業者に振り分ける箇所（チェック内容）", [ joinClean(s.otherVendorItems) ? joinClean(s.otherVendorItems) : "（チェックなし）" ]);
+
+      const sp = (s.repairSupervisors || [])
+        .map(x => {
+          const name = (x?.name||"").trim();
+          const phone = (x?.phone||"").trim();
+          if(!name && !phone) return null;
+          if(name && phone) return `${escapeHtml(name)}（${escapeHtml(phone)}）`;
+          return escapeHtml(name || phone);
+        })
+        .filter(Boolean);
+
+      mk("補修の担当監督（一覧）", [ sp.length ? sp.map(x=>`・${x}`).join("<br/>") : "（未入力）" ]);
+      mk("担当補修箇所（チェック内容）", [ joinClean(s.myRepairItems) ? `・${escapeHtml(joinClean(s.myRepairItems))}` : "（チェックなし）" ]);
+      mk("他業者に振り分ける箇所（チェック内容）", [ joinClean(s.otherVendorItems) ? `・${escapeHtml(joinClean(s.otherVendorItems))}` : "（チェックなし）" ]);
     }
 
     // default: edit
@@ -1173,7 +1435,6 @@
   function getRoomStageStatus(room, stageKey){
     return room.progressByStage?.[stageKey] || "todo";
   }
-
   function setRoomStageStatus(room, stageKey, st){
     if(!room.progressByStage) room.progressByStage = {};
     room.progressByStage[stageKey] = st;
@@ -1207,7 +1468,6 @@
       card.dataset.roomId = r.id;
       if(r.id===highlightedRoomId) card.classList.add("highlight");
 
-      // stage chips (damacho present)
       const chips = document.createElement("div");
       chips.className = "stageChips";
       for(const stg of site.stages){
@@ -1569,9 +1829,9 @@
     renderAll();
   });
 
-  // Schedule controls
+  // ✅ Schedule controls
   scheduleStageSelect.addEventListener("change", () => renderSchedule());
-  addScheduleBtn.addEventListener("click", () => addScheduleItem(scheduleStageSelect.value));
+  addScheduleBtn.addEventListener("click", () => addScheduleRow(scheduleStageSelect.value));
 
   // Site create / delete / save
   newSiteBtn.addEventListener("click", () => {
@@ -1640,6 +1900,7 @@
 ・段階の進捗：社内/設計/施主…は別々に管理されます
 ・総合の進捗：長期把握用（段階とは別）
 ・報告用：ダメ帳あり範囲の未/途/完（段階ごと）
+・検査/是正：スケジュール行は自動保存（編集→即反映）
 ・危険：部屋を再生成は最下部・二段階`
     );
   });
@@ -1693,8 +1954,10 @@
     if(overviewAcc.open) renderOverviewTable();
   });
 
-  // Jump / highlight
-  function initJump(){ /* already wired */ }
+  // Report init
+  function initReport(){
+    normalizeReportInputsUI();
+  }
 
   // Boot
   function renderAll(){
@@ -1713,19 +1976,6 @@
     renderAllStatsAndOverview();
   }
 
-  // schedule stage default options populate (uses renderStageSelects)
-  // report inputs init
-  function initReport(){
-    normalizeReportInputsUI();
-  }
-
-  // schedule: add list container events already wired
-
-  // filters already wired
-
-  // scheduleAcc open state default closed (HTML)
-
-  // initial
   ensureInitialSite();
   initReport();
   renderAll();
