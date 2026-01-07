@@ -233,6 +233,31 @@
       margin-bottom: 4px;
       display:block;
     }
+
+    /* ✅ Schedule summary look */
+    .schedSummaryBlock{
+      border:1px solid var(--line);
+      border-radius: 14px;
+      background:#fff;
+      padding: 10px;
+      margin: 8px 0;
+    }
+    .schedSummaryBlock h3{
+      margin:0 0 8px;
+      font-size: 13px;
+      font-weight: 900;
+      color:#1e3a8a;
+    }
+    .schedSummaryLine{
+      font-size: 12px;
+      line-height: 1.7;
+      color: var(--text);
+      padding: 2px 0;
+      white-space: pre-wrap;
+    }
+    .schedSummaryLine.muted{
+      color: var(--muted);
+    }
   </style>
 </head>
 
@@ -285,23 +310,41 @@
       </div>
     </div>
 
-    <!-- 検査スケジュール（閉じた状態） -->
+    <!-- ✅ 検査スケジュール（閉じた状態） -->
     <div style="margin-top:10px;">
       <details id="scheduleAcc">
         <summary>検査・内覧スケジュール（タップで開閉）</summary>
         <div class="accBody">
-          <div class="help" style="margin-bottom:8px;">
-            ※ 段階ごとに「<b>何階〜何階</b>」の行を複数追加できます。<br/>
-            日付はカレンダー（date）から選ぶ／手入力どちらでもOK（iPhoneはdateが一番ラクです）。
-          </div>
 
           <div class="row" style="margin-bottom:8px;">
-            <span class="chip blue">段階</span>
-            <select id="scheduleStageSelect"></select>
-            <button id="addScheduleBtn" class="small primary">＋ 行を追加</button>
+            <button id="scheduleTabEdit" class="small secondary">編集（段階別）</button>
+            <button id="scheduleTabAll" class="small">一覧（全段階）</button>
           </div>
 
-          <div id="scheduleList"></div>
+          <!-- 編集（段階別） -->
+          <div id="scheduleEditWrap">
+            <div class="help" style="margin-bottom:8px;">
+              ※ 段階ごとに「<b>何階〜何階</b>」の行を複数追加できます。<br/>
+              日付はカレンダー（date）から選ぶ／手入力どちらでもOK。
+            </div>
+
+            <div class="row" style="margin-bottom:8px;">
+              <span class="chip blue">段階</span>
+              <select id="scheduleStageSelect"></select>
+              <button id="addScheduleBtn" class="small primary">＋ 行を追加</button>
+            </div>
+
+            <div id="scheduleList"></div>
+          </div>
+
+          <!-- ✅ 一覧（全段階） -->
+          <div id="scheduleAllWrap" style="display:none;">
+            <div class="help" style="margin-bottom:8px;">
+              あなたの希望形式：段階ごとに「検査日（階範囲ごと）」を並べて、最後に「是正期間」を1本で表示します。
+            </div>
+            <div id="scheduleSummaryAll"></div>
+          </div>
+
         </div>
       </details>
     </div>
@@ -371,7 +414,7 @@
     <div class="stats" id="statsOverall"></div>
   </div>
 
-  <!-- 統計：段階（選択中段階の全体） -->
+  <!-- 統計：段階 -->
   <div class="panel">
     <h2>段階の進捗（選択中の検査段階）</h2>
     <div class="stats" id="statsStage"></div>
@@ -411,13 +454,13 @@
     <div class="stats" id="statsReport"></div>
   </div>
 
-  <!-- 俯瞰（a） -->
+  <!-- 俯瞰（段階×進捗の表） -->
   <div class="panel">
     <details id="overviewAcc">
       <summary>俯瞰（段階×進捗の表）（タップで開閉）</summary>
       <div class="accBody">
         <div class="help" style="margin-bottom:8px;">
-          「報告用」の範囲を基準に、各段階の <b>ダメ帳あり</b> 部屋について、未/途/完 を集計します（切り替え不要で全体把握）。
+          「報告用」の範囲を基準に、各段階の <b>ダメ帳あり</b> 部屋について、未/途/完 を集計します（切り替え不要で把握）。
         </div>
         <div id="overviewTable"></div>
       </div>
@@ -514,7 +557,7 @@
 
 <script>
 (() => {
-  const STORAGE_KEY = "repair_progress_complete_v5_schedule_form";
+  const STORAGE_KEY = "repair_progress_complete_v6_schedule_summary_all";
 
   const uid = () => Math.random().toString(36).slice(2, 10) + "-" + Date.now().toString(36);
   const now = () => Date.now();
@@ -537,9 +580,15 @@
   const saveSiteBtn = $("saveSiteBtn");
   const deleteSiteBtn = $("deleteSiteBtn");
 
+  // Schedule
+  const scheduleTabEdit = $("scheduleTabEdit");
+  const scheduleTabAll  = $("scheduleTabAll");
+  const scheduleEditWrap = $("scheduleEditWrap");
+  const scheduleAllWrap  = $("scheduleAllWrap");
   const scheduleStageSelect = $("scheduleStageSelect");
   const addScheduleBtn = $("addScheduleBtn");
   const scheduleList = $("scheduleList");
+  const scheduleSummaryAll = $("scheduleSummaryAll");
 
   const surveyEdit = $("surveyEdit");
   const surveyView = $("surveyView");
@@ -602,9 +651,7 @@
 
   function defaultSurvey(){
     return {
-      // ✅ 監督（複数）を「名前＋電話」で持つ
       repairSupervisors: [{ name:"", phone:"" }],
-
       genManagerName:"", genManagerPhone:"",
       genSupervisorName:"", genSupervisorPhone:"",
       morningTime:"8:00〜", morningPlace:"", morningNote:"",
@@ -728,7 +775,7 @@
         memo:"",
         rooms:[],
         stages: JSON.parse(JSON.stringify(DEFAULT_STAGES)),
-        schedules:{}, // stageKey -> ScheduleRow[]
+        schedules:{},
         survey: defaultSurvey(),
         createdAt: now(),
         updatedAt: now(),
@@ -749,15 +796,12 @@
     for(const s of state.sites){
       if(!s.stages || !Array.isArray(s.stages) || s.stages.length===0) s.stages = JSON.parse(JSON.stringify(DEFAULT_STAGES));
 
-      // schedules: normalize + convert old {start,end} into inspectStart/inspectEnd
       if(!s.schedules) s.schedules = {};
       for(const stg of s.stages){
         if(!Array.isArray(s.schedules[stg.key])) s.schedules[stg.key] = [];
         s.schedules[stg.key] = s.schedules[stg.key].map(row => {
-          // already new
           if(row && typeof row === "object" && ("inspectStart" in row || "fixStart" in row)) return row;
 
-          // old style conversion
           const fromFloor = Number(row?.fromFloor ?? 1) || 1;
           const toFloor = Number(row?.toFloor ?? fromFloor) || fromFloor;
           const start = String(row?.start ?? "").trim();
@@ -779,13 +823,11 @@
 
       if(!s.survey) s.survey = defaultSurvey();
 
-      // survey migrate: old repairSupervisors: [""] -> [{name,phone}]
       if(Array.isArray(s.survey.repairSupervisors)){
         const arr = s.survey.repairSupervisors;
         if(arr.length && typeof arr[0] === "string"){
           s.survey.repairSupervisors = arr.map(n => ({ name:String(n||""), phone:"" }));
         }else if(arr.length && typeof arr[0] === "object"){
-          // ensure shape
           s.survey.repairSupervisors = arr.map(x => ({ name:String(x?.name||""), phone:String(x?.phone||"") }));
         }else{
           s.survey.repairSupervisors = [{ name:"", phone:"" }];
@@ -901,6 +943,31 @@
       .replaceAll(">","&gt;")
       .replaceAll('"',"&quot;")
       .replaceAll("'","&#039;");
+  }
+
+  // ✅ 日付を「単日 or 期間」に整形
+  function formatOneOrRange(a, b){
+    const s = (a || "").trim();
+    const e = (b || "").trim();
+    if(!s && !e) return "";
+    if(s && (!e || s === e)) return s;   // 単日
+    if(!s && e) return e;
+    return `${s}〜${e}`;
+  }
+
+  // ✅ 是正期間を「段階内で1本」にまとめる（複数あれば複数表示）
+  function summarizeFixPeriods(list){
+    const ranges = list
+      .map(r => formatOneOrRange(r.fixStart, r.fixEnd))
+      .filter(Boolean);
+
+    if(ranges.length === 0) return [];
+    const count = new Map();
+    for(const x of ranges) count.set(x, (count.get(x) || 0) + 1);
+
+    // 頻度順に並べる（よく使われている期間を上）
+    const sorted = Array.from(count.entries()).sort((a,b)=>b[1]-a[1]);
+    return sorted.map(([range])=>range);
   }
 
   // --- UI rendering ---
@@ -1048,7 +1115,7 @@
     overviewTable.innerHTML = html;
   }
 
-  // --- ✅ Schedule (B案：フォーム＋一覧＋編集) ---
+  // --- Schedule (B案：フォーム＋一覧＋編集) ---
   function getScheduleList(site, stageKey){
     if(!site.schedules) site.schedules = {};
     if(!Array.isArray(site.schedules[stageKey])) site.schedules[stageKey] = [];
@@ -1097,6 +1164,7 @@
           site.updatedAt = now();
           saveState();
           renderSchedule();
+          renderScheduleSummaryAll();
           renderSiteForm();
         };
 
@@ -1108,7 +1176,6 @@
         const grid = document.createElement("div");
         grid.className="schedGrid";
 
-        // range
         const rangeBox = document.createElement("div");
         rangeBox.innerHTML = `
           <label class="schedLbl">階範囲（開始 / 終了）</label>
@@ -1119,10 +1186,9 @@
         `;
         const [fromInp, toInp] = rangeBox.querySelectorAll("input");
 
-        // inspect
         const inspBox = document.createElement("div");
         inspBox.innerHTML = `
-          <label class="schedLbl">検査期間（開始〜終了）</label>
+          <label class="schedLbl">検査日/検査期間（開始〜終了）</label>
           <div class="row">
             <input type="date" class="small" style="max-width:180px;" value="${row.inspectStart || ""}">
             <input type="date" class="small" style="max-width:180px;" value="${row.inspectEnd || ""}">
@@ -1130,7 +1196,6 @@
         `;
         const [inspStart, inspEnd] = inspBox.querySelectorAll("input");
 
-        // fix
         const fixBox = document.createElement("div");
         fixBox.innerHTML = `
           <label class="schedLbl">是正期間（開始〜終了）</label>
@@ -1141,7 +1206,6 @@
         `;
         const [fixStart, fixEnd] = fixBox.querySelectorAll("input");
 
-        // note
         const noteBox = document.createElement("div");
         noteBox.innerHTML = `
           <label class="schedLbl">メモ（任意）</label>
@@ -1150,12 +1214,9 @@
         const noteInp = noteBox.querySelector("input");
 
         const saveInline = () => {
-          // validate floors loosely
           const a = Number(fromInp.value || row.fromFloor);
           const b = Number(toInp.value || row.toFloor);
-
           if(!Number.isInteger(a) || !Number.isInteger(b) || a<=0 || b<=0 || a>b){
-            // 入力途中にうるさくしないため、確定時に戻す
             return;
           }
 
@@ -1170,12 +1231,11 @@
 
           site.updatedAt = now();
           saveState();
-          // 見出し（階範囲）が変わるので再描画（入力中のカレンダーが閉じるのが嫌なら外してもOK）
           renderSchedule();
+          renderScheduleSummaryAll();
           renderSiteForm();
         };
 
-        // events
         [fromInp,toInp,inspStart,inspEnd,fixStart,fixEnd,noteInp].forEach(el => {
           el.addEventListener("change", saveInline);
           el.addEventListener("blur", saveInline);
@@ -1214,7 +1274,85 @@
     site.updatedAt = now();
     saveState();
     renderSchedule();
+    renderScheduleSummaryAll();
     renderSiteForm();
+  }
+
+  // ✅ あなたの希望形式：段階ごとに全部並べる一覧
+  function renderScheduleSummaryAll(){
+    const site = getCurrentSite(); if(!site) return;
+    scheduleSummaryAll.innerHTML = "";
+
+    const any = site.stages.some(stg => (site.schedules?.[stg.key] || []).length > 0);
+    if(!any){
+      const empty = document.createElement("div");
+      empty.className = "help";
+      empty.textContent = "まだスケジュール行がありません。［編集（段階別）］で追加してください。";
+      scheduleSummaryAll.appendChild(empty);
+      return;
+    }
+
+    for(const stg of site.stages){
+      const list = (site.schedules?.[stg.key] || []).slice()
+        .sort((a,b)=>(a.fromFloor-b.fromFloor)||(a.toFloor-b.toFloor));
+
+      if(list.length===0) continue;
+
+      const block = document.createElement("div");
+      block.className = "schedSummaryBlock";
+
+      const h = document.createElement("h3");
+      h.textContent = `● ${stg.label}`;
+      block.appendChild(h);
+
+      // 検査：階範囲ごとに「単日」表示を優先（開始=終了なら単日）
+      const inspectLines = [];
+      for(const row of list){
+        const when = formatOneOrRange(row.inspectStart, row.inspectEnd);
+        if(!when) continue;
+        inspectLines.push(`${row.fromFloor}階〜${row.toFloor}階　${when}`);
+      }
+
+      if(inspectLines.length){
+        for(const line of inspectLines){
+          const div = document.createElement("div");
+          div.className = "schedSummaryLine";
+          div.textContent = line;
+          block.appendChild(div);
+        }
+      }else{
+        const div = document.createElement("div");
+        div.className = "schedSummaryLine muted";
+        div.textContent = "（検査日/検査期間 未入力）";
+        block.appendChild(div);
+      }
+
+      const fixRanges = summarizeFixPeriods(list);
+      if(fixRanges.length){
+        // 1つならあなたの理想どおり1本
+        if(fixRanges.length === 1){
+          const div = document.createElement("div");
+          div.className = "schedSummaryLine";
+          div.textContent = `是正期間　${fixRanges[0]}`;
+          block.appendChild(div);
+        }else{
+          // 複数あった場合だけ複数表示（現場事情でズレる時用）
+          fixRanges.forEach((r,i) => {
+            const div = document.createElement("div");
+            div.className = "schedSummaryLine";
+            div.textContent = `是正期間${i+1}　${r}`;
+            block.appendChild(div);
+          });
+        }
+      }else{
+        const div = document.createElement("div");
+        div.className = "schedSummaryLine muted";
+        div.textContent = "（是正期間 未入力）";
+        block.appendChild(div);
+      }
+
+      scheduleSummaryAll.appendChild(block);
+    }
   }
 
   // --- Survey ---
@@ -1302,13 +1440,12 @@
       return wrap;
     }
 
-    // ✅ 監督（名前＋電話、複数）
     function mkSupervisors(){
       const wrap = document.createElement("div");
       wrap.className="cardMini";
 
       const h = document.createElement("h3");
-      h.textContent = "補修の担当監督（複数追加OK）";
+      h.textContent = "補修の担当監督（複数追加OK・電話番号あり）";
       wrap.appendChild(h);
 
       const help = document.createElement("div");
@@ -1421,7 +1558,6 @@
       mk("他業者に振り分ける箇所（チェック内容）", [ joinClean(s.otherVendorItems) ? `・${escapeHtml(joinClean(s.otherVendorItems))}` : "（チェックなし）" ]);
     }
 
-    // default: edit
     surveyEdit.style.display = "";
     surveyView.style.display = "none";
     surveyTabEdit.classList.add("secondary");
@@ -1755,7 +1891,7 @@
 
   resetOverallBtn.addEventListener("click", () => {
     const site = getCurrentSite(); if(!site) return;
-    if(!confirm("【総合】の進捗を全て未着手に戻しますか？（長期把握用。段階には影響しません）")) return;
+    if(!confirm("【総合】の進捗を全て未着手に戻しますか？（長期把握用。段階とは別）")) return;
 
     for(const r of site.rooms) r.overallStatus = "todo";
     site.updatedAt = now();
@@ -1789,6 +1925,7 @@
     renderAllStatsAndOverview();
     renderSiteForm();
     renderSchedule();
+    renderScheduleSummaryAll();
   });
 
   // Stage manage (simple slash edit)
@@ -1810,7 +1947,6 @@
     for(const stg of newStages){ newSchedules[stg.key] = []; }
     site.schedules = newSchedules;
 
-    // reset damacho + stage progress per stage (safest)
     for(const r of site.rooms){
       if(!r.meta) r.meta = { date:"", worker:"", note:"", damacho:{} };
       r.meta.damacho = {};
@@ -1829,9 +1965,27 @@
     renderAll();
   });
 
-  // ✅ Schedule controls
+  // Schedule controls
   scheduleStageSelect.addEventListener("change", () => renderSchedule());
   addScheduleBtn.addEventListener("click", () => addScheduleRow(scheduleStageSelect.value));
+
+  // ✅ Schedule tab switching
+  function setScheduleTab(which){
+    if(which === "edit"){
+      scheduleEditWrap.style.display = "";
+      scheduleAllWrap.style.display = "none";
+      scheduleTabEdit.classList.add("secondary");
+      scheduleTabAll.classList.remove("secondary");
+    }else{
+      scheduleEditWrap.style.display = "none";
+      scheduleAllWrap.style.display = "";
+      scheduleTabAll.classList.add("secondary");
+      scheduleTabEdit.classList.remove("secondary");
+      renderScheduleSummaryAll();
+    }
+  }
+  scheduleTabEdit.addEventListener("click", () => setScheduleTab("edit"));
+  scheduleTabAll.addEventListener("click", () => setScheduleTab("all"));
 
   // Site create / delete / save
   newSiteBtn.addEventListener("click", () => {
@@ -1897,10 +2051,10 @@
 `【使い方メモ】
 ・部屋タップ：未着手→途中→完了→未着手（選択中段階に対して）
 ・入力モードON：部屋タップで作業日/担当者/ダメ帳（この段階）を入力
-・段階の進捗：社内/設計/施主…は別々に管理されます
+・段階の進捗：社内/設計/施主…は別々に管理
 ・総合の進捗：長期把握用（段階とは別）
 ・報告用：ダメ帳あり範囲の未/途/完（段階ごと）
-・検査/是正：スケジュール行は自動保存（編集→即反映）
+・スケジュール一覧（全段階）：あなたの希望形式で並べて表示
 ・危険：部屋を再生成は最下部・二段階`
     );
   });
@@ -1969,11 +2123,15 @@
     syncReportUi();
 
     renderSchedule();
+    renderScheduleSummaryAll();
     renderSurvey();
 
     renderModeBtn();
     renderRooms();
     renderAllStatsAndOverview();
+
+    // スケジュールは初期は「編集（段階別）」にしておく
+    setScheduleTab("edit");
   }
 
   ensureInitialSite();
