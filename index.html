@@ -11,8 +11,10 @@
       --line:#e6e6e6;
       --text:#111827;
       --muted:#6b7280;
+
       --blue:#2563eb;
-      --blue2:#dbeafe;
+      --blueSoft:#dbeafe;
+
       --danger:#ef4444;
 
       --todoBg:#f3f4f6;
@@ -24,6 +26,7 @@
       --doneBg:#ecfdf5;
       --doneBd:#10b981;
     }
+
     body { font-family: -apple-system, system-ui, sans-serif; margin:0; background:var(--bg); color:var(--text); }
     header { position: sticky; top: 0; background: var(--card); padding: 12px; border-bottom: 1px solid var(--line); z-index:10;}
     h1 { font-size: 16px; margin: 0 0 8px; }
@@ -34,7 +37,7 @@
 
     button { border: 1px solid var(--line); background:#fff; border-radius: 10px; }
     button.primary { background: var(--blue); color: white; border-color: var(--blue); }
-    button.secondary { background: var(--blue2); color: #1e3a8a; border-color: #bfdbfe; }
+    button.secondary { background: var(--blueSoft); color: #1e3a8a; border-color: #bfdbfe; }
     button.danger { border-color: var(--danger); color: var(--danger); background:#fff; }
     button:active{ transform: translateY(1px); }
 
@@ -54,6 +57,7 @@
     input.small{ font-size:12px; padding: 6px 8px; }
     .chip { display:inline-flex; align-items:center; gap:6px; border:1px solid var(--line); border-radius: 999px; padding: 6px 10px; background:#fff; font-size: 12px; color:var(--muted); }
     .chip b{ color:var(--text); }
+    .chip.blue{ background: var(--blueSoft); border-color:#bfdbfe; color:#1e3a8a; font-weight:700; }
 
     .grid { display:grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap:8px; }
     @media (max-width: 480px) { .grid { grid-template-columns: repeat(4, minmax(0,1fr)); } }
@@ -67,27 +71,44 @@
       font-weight: 800;
     }
 
-    /* Room card (全体色が変わる) */
+    /* Room card */
     .room{
       border-radius: 12px;
       padding: 10px 8px;
-      text-align:center;
       user-select:none;
       cursor:pointer;
-      display:flex;
-      flex-direction: column;
-      gap:6px;
       border: 1px solid var(--line);
       background: var(--card);
+      position: relative;
+      overflow: hidden;
     }
     .room.todo{ background: var(--todoBg); border-color: var(--todoBd); }
     .room.doing{ background: var(--doingBg); border-color: var(--doingBd); }
     .room.done{ background: var(--doneBg); border-color: var(--doneBd); }
 
-    .room .num{ font-weight: 800; font-size: 14px; }
-    .room .st{ font-size: 12px; padding: 2px 8px; border-radius: 999px; display:inline-block; margin:0 auto; background:#fff; border:1px solid rgba(0,0,0,0.06); }
-    .room .sub{ font-size: 11px; color: var(--muted); line-height: 1.2; }
+    .room .num{ font-weight: 900; font-size: 14px; text-align:center; }
+    .room .st{ font-size: 12px; padding: 2px 8px; border-radius: 999px; display:inline-block; margin:6px auto 0; background:#fff; border:1px solid rgba(0,0,0,0.06); text-align:center; }
+    .room .sub{ font-size: 11px; color: var(--muted); line-height: 1.25; margin-top:6px; text-align:center; }
+
     .room.highlight { outline: 3px solid var(--blue); outline-offset: 2px; }
+
+    /* stage chips (damacho present) */
+    .stageChips{
+      position:absolute; top:6px; right:6px;
+      display:flex; gap:4px; flex-wrap:wrap;
+      justify-content:flex-end;
+      max-width: 75%;
+    }
+    .stageChips .sChip{
+      font-size: 10px;
+      font-weight: 900;
+      padding: 2px 6px;
+      border-radius: 999px;
+      border: 1px solid #bfdbfe;
+      background: var(--blueSoft);
+      color: #1e3a8a;
+      line-height: 1;
+    }
 
     details summary{
       list-style:none;
@@ -95,14 +116,13 @@
       padding: 10px 12px;
       border-radius: 12px;
       border: 1px solid var(--line);
-      background: var(--blue2);
+      background: var(--blueSoft);
       color:#1e3a8a;
-      font-weight: 800;
+      font-weight: 900;
     }
     details summary::-webkit-details-marker{ display:none; }
     .accBody{ padding: 10px 6px 0; }
 
-    /* Mini cards for survey & schedule */
     .cardMini{
       border:1px solid var(--line);
       border-radius: 14px;
@@ -157,7 +177,7 @@
       padding: 16px; z-index: 50;
     }
     .modal{
-      width:min(720px, 100%);
+      width:min(760px, 100%);
       background:#fff;
       border-radius: 16px;
       border: 1px solid var(--line);
@@ -167,8 +187,27 @@
     .modal .row{ margin: 8px 0; }
     .modal .actions{ display:flex; gap:8px; justify-content:flex-end; margin-top:10px; flex-wrap:wrap; }
     .modal label{ font-size:12px; color:var(--muted); display:block; margin-bottom: 4px; }
+
+    table{
+      width:100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      background:#fff;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    th, td{
+      border-bottom: 1px solid var(--line);
+      padding: 8px 8px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th{ background:#f9fafb; font-weight: 900; }
+    tr:last-child td{ border-bottom:none; }
   </style>
 </head>
+
 <body>
 <header>
   <h1>リペア進捗管理（完成版）</h1>
@@ -180,7 +219,7 @@
   </div>
 
   <div class="row" style="margin-top:8px;">
-    <span class="chip">検査段階</span>
+    <span class="chip blue">検査段階</span>
     <select id="stageSelect"></select>
     <button id="stageManageBtn" class="small secondary">段階を編集</button>
   </div>
@@ -189,6 +228,7 @@
 </header>
 
 <main>
+
   <!-- 現場設定 -->
   <div class="panel">
     <h2>現場設定</h2>
@@ -217,7 +257,7 @@
       </div>
     </div>
 
-    <!-- 検査スケジュール（閉じた状態が初期） -->
+    <!-- 検査スケジュール（閉じた状態） -->
     <div style="margin-top:10px;">
       <details id="scheduleAcc">
         <summary>検査・内覧スケジュール（タップで開閉）</summary>
@@ -239,7 +279,7 @@
 
     <!-- 備考 -->
     <div style="margin-top:10px;">
-      <div class="help" style="margin: 0 0 6px; font-weight:800; color:var(--text);">備考（現場メモ）</div>
+      <div class="help" style="margin: 0 0 6px; font-weight:900; color:var(--text);">備考（現場メモ）</div>
       <textarea id="siteMemo" placeholder="自由メモ（段取り、注意事項、共通の指示など）"></textarea>
     </div>
 
@@ -264,31 +304,82 @@
     </details>
   </div>
 
-  <!-- 集計範囲 -->
+  <!-- ダメ帳：まとめて入力（A案2） -->
   <div class="panel">
-    <h2>集計範囲</h2>
+    <h2>ダメ帳（まとめて設定）</h2>
+    <div class="help" style="margin-bottom:8px;">
+      選択中の検査段階に対して、<b>階範囲</b> または <b>部屋番号範囲</b> を一括で「ダメ帳あり/なし」にできます。
+    </div>
+
     <div class="row">
-      <select id="scopeMode">
-        <option value="all">全部屋</option>
-        <option value="range">階範囲（例：1〜6）</option>
-        <option value="floors">選択フロア（例：1,3,8）</option>
+      <span class="chip blue">対象段階</span>
+      <select id="bulkStageSelect"></select>
+    </div>
+
+    <div class="row" style="margin-top:8px;">
+      <span class="chip">対象</span>
+      <select id="bulkTargetType">
+        <option value="floors">階の範囲（例：1〜6）</option>
+        <option value="rooms">部屋番号の範囲（例：701〜1105）</option>
       </select>
 
-      <input id="scopeFrom" class="small" inputmode="numeric" placeholder="開始階" style="max-width:110px; display:none;" />
-      <input id="scopeTo" class="small" inputmode="numeric" placeholder="終了階" style="max-width:110px; display:none;" />
+      <input id="bulkFrom" class="small" inputmode="numeric" placeholder="開始" style="max-width:120px;" />
+      <input id="bulkTo" class="small" inputmode="numeric" placeholder="終了" style="max-width:120px;" />
 
-      <input id="scopeFloors" class="small" placeholder="例 1,3,8" style="display:none;" />
-      <button id="scopeApplyBtn" class="small primary">適用</button>
+      <button id="bulkYesBtn" class="small primary">この範囲を「あり」</button>
+      <button id="bulkNoBtn" class="small">この範囲を「なし」</button>
     </div>
-    <div class="help">
-      ※この「集計範囲」は、合計/未着手/途中/完了/ダメ帳あり の集計にだけ反映します（表示フィルタとは別）
-    </div>
+
+    <div class="help" id="bulkPreview" style="margin-top:8px;"></div>
   </div>
 
-  <!-- ステータス -->
-  <div class="stats" id="stats"></div>
+  <!-- 統計：全体（固定） -->
+  <div class="panel">
+    <h2>全体の進捗（現場全体）</h2>
+    <div class="stats" id="statsOverall"></div>
+  </div>
 
-  <!-- 操作 -->
+  <!-- 統計：報告用（ダメ帳あり範囲） -->
+  <div class="panel">
+    <h2>報告用（ダメ帳あり範囲の進捗）</h2>
+    <div class="help" style="margin-bottom:8px;">
+      会社報告向け：選んだ「範囲」かつ「ダメ帳あり」の部屋だけで、未着手/途中/完了を集計します。
+    </div>
+
+    <div class="row">
+      <span class="chip">範囲</span>
+      <select id="reportScopeType">
+        <option value="all">全部屋</option>
+        <option value="floors">階の範囲（例：1〜6）</option>
+        <option value="rooms">部屋番号の範囲（例：701〜1105）</option>
+      </select>
+
+      <input id="reportFrom" class="small" inputmode="numeric" placeholder="開始" style="max-width:120px; display:none;" />
+      <input id="reportTo" class="small" inputmode="numeric" placeholder="終了" style="max-width:120px; display:none;" />
+
+      <span class="chip blue">段階</span>
+      <select id="reportStageSelect"></select>
+
+      <button id="reportApplyBtn" class="small primary">適用</button>
+    </div>
+
+    <div class="stats" id="statsReport"></div>
+  </div>
+
+  <!-- 俯瞰（a） -->
+  <div class="panel">
+    <details id="overviewAcc">
+      <summary>俯瞰（段階×進捗の表）（タップで開閉）</summary>
+      <div class="accBody">
+        <div class="help" style="margin-bottom:8px;">
+          「報告用」の範囲を基準に、各段階の <b>ダメ帳あり</b> 部屋について、未/途/完 を集計します（切り替え不要で全体把握）。
+        </div>
+        <div id="overviewTable"></div>
+      </div>
+    </details>
+  </div>
+
+  <!-- 表示・操作 -->
   <div class="panel">
     <div class="row">
       <button class="small" data-filter="all">全件</button>
@@ -308,7 +399,8 @@
 
     <div class="help" style="margin-top:8px;">
       ・通常：部屋をタップ → <b>未着手 → 途中 → 完了 → 未着手</b><br/>
-      ・入力モードON：部屋をタップ → <b>作業日 / 担当者（例：山田）/ ダメ帳（この検査段階）</b> を入力
+      ・入力モードON：部屋をタップ → <b>作業日 / 担当者（例：山田）/ メモ / この段階のダメ帳（あり/なし）</b> を入力<br/>
+      ・カード右上のチップ（例：<b>社 設 施</b>）は「その段階でダメ帳が残っている」印です
     </div>
   </div>
 
@@ -322,11 +414,12 @@
       <div class="dangerHelp">
         ・現在の部屋リストを <b>階数/部屋数</b> から作り直します。<br/>
         ・<b>進捗（未/途/完）</b>、<b>作業日</b>、<b>担当者</b>、<b>ダメ帳</b> が初期化されます。<br/>
-        ・誤操作防止のため <b>二段階タップ</b> です。
+        ・誤操作防止のため <b>二段階タップ</b> です（5秒で解除）。
       </div>
       <button id="regenRoomsBtn" class="dangerBtn">二段階：タップして準備</button>
     </div>
   </div>
+
 </main>
 
 <!-- 入力モード用モーダル -->
@@ -376,7 +469,7 @@
 
 <script>
 (() => {
-  const STORAGE_KEY = "repair_progress_complete_v2";
+  const STORAGE_KEY = "repair_progress_complete_v3";
 
   const uid = () => Math.random().toString(36).slice(2, 10) + "-" + Date.now().toString(36);
   const now = () => Date.now();
@@ -408,13 +501,26 @@
   const surveyTabEdit = $("surveyTabEdit");
   const surveyTabView = $("surveyTabView");
 
-  const scopeMode = $("scopeMode");
-  const scopeFrom = $("scopeFrom");
-  const scopeTo = $("scopeTo");
-  const scopeFloors = $("scopeFloors");
-  const scopeApplyBtn = $("scopeApplyBtn");
+  const bulkStageSelect = $("bulkStageSelect");
+  const bulkTargetType = $("bulkTargetType");
+  const bulkFrom = $("bulkFrom");
+  const bulkTo = $("bulkTo");
+  const bulkYesBtn = $("bulkYesBtn");
+  const bulkNoBtn = $("bulkNoBtn");
+  const bulkPreview = $("bulkPreview");
 
-  const statsEl = $("stats");
+  const reportScopeType = $("reportScopeType");
+  const reportFrom = $("reportFrom");
+  const reportTo = $("reportTo");
+  const reportStageSelect = $("reportStageSelect");
+  const reportApplyBtn = $("reportApplyBtn");
+
+  const statsOverallEl = $("statsOverall");
+  const statsReportEl = $("statsReport");
+
+  const overviewAcc = $("overviewAcc");
+  const overviewTable = $("overviewTable");
+
   const roomGrid = $("roomGrid");
 
   const modeBtn = $("modeBtn");
@@ -472,24 +578,24 @@
     };
   }
 
-  function defaultScope(){
-    return { mode:"all", from:1, to:1, floorsCsv:"" };
+  function defaultReport(){
+    return { scopeType:"all", from:1, to:1, stageKey:"in" };
   }
 
   function loadState(){
     try{
       const raw = localStorage.getItem(STORAGE_KEY);
-      if(!raw) return { sites:[], currentSiteId:null, ui:{ filter:"all", inputMode:false, currentStageKey:"in", scope: defaultScope() }};
+      if(!raw) return { sites:[], currentSiteId:null, ui:{ filter:"all", inputMode:false, currentStageKey:"in", report: defaultReport() }};
       const st = JSON.parse(raw);
       if(!st || !Array.isArray(st.sites)) throw new Error("invalid");
-      if(!st.ui) st.ui = { filter:"all", inputMode:false, currentStageKey:"in", scope: defaultScope() };
+      if(!st.ui) st.ui = { filter:"all", inputMode:false, currentStageKey:"in", report: defaultReport() };
       if(!st.ui.filter) st.ui.filter="all";
       if(typeof st.ui.inputMode !== "boolean") st.ui.inputMode=false;
       if(!st.ui.currentStageKey) st.ui.currentStageKey="in";
-      if(!st.ui.scope) st.ui.scope = defaultScope();
+      if(!st.ui.report) st.ui.report = defaultReport();
       return st;
     }catch{
-      return { sites:[], currentSiteId:null, ui:{ filter:"all", inputMode:false, currentStageKey:"in", scope: defaultScope() }};
+      return { sites:[], currentSiteId:null, ui:{ filter:"all", inputMode:false, currentStageKey:"in", report: defaultReport() }};
     }
   }
   function saveState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
@@ -524,20 +630,22 @@
     return out;
   }
 
-  function generateRoomsFromSpec(spec){
+  function generateRoomsFromSpec(spec, stages){
     const ranges = parseFloorSpec(spec);
     const rooms = [];
     for(const r of ranges){
       for(let f=r.from; f<=r.to; f++){
         for(let i=1; i<=r.roomsPerFloor; i++){
           const label = String(f*100+i);
+          const dame = {};
+          for(const stg of stages) dame[stg.key] = "none";
           rooms.push({
             id: uid(),
             label,
             floor:f,
             idx:i,
             status:"todo",
-            meta: { damacho:{} }
+            meta: { date:"", worker:"", note:"", damacho: dame }
           });
         }
       }
@@ -569,23 +677,19 @@
         createdAt: now(),
         updatedAt: now(),
       };
-      s.rooms = generateRoomsFromSpec(s.floorSpec);
+      s.rooms = generateRoomsFromSpec(s.floorSpec, s.stages);
       for(const stg of s.stages){ s.schedules[stg.key] = []; }
-      for(const r of s.rooms){
-        r.meta = r.meta || { damacho:{} };
-        r.meta.damacho = r.meta.damacho || {};
-        for(const stg of s.stages) r.meta.damacho[stg.key] = "none";
-      }
       state.sites.push(s);
       state.currentSiteId = s.id;
       state.ui.currentStageKey = "in";
-      if(!state.ui.scope) state.ui.scope = defaultScope();
+      state.ui.report = state.ui.report || defaultReport();
       saveState();
     }else if(!state.currentSiteId || !getCurrentSite()){
       state.currentSiteId = state.sites[0].id;
       saveState();
     }
 
+    // migrate/normalize
     for(const s of state.sites){
       if(!s.stages || !Array.isArray(s.stages) || s.stages.length===0) s.stages = JSON.parse(JSON.stringify(DEFAULT_STAGES));
       if(!s.schedules) s.schedules = {};
@@ -596,8 +700,9 @@
       if(typeof s.memo !== "string") s.memo = "";
       if(typeof s.gc !== "string") s.gc = "";
       if(!Array.isArray(s.rooms)) s.rooms = [];
+
       for(const r of s.rooms){
-        if(!r.meta) r.meta = { damacho:{} };
+        if(!r.meta) r.meta = { date:"", worker:"", note:"", damacho:{} };
         if(!r.meta.damacho) r.meta.damacho = {};
         for(const stg of s.stages){
           if(!r.meta.damacho[stg.key]) r.meta.damacho[stg.key] = "none";
@@ -605,7 +710,7 @@
       }
     }
 
-    if(!state.ui.scope) state.ui.scope = defaultScope();
+    if(!state.ui.report) state.ui.report = defaultReport();
   }
 
   function statusLabel(st){
@@ -624,47 +729,16 @@
     return hit ? hit.label : key;
   }
 
-  function parseFloorsCsv(csv){
-    return (csv||"")
-      .split(",")
-      .map(s=>s.trim())
-      .filter(Boolean)
-      .map(n=>Number(n))
-      .filter(n=>Number.isInteger(n) && n>0);
-  }
-
-  function getScopedRooms(site){
-    const scope = state.ui.scope || defaultScope();
-    if(scope.mode==="all") return site.rooms;
-
-    if(scope.mode==="range"){
-      const a = Number(scope.from||1);
-      const b = Number(scope.to||a||1);
-      const from = Math.min(a,b);
-      const to = Math.max(a,b);
-      return site.rooms.filter(r => r.floor>=from && r.floor<=to);
-    }
-
-    if(scope.mode==="floors"){
-      const floors = new Set(parseFloorsCsv(scope.floorsCsv));
-      if(floors.size===0) return site.rooms;
-      return site.rooms.filter(r => floors.has(r.floor));
-    }
-
-    return site.rooms;
-  }
-
-  function syncScopeUiFromState(){
-    const scope = state.ui.scope || defaultScope();
-    scopeMode.value = scope.mode || "all";
-    scopeFrom.value = String(scope.from ?? "");
-    scopeTo.value = String(scope.to ?? "");
-    scopeFloors.value = String(scope.floorsCsv ?? "");
-
-    const m = scopeMode.value;
-    scopeFrom.style.display = (m==="range") ? "inline-block" : "none";
-    scopeTo.style.display = (m==="range") ? "inline-block" : "none";
-    scopeFloors.style.display = (m==="floors") ? "inline-block" : "none";
+  function stageChipText(label){
+    const s = String(label||"");
+    if(s.includes("自主")) return "自";
+    if(s.includes("社内")) return "社";
+    if(s.includes("設計")) return "設";
+    if(s.includes("施主")) return "施";
+    if(s.includes("内覧") && s.includes("再")) return "再";
+    if(s.includes("再内覧")) return "再";
+    if(s.includes("内覧")) return "内";
+    return s.trim().slice(0,1) || "?";
   }
 
   function computeStats(rooms){
@@ -677,13 +751,32 @@
     return { total: rooms.length, todo, doing, done };
   }
 
-  function countDamachoYes(rooms, stageKey){
-    let c = 0;
-    for(const r of rooms){
-      const v = r.meta?.damacho?.[stageKey] || "none";
-      if(v==="yes") c++;
+  function roomsInRange(site, scopeType, from, to){
+    const a = Number(from||0), b = Number(to||0);
+    const lo = Math.min(a,b), hi = Math.max(a,b);
+
+    if(scopeType==="all") return site.rooms;
+
+    if(scopeType==="floors"){
+      if(!Number.isInteger(lo) || !Number.isInteger(hi) || lo<=0 || hi<=0) return [];
+      return site.rooms.filter(r => r.floor>=lo && r.floor<=hi);
     }
-    return c;
+
+    if(scopeType==="rooms"){
+      const lo2 = String(lo), hi2 = String(hi);
+      if(!lo2 || !hi2) return [];
+      return site.rooms.filter(r => {
+        const n = Number(r.label);
+        return Number.isFinite(n) && n>=lo && n<=hi;
+      });
+    }
+
+    return site.rooms;
+  }
+
+  function damachoYes(room, stageKey){
+    const v = room.meta?.damacho?.[stageKey] || "none";
+    return v === "yes";
   }
 
   function renderSiteSelect(){
@@ -701,24 +794,30 @@
     const site = getCurrentSite(); if(!site) return;
 
     stageSelect.innerHTML = "";
+    bulkStageSelect.innerHTML = "";
+    scheduleStageSelect.innerHTML = "";
+    reportStageSelect.innerHTML = "";
+
     for(const stg of site.stages){
-      const opt = document.createElement("option");
-      opt.value = stg.key;
-      opt.textContent = stg.label;
-      stageSelect.appendChild(opt);
+      const opt1 = document.createElement("option"); opt1.value = stg.key; opt1.textContent = stg.label; stageSelect.appendChild(opt1);
+      const opt2 = document.createElement("option"); opt2.value = stg.key; opt2.textContent = stg.label; bulkStageSelect.appendChild(opt2);
+      const opt3 = document.createElement("option"); opt3.value = stg.key; opt3.textContent = stg.label; scheduleStageSelect.appendChild(opt3);
+      const opt4 = document.createElement("option"); opt4.value = stg.key; opt4.textContent = stg.label; reportStageSelect.appendChild(opt4);
     }
+
     if(!site.stages.find(s=>s.key===state.ui.currentStageKey)){
       state.ui.currentStageKey = site.stages[0]?.key || "in";
     }
     stageSelect.value = state.ui.currentStageKey;
 
-    scheduleStageSelect.innerHTML = "";
-    for(const stg of site.stages){
-      const opt = document.createElement("option");
-      opt.value = stg.key;
-      opt.textContent = stg.label;
-      scheduleStageSelect.appendChild(opt);
+    // report stage default
+    if(!state.ui.report?.stageKey || !site.stages.find(s=>s.key===state.ui.report.stageKey)){
+      state.ui.report.stageKey = state.ui.currentStageKey;
+      saveState();
     }
+    reportStageSelect.value = state.ui.report.stageKey;
+
+    bulkStageSelect.value = state.ui.currentStageKey;
     scheduleStageSelect.value = state.ui.currentStageKey;
   }
 
@@ -734,112 +833,92 @@
     siteMeta.textContent = `部屋数: ${site.rooms.length} / 検査段階: ${stageLabel(site, state.ui.currentStageKey)} / 最終更新: ${updated}`;
   }
 
-  function renderStats(){
+  function mkPill(label, val){
+    const d = document.createElement("div");
+    d.className="pill";
+    d.textContent = `${label}: ${val}`;
+    return d;
+  }
+
+  function renderOverallStats(){
     const site = getCurrentSite(); if(!site) return;
+    const st = computeStats(site.rooms);
+    statsOverallEl.innerHTML = "";
+    statsOverallEl.appendChild(mkPill("合計", st.total));
+    statsOverallEl.appendChild(mkPill("未着手", st.todo));
+    statsOverallEl.appendChild(mkPill("途中", st.doing));
+    statsOverallEl.appendChild(mkPill("完了", st.done));
+  }
 
-    const scoped = getScopedRooms(site);
-    const st = computeStats(scoped);
-    const dam = countDamachoYes(scoped, state.ui.currentStageKey);
+  function normalizeReportInputsUI(){
+    const t = reportScopeType.value;
+    const show = (t==="floors" || t==="rooms");
+    reportFrom.style.display = show ? "inline-block" : "none";
+    reportTo.style.display = show ? "inline-block" : "none";
+  }
 
-    const sc = state.ui.scope || defaultScope();
+  function renderReportStats(){
+    const site = getCurrentSite(); if(!site) return;
+    const rep = state.ui.report || defaultReport();
+
+    // range rooms
+    const base = roomsInRange(site, rep.scopeType, rep.from, rep.to);
+
+    // damacho yes only
+    const stageKey = rep.stageKey || state.ui.currentStageKey;
+    const target = base.filter(r => damachoYes(r, stageKey));
+
+    const st = computeStats(target);
+
     let scopeLabel = "全部屋";
-    if(sc.mode==="range") scopeLabel = `${Math.min(sc.from, sc.to)}〜${Math.max(sc.from, sc.to)}階`;
-    if(sc.mode==="floors") scopeLabel = `フロア: ${(sc.floorsCsv||"").trim() || "（未指定=全部屋）"}`;
+    if(rep.scopeType==="floors") scopeLabel = `${Math.min(rep.from, rep.to)}〜${Math.max(rep.from, rep.to)}階`;
+    if(rep.scopeType==="rooms") scopeLabel = `${Math.min(rep.from, rep.to)}〜${Math.max(rep.from, rep.to)}号室`;
 
-    statsEl.innerHTML = "";
-    const mk=(label,val)=>{
-      const d=document.createElement("div");
-      d.className="pill";
-      d.textContent=`${label}: ${val}`;
-      return d;
-    };
-    statsEl.appendChild(mk("集計範囲", scopeLabel));
-    statsEl.appendChild(mk("合計", st.total));
-    statsEl.appendChild(mk("未着手", st.todo));
-    statsEl.appendChild(mk("途中", st.doing));
-    statsEl.appendChild(mk("完了", st.done));
-    statsEl.appendChild(mk("ダメ帳あり", dam));
+    statsReportEl.innerHTML = "";
+    statsReportEl.appendChild(mkPill("範囲", scopeLabel));
+    statsReportEl.appendChild(mkPill("段階", stageLabel(site, stageKey)));
+    statsReportEl.appendChild(mkPill("ダメ帳あり（対象）", st.total));
+    statsReportEl.appendChild(mkPill("未着手", st.todo));
+    statsReportEl.appendChild(mkPill("途中", st.doing));
+    statsReportEl.appendChild(mkPill("完了", st.done));
   }
 
-  let highlightedRoomId = null;
-
-  function renderRooms(){
+  function renderOverviewTable(){
     const site = getCurrentSite(); if(!site) return;
-    const filter = state.ui.filter;
-    const rooms = (filter==="all") ? site.rooms : site.rooms.filter(r=>r.status===filter);
+    const rep = state.ui.report || defaultReport();
+    const base = roomsInRange(site, rep.scopeType, rep.from, rep.to);
 
-    roomGrid.innerHTML = "";
-    let lastFloor = null;
-
-    for(const r of rooms){
-      if(lastFloor !== r.floor){
-        const header = document.createElement("div");
-        header.className="floorHeader";
-        header.textContent = `${r.floor}階`;
-        roomGrid.appendChild(header);
-        lastFloor = r.floor;
-      }
-
-      const card = document.createElement("div");
-      card.className = `room ${r.status}`;
-      card.dataset.roomId = r.id;
-      if(r.id===highlightedRoomId) card.classList.add("highlight");
-
-      const num = document.createElement("div");
-      num.className="num";
-      num.textContent = r.label;
-
-      const st = document.createElement("div");
-      st.className="st";
-      st.textContent = statusLabel(r.status);
-
-      const sub = document.createElement("div");
-      sub.className="sub";
-      const d = (r.meta?.date||"");
-      const w = (r.meta?.worker||"");
-      const dam = (r.meta?.damacho?.[state.ui.currentStageKey] || "none");
-      const damLabel = dam==="yes" ? "ダメ帳:あり" : dam==="no" ? "ダメ帳:なし" : "";
-      sub.textContent = [d, w, damLabel].filter(Boolean).join(" / ");
-
-      card.appendChild(num);
-      card.appendChild(st);
-      card.appendChild(sub);
-
-      card.addEventListener("click", () => {
-        const site2 = getCurrentSite(); if(!site2) return;
-        const room = site2.rooms.find(x=>x.id===r.id); if(!room) return;
-
-        if(state.ui.inputMode){
-          openRoomModal(room);
-          return;
-        }
-
-        room.status = nextStatus(room.status);
-        site2.updatedAt = now();
-        saveState();
-        renderStats();
-        renderRooms();
-        renderSiteForm();
-      });
-
-      roomGrid.appendChild(card);
-    }
-  }
-
-  function jumpToRoom(label){
-    const site = getCurrentSite(); if(!site) return;
-    const target = site.rooms.find(r=>r.label===String(label));
-    if(!target){ alert(`部屋が見つかりません: ${label}`); return; }
-
-    state.ui.filter = "all";
-    highlightedRoomId = target.id;
-    saveState();
-
-    renderRooms();
-    requestAnimationFrame(() => {
-      const el = document.querySelector(`[data-room-id="${target.id}"]`);
-      if(el) el.scrollIntoView({ behavior:"smooth", block:"center" });
+    const rows = site.stages.map(stg => {
+      const target = base.filter(r => damachoYes(r, stg.key));
+      const st = computeStats(target);
+      return { stageKey: stg.key, stageLabel: stg.label, total: st.total, todo: st.todo, doing: st.doing, done: st.done };
     });
+
+    const html = `
+      <table>
+        <thead>
+          <tr>
+            <th style="width:34%;">段階</th>
+            <th>ダメ帳あり</th>
+            <th>未着手</th>
+            <th>途中</th>
+            <th>完了</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map(r => `
+            <tr>
+              <td><b>${escapeHtml(r.stageLabel)}</b></td>
+              <td>${r.total}</td>
+              <td>${r.todo}</td>
+              <td>${r.doing}</td>
+              <td>${r.done}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    `;
+    overviewTable.innerHTML = html;
   }
 
   function renderSchedule(){
@@ -1203,6 +1282,7 @@
     surveyEdit.appendChild(mkText("現場の休業日（固定）", "holidaysFixed", "例：日曜、祝日"));
     surveyEdit.appendChild(mkRepeater("休業日（追加：カレンダーに関係なく入れない日など）", "holidaysExtra", "例：1/20（設備点検のため）"));
 
+    // default: edit
     surveyEdit.style.display = "";
     surveyView.style.display = "none";
     surveyTabEdit.classList.add("secondary");
@@ -1282,21 +1362,94 @@
     ]);
   }
 
+  // rooms render
+  let highlightedRoomId = null;
   let editingRoomId = null;
+
+  function renderRooms(){
+    const site = getCurrentSite(); if(!site) return;
+    const filter = state.ui.filter;
+    const rooms = (filter==="all") ? site.rooms : site.rooms.filter(r=>r.status===filter);
+
+    roomGrid.innerHTML = "";
+    let lastFloor = null;
+
+    for(const r of rooms){
+      if(lastFloor !== r.floor){
+        const header = document.createElement("div");
+        header.className="floorHeader";
+        header.textContent = `${r.floor}階`;
+        roomGrid.appendChild(header);
+        lastFloor = r.floor;
+      }
+
+      const card = document.createElement("div");
+      card.className = `room ${r.status}`;
+      card.dataset.roomId = r.id;
+      if(r.id===highlightedRoomId) card.classList.add("highlight");
+
+      // stage chips (b) : show stages where damacho is YES
+      const chips = document.createElement("div");
+      chips.className = "stageChips";
+      for(const stg of site.stages){
+        if(damachoYes(r, stg.key)){
+          const c = document.createElement("span");
+          c.className = "sChip";
+          c.textContent = stageChipText(stg.label);
+          chips.appendChild(c);
+        }
+      }
+      if(chips.childElementCount>0) card.appendChild(chips);
+
+      const num = document.createElement("div");
+      num.className="num";
+      num.textContent = r.label;
+
+      const st = document.createElement("div");
+      st.className="st";
+      st.textContent = statusLabel(r.status);
+
+      const sub = document.createElement("div");
+      sub.className="sub";
+      const d = (r.meta?.date||"");
+      const w = (r.meta?.worker||"");
+      const dam = (r.meta?.damacho?.[state.ui.currentStageKey] || "none");
+      const damLabel = dam==="yes" ? "ダメ帳:あり" : dam==="no" ? "ダメ帳:なし" : "";
+      sub.textContent = [d, w, damLabel].filter(Boolean).join(" / ");
+
+      card.appendChild(num);
+      card.appendChild(st);
+      card.appendChild(sub);
+
+      card.addEventListener("click", () => {
+        const site2 = getCurrentSite(); if(!site2) return;
+        const room = site2.rooms.find(x=>x.id===r.id); if(!room) return;
+
+        if(state.ui.inputMode){
+          openRoomModal(room);
+          return;
+        }
+
+        room.status = nextStatus(room.status);
+        site2.updatedAt = now();
+        saveState();
+        renderAllStatsAndOverview();
+        renderRooms();
+        renderSiteForm();
+      });
+
+      roomGrid.appendChild(card);
+    }
+  }
 
   function openRoomModal(room){
     const site = getCurrentSite(); if(!site) return;
     editingRoomId = room.id;
 
-    const extra = document.getElementById("schedExtra");
-    if(extra) extra.style.display = "none";
-    workerName.parentElement.style.display="";
-    damachoSel.parentElement.style.display="";
-
     modalTitle.textContent = `部屋 ${room.label}（${stageLabel(site, state.ui.currentStageKey)}）`;
     workDate.value = room.meta?.date || "";
     workDateText.value = room.meta?.date || "";
-    workerName.value = room.meta?.worker || "";
+    workerName.value = room.meta?.worker || "山田";
     roomNote.value = room.meta?.note || "";
 
     const dam = room.meta?.damacho?.[state.ui.currentStageKey] || "none";
@@ -1331,18 +1484,197 @@
     site.updatedAt = now();
     saveState();
     closeRoomModal();
+    renderAllStatsAndOverview();
     renderRooms();
-    renderStats();
     renderSiteForm();
   });
 
   workDate.addEventListener("change", () => { workDateText.value = workDate.value; });
 
+  // Jump
+  function jumpToRoom(label){
+    const site = getCurrentSite(); if(!site) return;
+    const target = site.rooms.find(r=>r.label===String(label));
+    if(!target){ alert(`部屋が見つかりません: ${label}`); return; }
+
+    state.ui.filter = "all";
+    highlightedRoomId = target.id;
+    saveState();
+
+    renderRooms();
+    requestAnimationFrame(() => {
+      const el = document.querySelector(`[data-room-id="${target.id}"]`);
+      if(el) el.scrollIntoView({ behavior:"smooth", block:"center" });
+    });
+  }
+
+  jumpBtn.addEventListener("click", () => {
+    const v = (jumpInput.value||"").trim();
+    if(!v) return;
+    jumpToRoom(v);
+  });
+  jumpInput.addEventListener("keydown", (e) => {
+    if(e.key==="Enter"){
+      const v = (jumpInput.value||"").trim();
+      if(!v) return;
+      jumpToRoom(v);
+    }
+  });
+  clearJumpBtn.addEventListener("click", () => {
+    highlightedRoomId = null;
+    jumpInput.value = "";
+    renderRooms();
+  });
+
+  // Bulk damacho
+  function bulkPreviewText(){
+    const site = getCurrentSite(); if(!site) return "";
+    const stageKey = bulkStageSelect.value || state.ui.currentStageKey;
+    const type = bulkTargetType.value;
+    const from = Number(bulkFrom.value);
+    const to = Number(bulkTo.value);
+
+    if(!Number.isFinite(from) || !Number.isFinite(to)) return "開始/終了を入力してください。";
+
+    const base = roomsInRange(site, type==="floors" ? "floors" : "rooms", from, to);
+    const label = type==="floors"
+      ? `${Math.min(from,to)}〜${Math.max(from,to)}階`
+      : `${Math.min(from,to)}〜${Math.max(from,to)}号室`;
+
+    return `対象：${stageLabel(site, stageKey)} / ${label}（${base.length}室）`;
+  }
+
+  function applyBulkDamacho(valueYes){
+    const site = getCurrentSite(); if(!site) return;
+    const stageKey = bulkStageSelect.value || state.ui.currentStageKey;
+    const type = bulkTargetType.value;
+    const from = Number(bulkFrom.value);
+    const to = Number(bulkTo.value);
+
+    if(!Number.isFinite(from) || !Number.isFinite(to)){
+      alert("開始/終了を数値で入力してください");
+      return;
+    }
+
+    const scopeType = type==="floors" ? "floors" : "rooms";
+    const base = roomsInRange(site, scopeType, from, to);
+
+    const label = type==="floors"
+      ? `${Math.min(from,to)}〜${Math.max(from,to)}階`
+      : `${Math.min(from,to)}〜${Math.max(from,to)}号室`;
+
+    const nextVal = valueYes ? "yes" : "no";
+    const ok = confirm(`${stageLabel(site, stageKey)} / ${label} の ${base.length}室 を「${valueYes ? "ダメ帳あり" : "ダメ帳なし"}」にしますか？`);
+    if(!ok) return;
+
+    for(const r of base){
+      if(!r.meta) r.meta = { date:"", worker:"", note:"", damacho:{} };
+      if(!r.meta.damacho) r.meta.damacho = {};
+      r.meta.damacho[stageKey] = nextVal;
+    }
+
+    site.updatedAt = now();
+    saveState();
+    renderAllStatsAndOverview();
+    renderRooms();
+    renderSiteForm();
+  }
+
+  bulkFrom.addEventListener("input", () => bulkPreview.textContent = bulkPreviewText());
+  bulkTo.addEventListener("input", () => bulkPreview.textContent = bulkPreviewText());
+  bulkTargetType.addEventListener("change", () => bulkPreview.textContent = bulkPreviewText());
+  bulkStageSelect.addEventListener("change", () => bulkPreview.textContent = bulkPreviewText());
+
+  bulkYesBtn.addEventListener("click", () => applyBulkDamacho(true));
+  bulkNoBtn.addEventListener("click", () => applyBulkDamacho(false));
+
+  // Report scope
+  function syncReportUi(){
+    const rep = state.ui.report || defaultReport();
+    reportScopeType.value = rep.scopeType || "all";
+    reportFrom.value = String(rep.from ?? "");
+    reportTo.value = String(rep.to ?? "");
+    reportStageSelect.value = rep.stageKey || state.ui.currentStageKey;
+    normalizeReportInputsUI();
+  }
+
+  reportScopeType.addEventListener("change", () => {
+    state.ui.report.scopeType = reportScopeType.value;
+    saveState();
+    syncReportUi();
+  });
+
+  reportApplyBtn.addEventListener("click", () => {
+    const rep = state.ui.report || defaultReport();
+    rep.scopeType = reportScopeType.value;
+    rep.stageKey = reportStageSelect.value;
+
+    if(rep.scopeType==="floors" || rep.scopeType==="rooms"){
+      rep.from = Number(reportFrom.value || 1);
+      rep.to = Number(reportTo.value || rep.from || 1);
+    }else{
+      rep.from = 1; rep.to = 1;
+    }
+
+    state.ui.report = rep;
+    saveState();
+    renderAllStatsAndOverview();
+  });
+
+  reportStageSelect.addEventListener("change", () => {
+    state.ui.report.stageKey = reportStageSelect.value;
+    saveState();
+    renderAllStatsAndOverview();
+  });
+
+  // Mode btn
+  function renderModeBtn(){
+    if(state.ui.inputMode){
+      modeBtn.textContent = "入力モード: ON";
+      modeBtn.classList.add("primary");
+    }else{
+      modeBtn.textContent = "入力モード: OFF";
+      modeBtn.classList.remove("primary");
+    }
+  }
+  modeBtn.addEventListener("click", () => {
+    state.ui.inputMode = !state.ui.inputMode;
+    saveState();
+    renderModeBtn();
+  });
+
+  resetAllBtn.addEventListener("click", () => {
+    const site = getCurrentSite(); if(!site) return;
+    if(!confirm("全ての部屋を未着手に戻しますか？")) return;
+    for(const r of site.rooms) r.status="todo";
+    site.updatedAt = now();
+    saveState();
+    renderAllStatsAndOverview();
+    renderRooms();
+    renderSiteForm();
+  });
+
+  // Filter buttons
+  document.querySelectorAll("[data-filter]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const f = btn.getAttribute("data-filter");
+      if(f==="all"||f==="todo"||f==="doing"||f==="done"){
+        state.ui.filter = f;
+        saveState();
+        renderRooms();
+      }
+    });
+  });
+
+  // Site switching
   siteSelect.addEventListener("change", () => {
     state.currentSiteId = siteSelect.value;
     const site = getCurrentSite();
     if(site && !site.stages.find(s=>s.key===state.ui.currentStageKey)){
       state.ui.currentStageKey = site.stages[0]?.key || "in";
+    }
+    if(site && (!state.ui.report?.stageKey || !site.stages.find(s=>s.key===state.ui.report.stageKey))){
+      state.ui.report.stageKey = state.ui.currentStageKey;
     }
     saveState();
     renderAll();
@@ -1350,26 +1682,19 @@
 
   stageSelect.addEventListener("change", () => {
     state.ui.currentStageKey = stageSelect.value;
-    saveState();
-    renderStageSelects();
-    renderRooms();
-    renderStats();
-    renderSiteForm();
+    // keep bulk stage synced to current
+    bulkStageSelect.value = state.ui.currentStageKey;
+    // schedule stage synced too
     scheduleStageSelect.value = state.ui.currentStageKey;
-    renderSchedule();
-  });
 
-  scheduleStageSelect.addEventListener("change", () => {
-    renderSchedule();
-  });
-
-  addScheduleBtn.addEventListener("click", () => {
-    const stageKey = scheduleStageSelect.value;
-    addScheduleItem(stageKey);
-    renderSchedule();
+    saveState();
+    renderRooms();
+    renderAllStatsAndOverview();
     renderSiteForm();
+    renderSchedule();
   });
 
+  // Stage manage (simple slash edit)
   stageManageBtn.addEventListener("click", () => {
     const site = getCurrentSite(); if(!site) return;
     const current = site.stages.map(s=>s.label).join(" / ");
@@ -1384,22 +1709,30 @@
     const newStages = labels.map((lb,i)=>({ key: "st"+(i+1), label: lb }));
     site.stages = newStages;
 
+    // schedules reset per stage
     const newSchedules = {};
     for(const stg of newStages){ newSchedules[stg.key] = []; }
     site.schedules = newSchedules;
 
+    // room damacho migrate: keep by label best-effort is hard -> reset to none for safety
     for(const r of site.rooms){
-      if(!r.meta) r.meta = { damacho:{} };
+      if(!r.meta) r.meta = { date:"", worker:"", note:"", damacho:{} };
       r.meta.damacho = {};
       for(const stg of newStages){ r.meta.damacho[stg.key] = "none"; }
     }
 
     state.ui.currentStageKey = newStages[0].key;
+    state.ui.report.stageKey = newStages[0].key;
     site.updatedAt = now();
     saveState();
     renderAll();
   });
 
+  // Schedule controls
+  scheduleStageSelect.addEventListener("change", () => renderSchedule());
+  addScheduleBtn.addEventListener("click", () => addScheduleItem(scheduleStageSelect.value));
+
+  // Site create / delete / save
   newSiteBtn.addEventListener("click", () => {
     const s = {
       id: uid(),
@@ -1415,16 +1748,14 @@
       createdAt: now(),
       updatedAt: now(),
     };
-    s.rooms = generateRoomsFromSpec(s.floorSpec);
+    s.rooms = generateRoomsFromSpec(s.floorSpec, s.stages);
     for(const stg of s.stages){ s.schedules[stg.key] = []; }
-    for(const r of s.rooms){
-      r.meta = r.meta || { damacho:{} };
-      r.meta.damacho = r.meta.damacho || {};
-      for(const stg of s.stages) r.meta.damacho[stg.key] = "none";
-    }
+
     state.sites.push(s);
     state.currentSiteId = s.id;
     state.ui.currentStageKey = "in";
+    state.ui.report.stageKey = "in";
+    state.ui.report.scopeType = "all";
     saveState();
     renderAll();
   });
@@ -1447,7 +1778,7 @@
     site.memo = memo;
     site.updatedAt = now();
     saveState();
-    renderAll();
+    renderSiteForm();
   });
 
   deleteSiteBtn.addEventListener("click", () => {
@@ -1460,91 +1791,19 @@
     renderAll();
   });
 
-  document.querySelectorAll("[data-filter]").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const f = btn.getAttribute("data-filter");
-      if(f==="all"||f==="todo"||f==="doing"||f==="done"){
-        state.ui.filter = f;
-        saveState();
-        renderRooms();
-      }
-    });
-  });
-
-  function renderModeBtn(){
-    if(state.ui.inputMode){
-      modeBtn.textContent = "入力モード: ON";
-      modeBtn.classList.add("primary");
-    }else{
-      modeBtn.textContent = "入力モード: OFF";
-      modeBtn.classList.remove("primary");
-    }
-  }
-  modeBtn.addEventListener("click", () => {
-    state.ui.inputMode = !state.ui.inputMode;
-    saveState();
-    renderModeBtn();
-  });
-
-  resetAllBtn.addEventListener("click", () => {
-    const site = getCurrentSite(); if(!site) return;
-    if(!confirm("全ての部屋を未着手に戻しますか？")) return;
-    for(const r of site.rooms) r.status="todo";
-    site.updatedAt = now();
-    saveState();
-    renderAll();
-  });
-
-  jumpBtn.addEventListener("click", () => {
-    const v = (jumpInput.value||"").trim();
-    if(!v) return;
-    jumpToRoom(v);
-  });
-  jumpInput.addEventListener("keydown", (e) => {
-    if(e.key==="Enter"){
-      const v = (jumpInput.value||"").trim();
-      if(!v) return;
-      jumpToRoom(v);
-    }
-  });
-  clearJumpBtn.addEventListener("click", () => {
-    highlightedRoomId = null;
-    jumpInput.value = "";
-    renderRooms();
-  });
-
   manageBtn.addEventListener("click", () => {
     alert(
 `【使い方メモ】
 ・部屋タップ：未着手→途中→完了→未着手
-・入力モードON：部屋タップで「作業日/担当者/ダメ帳」を入力
-・検査段階：上部で切替（段階ごとにダメ帳を管理）
-・集計範囲：全部屋/階範囲/選択フロアで、合計を切替
-・危険：部屋を再生成は一番下、二段階タップ`
+・入力モードON：部屋タップで作業日/担当者/ダメ帳（この段階）を入力
+・ダメ帳（まとめて設定）：階範囲 or 部屋番号範囲で一括反映（会社報告用に便利）
+・報告用：ダメ帳あり範囲の未/途/完が出る
+・俯瞰：段階ごとの詰まりを一括表示
+・危険：部屋を再生成は最下部・二段階`
     );
   });
 
-  scopeMode.addEventListener("change", () => {
-    state.ui.scope.mode = scopeMode.value;
-    saveState();
-    syncScopeUiFromState();
-  });
-
-  scopeApplyBtn.addEventListener("click", () => {
-    const m = scopeMode.value;
-    state.ui.scope.mode = m;
-
-    if(m==="range"){
-      state.ui.scope.from = Number(scopeFrom.value || 1);
-      state.ui.scope.to = Number(scopeTo.value || state.ui.scope.from || 1);
-    }else if(m==="floors"){
-      state.ui.scope.floorsCsv = (scopeFloors.value || "").trim();
-    }
-
-    saveState();
-    renderStats();
-  });
-
+  // Regen safety
   let regenArmed = false;
   let regenTimer = null;
 
@@ -1571,11 +1830,7 @@
     if(!confirm("本当に部屋を再生成しますか？（進捗・作業日・担当者・ダメ帳が初期化されます）")) return;
 
     try{
-      site.rooms = generateRoomsFromSpec(site.floorSpec);
-      for(const r of site.rooms){
-        r.meta = { damacho:{} };
-        for(const stg of site.stages){ r.meta.damacho[stg.key] = "none"; }
-      }
+      site.rooms = generateRoomsFromSpec(site.floorSpec, site.stages);
       site.updatedAt = now();
       saveState();
       highlightedRoomId = null;
@@ -1585,20 +1840,48 @@
     }
   });
 
+  function renderAllStatsAndOverview(){
+    renderOverallStats();
+    renderReportStats();
+    if(overviewAcc.open) renderOverviewTable();
+  }
+
+  overviewAcc.addEventListener("toggle", () => {
+    if(overviewAcc.open) renderOverviewTable();
+  });
+
+  // Init report UI
+  function renderReportControls(){
+    const rep = state.ui.report || defaultReport();
+    reportScopeType.value = rep.scopeType || "all";
+    reportFrom.value = String(rep.from ?? "");
+    reportTo.value = String(rep.to ?? "");
+    normalizeReportInputsUI();
+  }
+
+  // Main render
   function renderAll(){
     renderSiteSelect();
     renderStageSelects();
     renderSiteForm();
-    syncScopeUiFromState();
-    renderStats();
-    renderRooms();
-    renderModeBtn();
+
+    // bulk preview
+    bulkPreview.textContent = bulkPreviewText();
+
+    // report controls
+    syncReportUi();
+
     renderSchedule();
     renderSurvey();
+
+    renderModeBtn();
+    renderRooms();
+    renderAllStatsAndOverview();
   }
 
   ensureInitialSite();
   renderAll();
+
 })();
 </script>
 </body>
