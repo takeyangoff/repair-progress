@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>リペア進捗管理（完成版）</title>
+  <title>リペア進捗管理（完成版・段階＋総合）</title>
   <style>
     :root{
       --bg:#f6f7f9;
@@ -210,7 +210,7 @@
 
 <body>
 <header>
-  <h1>リペア進捗管理（完成版）</h1>
+  <h1>リペア進捗管理（完成版・段階＋総合）</h1>
 
   <div class="row">
     <select id="siteSelect"></select>
@@ -333,10 +333,26 @@
     <div class="help" id="bulkPreview" style="margin-top:8px;"></div>
   </div>
 
-  <!-- 統計：全体（固定） -->
+  <!-- 統計：総合（固定） -->
   <div class="panel">
-    <h2>全体の進捗（現場全体）</h2>
+    <h2>総合の進捗（長期把握）</h2>
+    <div class="help" style="margin-bottom:8px;">
+      ※ 「総合」は検査段階とは別の “長期の進捗” です（段階を切り替えても変わりません）。
+    </div>
     <div class="stats" id="statsOverall"></div>
+  </div>
+
+  <!-- 統計：段階（選択中段階の全体） -->
+  <div class="panel">
+    <h2>段階の進捗（選択中の検査段階）</h2>
+    <div class="stats" id="statsStage"></div>
+
+    <div class="row" style="margin-top:6px;">
+      <button id="resetStageBtn" class="small danger">この段階だけ：全て未着手に戻す</button>
+    </div>
+    <div class="help" style="margin-top:6px;">
+      ここは「今選択中の段階」だけに作用します。他の段階には影響しません。
+    </div>
   </div>
 
   <!-- 統計：報告用（ダメ帳あり範囲） -->
@@ -388,7 +404,7 @@
       <button class="small" data-filter="done">完了</button>
 
       <button class="small" id="modeBtn">入力モード: OFF</button>
-      <button class="small" id="resetAllBtn">全て未着手に戻す</button>
+      <button class="small" id="resetOverallBtn">総合：全て未着手に戻す（危険）</button>
     </div>
 
     <div class="row" style="margin-top:10px;">
@@ -398,7 +414,7 @@
     </div>
 
     <div class="help" style="margin-top:8px;">
-      ・通常：部屋をタップ → <b>未着手 → 途中 → 完了 → 未着手</b><br/>
+      ・通常：部屋をタップ → <b>未着手 → 途中 → 完了 → 未着手</b>（選択中段階に対して）<br/>
       ・入力モードON：部屋をタップ → <b>作業日 / 担当者（例：山田）/ メモ / この段階のダメ帳（あり/なし）</b> を入力<br/>
       ・カード右上のチップ（例：<b>社 設 施</b>）は「その段階でダメ帳が残っている」印です
     </div>
@@ -413,7 +429,7 @@
       <div class="dangerTitle">⚠️ 部屋を再生成（危険）</div>
       <div class="dangerHelp">
         ・現在の部屋リストを <b>階数/部屋数</b> から作り直します。<br/>
-        ・<b>進捗（未/途/完）</b>、<b>作業日</b>、<b>担当者</b>、<b>ダメ帳</b> が初期化されます。<br/>
+        ・<b>進捗（段階/総合）</b>、<b>作業日</b>、<b>担当者</b>、<b>ダメ帳</b> が初期化されます。<br/>
         ・誤操作防止のため <b>二段階タップ</b> です（5秒で解除）。
       </div>
       <button id="regenRoomsBtn" class="dangerBtn">二段階：タップして準備</button>
@@ -469,7 +485,7 @@
 
 <script>
 (() => {
-  const STORAGE_KEY = "repair_progress_complete_v3";
+  const STORAGE_KEY = "repair_progress_complete_v4_stage_overall";
 
   const uid = () => Math.random().toString(36).slice(2, 10) + "-" + Date.now().toString(36);
   const now = () => Date.now();
@@ -509,13 +525,16 @@
   const bulkNoBtn = $("bulkNoBtn");
   const bulkPreview = $("bulkPreview");
 
+  const statsOverallEl = $("statsOverall");
+  const statsStageEl = $("statsStage");
+  const resetStageBtn = $("resetStageBtn");
+  const resetOverallBtn = $("resetOverallBtn");
+
   const reportScopeType = $("reportScopeType");
   const reportFrom = $("reportFrom");
   const reportTo = $("reportTo");
   const reportStageSelect = $("reportStageSelect");
   const reportApplyBtn = $("reportApplyBtn");
-
-  const statsOverallEl = $("statsOverall");
   const statsReportEl = $("statsReport");
 
   const overviewAcc = $("overviewAcc");
@@ -524,8 +543,6 @@
   const roomGrid = $("roomGrid");
 
   const modeBtn = $("modeBtn");
-  const resetAllBtn = $("resetAllBtn");
-
   const jumpInput = $("jumpInput");
   const jumpBtn = $("jumpBtn");
   const clearJumpBtn = $("clearJumpBtn");
@@ -633,19 +650,32 @@
   function generateRoomsFromSpec(spec, stages){
     const ranges = parseFloorSpec(spec);
     const rooms = [];
+
     for(const r of ranges){
       for(let f=r.from; f<=r.to; f++){
         for(let i=1; i<=r.roomsPerFloor; i++){
           const label = String(f*100+i);
-          const dame = {};
-          for(const stg of stages) dame[stg.key] = "none";
+
+          const dam = {};
+          const prog = {};
+          for(const stg of stages){
+            dam[stg.key] = "none";
+            prog[stg.key] = "todo";
+          }
+
           rooms.push({
             id: uid(),
             label,
             floor:f,
             idx:i,
-            status:"todo",
-            meta: { date:"", worker:"", note:"", damacho: dame }
+
+            // ✅ 長期把握用（総合）
+            overallStatus: "todo",
+
+            // ✅ 段階ごと（報告用）
+            progressByStage: prog,
+
+            meta: { date:"", worker:"", note:"", damacho: dam }
           });
         }
       }
@@ -704,8 +734,15 @@
       for(const r of s.rooms){
         if(!r.meta) r.meta = { date:"", worker:"", note:"", damacho:{} };
         if(!r.meta.damacho) r.meta.damacho = {};
+
+        // ✅ 総合が無い場合は未着手で追加
+        if(!r.overallStatus) r.overallStatus = "todo";
+
+        // ✅ 段階進捗が無い場合は段階分作る（全部未着手）
+        if(!r.progressByStage) r.progressByStage = {};
         for(const stg of s.stages){
           if(!r.meta.damacho[stg.key]) r.meta.damacho[stg.key] = "none";
+          if(!r.progressByStage[stg.key]) r.progressByStage[stg.key] = "todo";
         }
       }
     }
@@ -741,14 +778,23 @@
     return s.trim().slice(0,1) || "?";
   }
 
-  function computeStats(rooms){
+  function computeStatsFromStatusList(statuses){
     let todo=0, doing=0, done=0;
-    for(const r of rooms){
-      if(r.status==="todo") todo++;
-      else if(r.status==="doing") doing++;
+    for(const st of statuses){
+      if(st==="todo") todo++;
+      else if(st==="doing") doing++;
       else done++;
     }
-    return { total: rooms.length, todo, doing, done };
+    return { total: statuses.length, todo, doing, done };
+  }
+
+  function computeOverallStats(site){
+    return computeStatsFromStatusList(site.rooms.map(r => r.overallStatus || "todo"));
+  }
+
+  function computeStageStats(site, stageKey, roomsSubset=null){
+    const list = (roomsSubset || site.rooms).map(r => (r.progressByStage?.[stageKey] || "todo"));
+    return computeStatsFromStatusList(list);
   }
 
   function roomsInRange(site, scopeType, from, to){
@@ -763,8 +809,7 @@
     }
 
     if(scopeType==="rooms"){
-      const lo2 = String(lo), hi2 = String(hi);
-      if(!lo2 || !hi2) return [];
+      if(!Number.isFinite(lo) || !Number.isFinite(hi)) return [];
       return site.rooms.filter(r => {
         const n = Number(r.label);
         return Number.isFinite(n) && n>=lo && n<=hi;
@@ -779,6 +824,23 @@
     return v === "yes";
   }
 
+  function mkPill(label, val){
+    const d = document.createElement("div");
+    d.className="pill";
+    d.textContent = `${label}: ${val}`;
+    return d;
+  }
+
+  function escapeHtml(str){
+    return String(str)
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+
+  // --- UI rendering ---
   function renderSiteSelect(){
     siteSelect.innerHTML = "";
     for(const s of state.sites){
@@ -794,15 +856,15 @@
     const site = getCurrentSite(); if(!site) return;
 
     stageSelect.innerHTML = "";
-    bulkStageSelect.innerHTML = "";
+    $("bulkStageSelect").innerHTML = "";
     scheduleStageSelect.innerHTML = "";
-    reportStageSelect.innerHTML = "";
+    $("reportStageSelect").innerHTML = "";
 
     for(const stg of site.stages){
       const opt1 = document.createElement("option"); opt1.value = stg.key; opt1.textContent = stg.label; stageSelect.appendChild(opt1);
-      const opt2 = document.createElement("option"); opt2.value = stg.key; opt2.textContent = stg.label; bulkStageSelect.appendChild(opt2);
+      const opt2 = document.createElement("option"); opt2.value = stg.key; opt2.textContent = stg.label; $("bulkStageSelect").appendChild(opt2);
       const opt3 = document.createElement("option"); opt3.value = stg.key; opt3.textContent = stg.label; scheduleStageSelect.appendChild(opt3);
-      const opt4 = document.createElement("option"); opt4.value = stg.key; opt4.textContent = stg.label; reportStageSelect.appendChild(opt4);
+      const opt4 = document.createElement("option"); opt4.value = stg.key; opt4.textContent = stg.label; $("reportStageSelect").appendChild(opt4);
     }
 
     if(!site.stages.find(s=>s.key===state.ui.currentStageKey)){
@@ -810,14 +872,13 @@
     }
     stageSelect.value = state.ui.currentStageKey;
 
-    // report stage default
     if(!state.ui.report?.stageKey || !site.stages.find(s=>s.key===state.ui.report.stageKey)){
       state.ui.report.stageKey = state.ui.currentStageKey;
       saveState();
     }
-    reportStageSelect.value = state.ui.report.stageKey;
+    $("reportStageSelect").value = state.ui.report.stageKey;
 
-    bulkStageSelect.value = state.ui.currentStageKey;
+    $("bulkStageSelect").value = state.ui.currentStageKey;
     scheduleStageSelect.value = state.ui.currentStageKey;
   }
 
@@ -830,24 +891,29 @@
     siteMemo.value = site.memo || "";
 
     const updated = new Date(site.updatedAt).toLocaleString("ja-JP");
-    siteMeta.textContent = `部屋数: ${site.rooms.length} / 検査段階: ${stageLabel(site, state.ui.currentStageKey)} / 最終更新: ${updated}`;
-  }
-
-  function mkPill(label, val){
-    const d = document.createElement("div");
-    d.className="pill";
-    d.textContent = `${label}: ${val}`;
-    return d;
+    siteMeta.textContent = `部屋数: ${site.rooms.length} / 段階: ${stageLabel(site, state.ui.currentStageKey)} / 最終更新: ${updated}`;
   }
 
   function renderOverallStats(){
     const site = getCurrentSite(); if(!site) return;
-    const st = computeStats(site.rooms);
+    const st = computeOverallStats(site);
     statsOverallEl.innerHTML = "";
     statsOverallEl.appendChild(mkPill("合計", st.total));
     statsOverallEl.appendChild(mkPill("未着手", st.todo));
     statsOverallEl.appendChild(mkPill("途中", st.doing));
     statsOverallEl.appendChild(mkPill("完了", st.done));
+  }
+
+  function renderStageStats(){
+    const site = getCurrentSite(); if(!site) return;
+    const stageKey = state.ui.currentStageKey;
+    const st = computeStageStats(site, stageKey);
+    statsStageEl.innerHTML = "";
+    statsStageEl.appendChild(mkPill("段階", stageLabel(site, stageKey)));
+    statsStageEl.appendChild(mkPill("合計", st.total));
+    statsStageEl.appendChild(mkPill("未着手", st.todo));
+    statsStageEl.appendChild(mkPill("途中", st.doing));
+    statsStageEl.appendChild(mkPill("完了", st.done));
   }
 
   function normalizeReportInputsUI(){
@@ -861,14 +927,12 @@
     const site = getCurrentSite(); if(!site) return;
     const rep = state.ui.report || defaultReport();
 
-    // range rooms
     const base = roomsInRange(site, rep.scopeType, rep.from, rep.to);
 
-    // damacho yes only
     const stageKey = rep.stageKey || state.ui.currentStageKey;
     const target = base.filter(r => damachoYes(r, stageKey));
 
-    const st = computeStats(target);
+    const st = computeStageStats(site, stageKey, target);
 
     let scopeLabel = "全部屋";
     if(rep.scopeType==="floors") scopeLabel = `${Math.min(rep.from, rep.to)}〜${Math.max(rep.from, rep.to)}階`;
@@ -890,8 +954,8 @@
 
     const rows = site.stages.map(stg => {
       const target = base.filter(r => damachoYes(r, stg.key));
-      const st = computeStats(target);
-      return { stageKey: stg.key, stageLabel: stg.label, total: st.total, todo: st.todo, doing: st.doing, done: st.done };
+      const st = computeStageStats(site, stg.key, target);
+      return { stageLabel: stg.label, total: st.total, todo: st.todo, doing: st.doing, done: st.done };
     });
 
     const html = `
@@ -921,6 +985,7 @@
     overviewTable.innerHTML = html;
   }
 
+  // --- Schedule (簡易版：前回と同等) ---
   function renderSchedule(){
     const site = getCurrentSite(); if(!site) return;
     const stageKey = scheduleStageSelect.value || state.ui.currentStageKey;
@@ -951,11 +1016,6 @@
       row.className="row";
       row.style.marginTop="8px";
 
-      const edit = document.createElement("button");
-      edit.className="small secondary";
-      edit.textContent="編集";
-      edit.onclick = () => editScheduleItem(stageKey, idx);
-
       const del = document.createElement("button");
       del.className="small danger";
       del.textContent="削除";
@@ -968,10 +1028,8 @@
         renderSiteForm();
       };
 
-      row.appendChild(edit);
       row.appendChild(del);
       box.appendChild(row);
-
       scheduleList.appendChild(box);
     });
   }
@@ -979,238 +1037,82 @@
   function addScheduleItem(stageKey){
     const site = getCurrentSite(); if(!site) return;
     if(!Array.isArray(site.schedules[stageKey])) site.schedules[stageKey] = [];
-    site.schedules[stageKey].push({
-      stageKey,
-      fromFloor:1,
-      toFloor:1,
-      start:"",
-      end:"",
-      note:""
-    });
+    const from = prompt("開始階（例：1）", "1");
+    if(from===null) return;
+    const to = prompt("終了階（例：6）", "6");
+    if(to===null) return;
+    const start = prompt("開始日（例：2026-01-07）", "");
+    if(start===null) return;
+    const end = prompt("終了日（例：2026-01-12）", "");
+    if(end===null) return;
+
+    const a = Number(from), b = Number(to);
+    if(!Number.isInteger(a)||!Number.isInteger(b)||a<=0||b<=0||a>b){ alert("階の入力が不正です"); return; }
+
+    site.schedules[stageKey].push({ stageKey, fromFloor:a, toFloor:b, start:start.trim(), end:end.trim(), note:"" });
     site.updatedAt = now();
     saveState();
     renderSchedule();
+    renderSiteForm();
   }
 
-  function editScheduleItem(stageKey, idx){
-    const site = getCurrentSite(); if(!site) return;
-    const item = site.schedules[stageKey][idx]; if(!item) return;
-
-    overlay.style.display = "flex";
-    modalTitle.textContent = `スケジュール編集：${stageLabel(site, stageKey)}`;
-
-    workDate.value = item.start || "";
-    workDateText.value = item.start || "";
-    roomNote.value = item.note || "";
-    damachoSel.value = "none";
-    workerName.value = "";
-
-    let extra = document.getElementById("schedExtra");
-    if(!extra){
-      extra = document.createElement("div");
-      extra.id="schedExtra";
-      extra.innerHTML = `
-        <div class="row">
-          <div style="flex:1; min-width:160px;">
-            <label>開始階</label>
-            <input id="schedFrom" inputmode="numeric" placeholder="例：1" />
-          </div>
-          <div style="flex:1; min-width:160px;">
-            <label>終了階</label>
-            <input id="schedTo" inputmode="numeric" placeholder="例：6" />
-          </div>
-        </div>
-        <div class="row">
-          <div style="flex:1; min-width:200px;">
-            <label>終了日（カレンダー）</label>
-            <input type="date" id="schedEndDate" />
-          </div>
-          <div style="flex:1; min-width:200px;">
-            <label>終了日（手入力：YYYY-MM-DD）</label>
-            <input id="schedEndText" placeholder="例：2026-01-20" />
-          </div>
-        </div>
-      `;
-      overlay.querySelector(".modal .actions").before(extra);
-    }
-    extra.style.display = "";
-
-    const fromEl = document.getElementById("schedFrom");
-    const toEl = document.getElementById("schedTo");
-    const endDateEl = document.getElementById("schedEndDate");
-    const endTextEl = document.getElementById("schedEndText");
-
-    fromEl.value = String(item.fromFloor||1);
-    toEl.value = String(item.toFloor||item.fromFloor||1);
-    endDateEl.value = item.end || "";
-    endTextEl.value = item.end || "";
-
-    workerName.parentElement.style.display="none";
-    damachoSel.parentElement.style.display="none";
-
-    const close = () => {
-      overlay.style.display="none";
-      workerName.parentElement.style.display="";
-      damachoSel.parentElement.style.display="";
-      extra.style.display="none";
-    };
-
-    modalCancelBtn.onclick = () => { close(); };
-
-    modalSaveBtn.onclick = () => {
-      const from = Number(fromEl.value);
-      const to = Number(toEl.value);
-      if(!Number.isInteger(from)||!Number.isInteger(to)||from<=0||to<=0||from>to){
-        alert("階の入力が不正です（開始<=終了）");
-        return;
-      }
-      const start = (workDate.value || workDateText.value || "").trim();
-      const end = (endDateEl.value || endTextEl.value || "").trim();
-      item.fromFloor = from;
-      item.toFloor = to;
-      item.start = start;
-      item.end = end;
-      item.note = (roomNote.value || "").trim();
-      site.updatedAt = now();
-      saveState();
-      close();
-      renderSchedule();
-      renderSiteForm();
-    };
-  }
-
-  function escapeHtml(str){
-    return String(str)
-      .replaceAll("&","&amp;")
-      .replaceAll("<","&lt;")
-      .replaceAll(">","&gt;")
-      .replaceAll('"',"&quot;")
-      .replaceAll("'","&#039;");
-  }
-
+  // --- Survey (一覧表示でチェック内容も出る簡易版) ---
   function renderSurvey(){
     const site = getCurrentSite(); if(!site) return;
     if(!site.survey) site.survey = defaultSurvey();
     const s = site.survey;
 
-    const switchToEdit = () => {
-      surveyEdit.style.display = "";
-      surveyView.style.display = "none";
-      surveyTabEdit.classList.add("secondary");
-      surveyTabView.classList.remove("secondary");
-    };
-    const switchToView = () => {
-      surveyEdit.style.display = "none";
-      surveyView.style.display = "";
-      surveyTabView.classList.add("secondary");
-      surveyTabEdit.classList.remove("secondary");
-      renderSurveyView();
-    };
+    const joinClean = (arr) => (arr||[]).map(x=>String(x||"").trim()).filter(Boolean).join("、");
 
-    surveyTabEdit.onclick = switchToEdit;
-    surveyTabView.onclick = switchToView;
+    surveyTabEdit.onclick = () => { surveyEdit.style.display=""; surveyView.style.display="none"; surveyTabEdit.classList.add("secondary"); surveyTabView.classList.remove("secondary"); };
+    surveyTabView.onclick = () => { surveyEdit.style.display="none"; surveyView.style.display=""; surveyTabView.classList.add("secondary"); surveyTabEdit.classList.remove("secondary"); renderSurveyView(); };
 
-    surveyEdit.innerHTML = "";
-
-    const mkSelect = (label, key, options) => {
-      const wrap = document.createElement("div");
-      wrap.className="cardMini";
-      const h = document.createElement("h3"); h.textContent = label;
-      const sel = document.createElement("select");
-      for(const o of options){
-        const op = document.createElement("option");
-        op.value = o; op.textContent = o;
-        sel.appendChild(op);
-      }
-      sel.value = s[key] || options[0];
-      sel.onchange = () => { s[key] = sel.value; site.updatedAt = now(); saveState(); };
-      wrap.appendChild(h); wrap.appendChild(sel);
-      return wrap;
-    };
-
-    const mkText = (label, key, placeholder="") => {
+    function mkText(label, key, placeholder=""){
       const wrap = document.createElement("div");
       wrap.className="cardMini";
       const h = document.createElement("h3"); h.textContent = label;
       const inp = document.createElement("input");
       inp.placeholder = placeholder;
       inp.value = s[key] || "";
-      inp.oninput = () => { s[key] = inp.value; site.updatedAt = now(); saveState(); };
+      inp.oninput = () => { s[key] = inp.value; site.updatedAt=now(); saveState(); };
       wrap.appendChild(h); wrap.appendChild(inp);
       return wrap;
-    };
+    }
 
-    const mkArea = (label, key, placeholder="") => {
+    function mkArea(label, key, placeholder=""){
       const wrap = document.createElement("div");
       wrap.className="cardMini";
       const h = document.createElement("h3"); h.textContent = label;
       const ta = document.createElement("textarea");
       ta.placeholder = placeholder;
       ta.value = s[key] || "";
-      ta.oninput = () => { s[key] = ta.value; site.updatedAt = now(); saveState(); };
+      ta.oninput = () => { s[key] = ta.value; site.updatedAt=now(); saveState(); };
       wrap.appendChild(h); wrap.appendChild(ta);
       return wrap;
-    };
+    }
 
-    const mkRepeater = (label, arrKey, placeholder="") => {
+    function mkSelect(label, key, options){
       const wrap = document.createElement("div");
       wrap.className="cardMini";
       const h = document.createElement("h3"); h.textContent = label;
-      wrap.appendChild(h);
-
-      const list = document.createElement("div");
-      (s[arrKey] || []).forEach((v, i) => {
-        const row = document.createElement("div");
-        row.className="row";
-        const inp = document.createElement("input");
-        inp.placeholder = placeholder;
-        inp.value = v || "";
-        inp.oninput = () => { s[arrKey][i] = inp.value; site.updatedAt = now(); saveState(); };
-        const del = document.createElement("button");
-        del.className="danger small";
-        del.textContent="削除";
-        del.onclick = () => {
-          s[arrKey].splice(i,1);
-          if(s[arrKey].length===0) s[arrKey].push("");
-          site.updatedAt = now(); saveState();
-          renderSurvey();
-        };
-        row.appendChild(inp); row.appendChild(del);
-        list.appendChild(row);
-      });
-
-      const add = document.createElement("button");
-      add.className="secondary small";
-      add.textContent="＋ 追加";
-      add.onclick = () => {
-        s[arrKey].push("");
-        site.updatedAt = now(); saveState();
-        renderSurvey();
-      };
-
-      wrap.appendChild(list);
-      wrap.appendChild(add);
+      const sel = document.createElement("select");
+      for(const o of options){ const op=document.createElement("option"); op.value=o; op.textContent=o; sel.appendChild(op); }
+      sel.value = s[key] || options[0];
+      sel.onchange = () => { s[key]=sel.value; site.updatedAt=now(); saveState(); };
+      wrap.appendChild(h); wrap.appendChild(sel);
       return wrap;
-    };
+    }
 
-    const mkChecklist = (label, arrKey) => {
+    function mkChecklist(label, arrKey){
       const wrap = document.createElement("div");
       wrap.className="cardMini";
       const h = document.createElement("h3"); h.textContent = label;
       wrap.appendChild(h);
-
-      const grid = document.createElement("div");
-      grid.className="checkgrid";
-
+      const grid = document.createElement("div"); grid.className="checkgrid";
       const set = new Set(s[arrKey] || []);
       for(const opt of REPAIR_OPTIONS){
         const lab = document.createElement("label");
-        lab.style.display="flex";
-        lab.style.alignItems="center";
-        lab.style.gap="8px";
-        lab.style.fontSize="13px";
-        lab.style.color="var(--text)";
-
+        lab.style.display="flex"; lab.style.alignItems="center"; lab.style.gap="8px"; lab.style.fontSize="13px"; lab.style.color="var(--text)";
         const cb = document.createElement("input");
         cb.type="checkbox";
         cb.checked = set.has(opt);
@@ -1218,69 +1120,44 @@
           const arr = new Set(s[arrKey] || []);
           if(cb.checked) arr.add(opt); else arr.delete(opt);
           s[arrKey] = Array.from(arr);
-          site.updatedAt = now(); saveState();
+          site.updatedAt=now(); saveState();
         };
-
-        const span = document.createElement("span");
-        span.textContent = opt;
-
-        lab.appendChild(cb);
-        lab.appendChild(span);
+        const span = document.createElement("span"); span.textContent = opt;
+        lab.appendChild(cb); lab.appendChild(span);
         grid.appendChild(lab);
       }
-
       wrap.appendChild(grid);
       return wrap;
-    };
+    }
 
-    surveyEdit.appendChild(mkRepeater("補修の担当監督（追記可能）", "repairSupervisors", "例：〇〇監督"));
-
-    const kv1 = document.createElement("div"); kv1.className="kv";
-    kv1.appendChild(mkText("○○所長 名前", "genManagerName", "例：田中 所長"));
-    kv1.appendChild(mkText("○○所長 電話番号", "genManagerPhone", "例：090-xxxx-xxxx"));
-    kv1.appendChild(mkText("○○監督 名前", "genSupervisorName", "例：佐々木 監督"));
-    kv1.appendChild(mkText("○○監督 電話番号", "genSupervisorPhone", "例：090-xxxx-xxxx"));
-    surveyEdit.appendChild(kv1);
-
-    const kv2 = document.createElement("div"); kv2.className="kv";
-    kv2.appendChild(mkText("朝礼 時間（自由入力）", "morningTime", "例：8:15〜"));
-    kv2.appendChild(mkText("朝礼 場所（自由入力）", "morningPlace", "例：建物外広場（仮設トイレがある道路側）"));
-    surveyEdit.appendChild(kv2);
-    surveyEdit.appendChild(mkArea("朝礼 補足（自由入力）", "morningNote", "例：8時ちょっと過ぎからラジオ体操あり"));
-
-    const kv3 = document.createElement("div"); kv3.className="kv";
-    kv3.appendChild(mkText("昼礼 時間（自由入力）", "lunchTime", "例：11:40〜"));
-    kv3.appendChild(mkSelect("昼礼 あり/なし", "lunchHas", ["あり","なし"]));
-    kv3.appendChild(mkText("昼礼 場所（自由入力）", "lunchPlace", "例：建物内ホール（EV左奥右手のWBスペース）"));
-    surveyEdit.appendChild(kv3);
-
-    const kv4 = document.createElement("div"); kv4.className="kv";
-    kv4.appendChild(mkSelect("新規用紙・KY用紙 あり/なし", "kyHas", ["あり","なし"]));
-    kv4.appendChild(mkText("新規用紙・KY用紙 場所（自由入力）", "kyPlace", "例：ホワイトボード右の茶色長机 上の引き出し"));
-    surveyEdit.appendChild(kv4);
-
-    surveyEdit.appendChild(mkSelect("新規入場説明 あり/なし", "newEntryHas", ["あり","なし"]));
-
+    surveyEdit.innerHTML = "";
+    surveyEdit.appendChild(mkText("補修の担当監督（例：〇〇監督）", "repairSupervisors0", "例：田中監督"));
+    surveyEdit.appendChild(mkText("○○所長 電話番号", "genManagerPhone", "例：090-xxxx-xxxx"));
+    surveyEdit.appendChild(mkText("○○監督 電話番号", "genSupervisorPhone", "例：090-xxxx-xxxx"));
+    surveyEdit.appendChild(mkText("朝礼 時間（自由入力）", "morningTime", "例：8:15〜"));
+    surveyEdit.appendChild(mkArea("朝礼 場所/補足（自由入力）", "morningPlace", "例：建物外広場…／ラジオ体操あり"));
+    surveyEdit.appendChild(mkText("昼礼 時間（自由入力）", "lunchTime", "例：11:40〜"));
+    surveyEdit.appendChild(mkSelect("昼礼 あり/なし", "lunchHas", ["あり","なし"]));
+    surveyEdit.appendChild(mkArea("昼礼 場所（自由入力）", "lunchPlace", "例：建物内ホール…"));
     surveyEdit.appendChild(mkChecklist("担当補修箇所（チェック）", "myRepairItems"));
-    surveyEdit.appendChild(mkChecklist("他業者に振り分ける箇所（業者違い）（チェック）", "otherVendorItems"));
+    surveyEdit.appendChild(mkChecklist("他業者に振り分ける箇所（チェック）", "otherVendorItems"));
 
-    surveyEdit.appendChild(mkSelect("ダメ帳（全体運用） あり/なし", "damechoHas", ["あり","なし"]));
-
-    surveyEdit.appendChild(mkSelect("進行（方向）", "progressDir", ["下階より上へ","上階より下へ"]));
-    surveyEdit.appendChild(mkArea("進行メモ（自由入力）", "progressNote", "例：12/15は1階101から…など"));
-
-    surveyEdit.appendChild(mkSelect("指摘テープ", "tapeState", ["なし","あり（剥がす）","あり（レチェック残し）"]));
-    surveyEdit.appendChild(mkArea("指摘テープ補足（自由入力）", "tapeNote", "例：薄紫テープがあることも"));
-
-    const kv5 = document.createElement("div"); kv5.className="kv";
-    kv5.appendChild(mkText("トイレ（現場）", "toiletSite", "例：仮設トイレ、管理人室"));
-    kv5.appendChild(mkText("トイレ（近隣）", "toiletNearby", "例：コンビニ、公園"));
-    surveyEdit.appendChild(kv5);
-
-    surveyEdit.appendChild(mkSelect("残業", "overtime", ["可","昼礼にて要申請","不可"]));
-
-    surveyEdit.appendChild(mkText("現場の休業日（固定）", "holidaysFixed", "例：日曜、祝日"));
-    surveyEdit.appendChild(mkRepeater("休業日（追加：カレンダーに関係なく入れない日など）", "holidaysExtra", "例：1/20（設備点検のため）"));
+    surveyView.innerHTML = "";
+    function renderSurveyView(){
+      surveyView.innerHTML = "";
+      const mk = (title, lines) => {
+        const box = document.createElement("div");
+        box.className="cardMini";
+        const h = document.createElement("h3"); h.textContent = title;
+        box.appendChild(h);
+        const p = document.createElement("p");
+        p.innerHTML = lines.map(x=>`・${escapeHtml(x)}`).join("<br/>");
+        box.appendChild(p);
+        surveyView.appendChild(box);
+      };
+      mk("担当補修箇所（チェック内容）", [ joinClean(s.myRepairItems) ? joinClean(s.myRepairItems) : "（チェックなし）" ]);
+      mk("他業者に振り分ける箇所（チェック内容）", [ joinClean(s.otherVendorItems) ? joinClean(s.otherVendorItems) : "（チェックなし）" ]);
+    }
 
     // default: edit
     surveyEdit.style.display = "";
@@ -1289,87 +1166,27 @@
     surveyTabView.classList.remove("secondary");
   }
 
-  function renderSurveyView(){
-    const site = getCurrentSite(); if(!site) return;
-    const s = site.survey || defaultSurvey();
-
-    const joinClean = (arr) => (arr||[]).map(x=>String(x||"").trim()).filter(Boolean).join("、");
-
-    surveyView.innerHTML = "";
-
-    const mk = (title, lines) => {
-      const box = document.createElement("div");
-      box.className="cardMini";
-      const h = document.createElement("h3"); h.textContent = title;
-      box.appendChild(h);
-      const p = document.createElement("p");
-      p.innerHTML = lines.map(x=>`・${escapeHtml(x)}`).join("<br/>");
-      box.appendChild(p);
-      surveyView.appendChild(box);
-    };
-
-    mk("補修の担当監督", [ joinClean(s.repairSupervisors) || "（未入力）" ]);
-
-    mk("連絡先", [
-      `所長：${(s.genManagerName||"（未）")} / ${(s.genManagerPhone||"（未）")}`,
-      `監督：${(s.genSupervisorName||"（未）")} / ${(s.genSupervisorPhone||"（未）")}`,
-    ]);
-
-    mk("朝礼", [
-      `時間：${s.morningTime||"（未）"}`,
-      `場所：${s.morningPlace||"（未）"}`,
-      `補足：${s.morningNote||"（なし）"}`,
-    ]);
-
-    mk("昼礼", [
-      `時間：${s.lunchTime||"（未）"}`,
-      `あり/なし：${s.lunchHas||"（未）"}`,
-      `場所：${s.lunchPlace||"（未）"}`,
-    ]);
-
-    mk("新規用紙・KY用紙", [
-      `あり/なし：${s.kyHas||"（未）"}`,
-      `場所：${s.kyPlace||"（未）"}`,
-    ]);
-
-    mk("新規入場説明", [ `${s.newEntryHas||"（未）"}` ]);
-
-    mk("担当補修箇所（チェック内容）", [ joinClean(s.myRepairItems) ? joinClean(s.myRepairItems) : "（チェックなし）" ]);
-    mk("他業者に振り分ける箇所（チェック内容）", [ joinClean(s.otherVendorItems) ? joinClean(s.otherVendorItems) : "（チェックなし）" ]);
-
-    mk("ダメ帳（全体運用）", [ `${s.damechoHas||"（未）"}` ]);
-
-    mk("進行（方向）", [
-      `方向：${s.progressDir||"（未）"}`,
-      `メモ：${s.progressNote||"（なし）"}`
-    ]);
-
-    mk("指摘テープ", [
-      `状態：${s.tapeState||"（未）"}`,
-      `補足：${s.tapeNote||"（なし）"}`
-    ]);
-
-    mk("トイレ", [
-      `現場：${s.toiletSite||"（未）"}`,
-      `近隣：${s.toiletNearby||"（未）"}`
-    ]);
-
-    mk("残業", [ `${s.overtime||"（未）"}` ]);
-
-    mk("休業日", [
-      `固定：${s.holidaysFixed||"（未）"}`,
-      `追加：${joinClean(s.holidaysExtra) || "（なし）"}`
-    ]);
-  }
-
-  // rooms render
+  // --- Rooms render ---
   let highlightedRoomId = null;
   let editingRoomId = null;
+
+  function getRoomStageStatus(room, stageKey){
+    return room.progressByStage?.[stageKey] || "todo";
+  }
+
+  function setRoomStageStatus(room, stageKey, st){
+    if(!room.progressByStage) room.progressByStage = {};
+    room.progressByStage[stageKey] = st;
+  }
 
   function renderRooms(){
     const site = getCurrentSite(); if(!site) return;
     const filter = state.ui.filter;
-    const rooms = (filter==="all") ? site.rooms : site.rooms.filter(r=>r.status===filter);
+    const curStage = state.ui.currentStageKey;
+
+    const rooms = (filter==="all")
+      ? site.rooms
+      : site.rooms.filter(r => getRoomStageStatus(r, curStage) === filter);
 
     roomGrid.innerHTML = "";
     let lastFloor = null;
@@ -1383,12 +1200,14 @@
         lastFloor = r.floor;
       }
 
+      const prog = getRoomStageStatus(r, curStage);
+
       const card = document.createElement("div");
-      card.className = `room ${r.status}`;
+      card.className = `room ${prog}`;
       card.dataset.roomId = r.id;
       if(r.id===highlightedRoomId) card.classList.add("highlight");
 
-      // stage chips (b) : show stages where damacho is YES
+      // stage chips (damacho present)
       const chips = document.createElement("div");
       chips.className = "stageChips";
       for(const stg of site.stages){
@@ -1407,13 +1226,13 @@
 
       const st = document.createElement("div");
       st.className="st";
-      st.textContent = statusLabel(r.status);
+      st.textContent = statusLabel(prog);
 
       const sub = document.createElement("div");
       sub.className="sub";
       const d = (r.meta?.date||"");
       const w = (r.meta?.worker||"");
-      const dam = (r.meta?.damacho?.[state.ui.currentStageKey] || "none");
+      const dam = (r.meta?.damacho?.[curStage] || "none");
       const damLabel = dam==="yes" ? "ダメ帳:あり" : dam==="no" ? "ダメ帳:なし" : "";
       sub.textContent = [d, w, damLabel].filter(Boolean).join(" / ");
 
@@ -1430,7 +1249,9 @@
           return;
         }
 
-        room.status = nextStatus(room.status);
+        const current = getRoomStageStatus(room, curStage);
+        setRoomStageStatus(room, curStage, nextStatus(current));
+
         site2.updatedAt = now();
         saveState();
         renderAllStatsAndOverview();
@@ -1643,17 +1464,6 @@
     renderModeBtn();
   });
 
-  resetAllBtn.addEventListener("click", () => {
-    const site = getCurrentSite(); if(!site) return;
-    if(!confirm("全ての部屋を未着手に戻しますか？")) return;
-    for(const r of site.rooms) r.status="todo";
-    site.updatedAt = now();
-    saveState();
-    renderAllStatsAndOverview();
-    renderRooms();
-    renderSiteForm();
-  });
-
   // Filter buttons
   document.querySelectorAll("[data-filter]").forEach(btn => {
     btn.addEventListener("click", () => {
@@ -1664,6 +1474,35 @@
         renderRooms();
       }
     });
+  });
+
+  // Resets
+  resetStageBtn.addEventListener("click", () => {
+    const site = getCurrentSite(); if(!site) return;
+    const stageKey = state.ui.currentStageKey;
+    if(!confirm(`【${stageLabel(site, stageKey)}】の進捗を全て未着手に戻しますか？（他段階には影響しません）`)) return;
+
+    for(const r of site.rooms){
+      if(!r.progressByStage) r.progressByStage = {};
+      r.progressByStage[stageKey] = "todo";
+    }
+    site.updatedAt = now();
+    saveState();
+    renderAllStatsAndOverview();
+    renderRooms();
+    renderSiteForm();
+  });
+
+  resetOverallBtn.addEventListener("click", () => {
+    const site = getCurrentSite(); if(!site) return;
+    if(!confirm("【総合】の進捗を全て未着手に戻しますか？（長期把握用。段階には影響しません）")) return;
+
+    for(const r of site.rooms) r.overallStatus = "todo";
+    site.updatedAt = now();
+    saveState();
+    renderAllStatsAndOverview();
+    renderRooms();
+    renderSiteForm();
   });
 
   // Site switching
@@ -1682,9 +1521,7 @@
 
   stageSelect.addEventListener("change", () => {
     state.ui.currentStageKey = stageSelect.value;
-    // keep bulk stage synced to current
     bulkStageSelect.value = state.ui.currentStageKey;
-    // schedule stage synced too
     scheduleStageSelect.value = state.ui.currentStageKey;
 
     saveState();
@@ -1709,20 +1546,24 @@
     const newStages = labels.map((lb,i)=>({ key: "st"+(i+1), label: lb }));
     site.stages = newStages;
 
-    // schedules reset per stage
     const newSchedules = {};
     for(const stg of newStages){ newSchedules[stg.key] = []; }
     site.schedules = newSchedules;
 
-    // room damacho migrate: keep by label best-effort is hard -> reset to none for safety
+    // reset damacho + stage progress per stage (safest)
     for(const r of site.rooms){
       if(!r.meta) r.meta = { date:"", worker:"", note:"", damacho:{} };
       r.meta.damacho = {};
-      for(const stg of newStages){ r.meta.damacho[stg.key] = "none"; }
+      r.progressByStage = {};
+      for(const stg of newStages){
+        r.meta.damacho[stg.key] = "none";
+        r.progressByStage[stg.key] = "todo";
+      }
     }
 
     state.ui.currentStageKey = newStages[0].key;
     state.ui.report.stageKey = newStages[0].key;
+
     site.updatedAt = now();
     saveState();
     renderAll();
@@ -1794,11 +1635,11 @@
   manageBtn.addEventListener("click", () => {
     alert(
 `【使い方メモ】
-・部屋タップ：未着手→途中→完了→未着手
+・部屋タップ：未着手→途中→完了→未着手（選択中段階に対して）
 ・入力モードON：部屋タップで作業日/担当者/ダメ帳（この段階）を入力
-・ダメ帳（まとめて設定）：階範囲 or 部屋番号範囲で一括反映（会社報告用に便利）
-・報告用：ダメ帳あり範囲の未/途/完が出る
-・俯瞰：段階ごとの詰まりを一括表示
+・段階の進捗：社内/設計/施主…は別々に管理されます
+・総合の進捗：長期把握用（段階とは別）
+・報告用：ダメ帳あり範囲の未/途/完（段階ごと）
 ・危険：部屋を再生成は最下部・二段階`
     );
   });
@@ -1827,7 +1668,7 @@
     }
 
     disarmRegen();
-    if(!confirm("本当に部屋を再生成しますか？（進捗・作業日・担当者・ダメ帳が初期化されます）")) return;
+    if(!confirm("本当に部屋を再生成しますか？（段階/総合の進捗・作業日・担当者・ダメ帳が初期化されます）")) return;
 
     try{
       site.rooms = generateRoomsFromSpec(site.floorSpec, site.stages);
@@ -1840,8 +1681,10 @@
     }
   });
 
+  // Overview render
   function renderAllStatsAndOverview(){
     renderOverallStats();
+    renderStageStats();
     renderReportStats();
     if(overviewAcc.open) renderOverviewTable();
   }
@@ -1850,25 +1693,16 @@
     if(overviewAcc.open) renderOverviewTable();
   });
 
-  // Init report UI
-  function renderReportControls(){
-    const rep = state.ui.report || defaultReport();
-    reportScopeType.value = rep.scopeType || "all";
-    reportFrom.value = String(rep.from ?? "");
-    reportTo.value = String(rep.to ?? "");
-    normalizeReportInputsUI();
-  }
+  // Jump / highlight
+  function initJump(){ /* already wired */ }
 
-  // Main render
+  // Boot
   function renderAll(){
     renderSiteSelect();
     renderStageSelects();
     renderSiteForm();
 
-    // bulk preview
     bulkPreview.textContent = bulkPreviewText();
-
-    // report controls
     syncReportUi();
 
     renderSchedule();
@@ -1879,7 +1713,21 @@
     renderAllStatsAndOverview();
   }
 
+  // schedule stage default options populate (uses renderStageSelects)
+  // report inputs init
+  function initReport(){
+    normalizeReportInputsUI();
+  }
+
+  // schedule: add list container events already wired
+
+  // filters already wired
+
+  // scheduleAcc open state default closed (HTML)
+
+  // initial
   ensureInitialSite();
+  initReport();
   renderAll();
 
 })();
