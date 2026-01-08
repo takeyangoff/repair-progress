@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>リペア進捗管理 v1.1-S1b</title>
+  <title>リペア進捗管理 v1.1-S1</title>
   <style>
     :root{
       --bg:#f6f7f9;
@@ -29,6 +29,8 @@
 
       --badge_red_bg:#fee2e2;
       --badge_red_tx:#991b1b;
+      --badge_green_bg: rgba(34,197,94,0.14);
+      --badge_green_tx:#065f46;
 
       --note_open:#ef4444;
       --note_done:#22c55e;
@@ -45,48 +47,60 @@
     button.primary { background: #111827; color: white; border-color: #111827; }
     button.danger { border-color: var(--danger); color: var(--danger); background:#fff; }
 
-    /* 大ボタン（通常は青ベース） */
-    button.bigAction{
+    /* 大ボタン（赤） */
+    .bigBtnWrap{ display:flex; flex-direction: column; gap: 10px; }
+    button.redBig{
       width: 100%;
-      background: rgba(37,99,235,0.12);
-      color: var(--blue2);
-      border: 1px solid rgba(37,99,235,0.35);
+      background: rgba(239,68,68,0.10);
+      color: #991b1b;
+      border: 1px solid rgba(239,68,68,0.35);
       font-weight: 900;
       border-radius: 14px;
       padding: 14px 12px;
-      text-align: left;
-      display:flex;
-      align-items:center;
-      justify-content: space-between;
-      gap: 10px;
+      text-align:left;
+      position: relative;
     }
-    /* ON時は赤 */
-    button.bigAction.on{
+    button.redBig .onTag{
+      position:absolute;
+      right: 12px;
+      top: 12px;
+      font-size: 12px;
+      font-weight: 900;
+      padding: 3px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.85);
+      border: 1px solid rgba(239,68,68,0.35);
+      color:#991b1b;
+      display:none;
+    }
+    button.redBig.on{
       background: var(--danger);
       color:#fff;
       border-color: var(--danger);
     }
-    .onPill{
-      flex: 0 0 auto;
-      font-size: 12px;
-      font-weight: 900;
-      padding: 6px 10px;
-      border-radius: 999px;
-      background: rgba(255,255,255,0.22);
-      border: 1px solid rgba(255,255,255,0.35);
-      color:#fff;
-      display:none;
+    button.redBig.on .onTag{
+      display:inline-block;
+      background: rgba(255,255,255,0.92);
+      color:#991b1b;
+      border-color: rgba(255,255,255,0.8);
     }
-    button.bigAction.on .onPill{ display:inline-block; }
+    .btnHelp{
+      font-size: 12px;
+      color: rgba(17,24,39,0.72);
+      font-weight: 800;
+      margin-top: 6px;
+      line-height: 1.45;
+    }
 
     .meta { font-size: 12px; color: var(--muted); margin-top: 6px; }
     main { padding: 12px; }
     .panel { background:white; border:1px solid var(--line); border-radius: 14px; padding: 12px; margin-bottom: 12px; }
     .panel h2 { font-size: 14px; margin:0 0 8px; }
-    .help { font-size: 12px; color:var(--muted); line-height: 1.55; font-weight: 700; }
+    .help { font-size: 12px; color:var(--muted); line-height: 1.5; }
     .split { display:flex; gap:8px; flex-wrap: wrap; }
     .split > * { flex: 1; min-width: 220px; }
     .small { font-size: 12px; padding: 8px 10px; border-radius: 12px; }
+    .small:disabled{ opacity: 0.5; }
     .stats { display:flex; gap:8px; flex-wrap: wrap; margin-bottom: 10px; }
     .pill { background:white; border:1px solid var(--line); border-radius: 999px; padding: 6px 10px; font-size: 13px; font-weight: 800; }
     .grid { display:grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap:8px; }
@@ -126,11 +140,17 @@
       margin: 0 auto;
       border:1px solid transparent;
     }
-    .badge.dame{
+    .badge.dameRed{
       background: var(--badge_red_bg);
       color: var(--badge_red_tx);
       border-color: rgba(239,68,68,0.25);
     }
+    .badge.dameGreen{
+      background: var(--badge_green_bg);
+      color: var(--badge_green_tx);
+      border-color: rgba(34,197,94,0.25);
+    }
+
     .st{
       font-size: 12px;
       font-weight: 900;
@@ -147,7 +167,7 @@
     .subline{
       font-size: 11px;
       color: var(--muted);
-      line-height: 1.2;
+      line-height: 1.15;
       font-weight: 800;
     }
 
@@ -207,32 +227,29 @@
       box-shadow: 0 0 0 3px rgba(37,99,235,0.14);
     }
 
-    /* details（スケジュール）をボタンっぽく */
+    /* details summary をボタンっぽく */
     details > summary{
       cursor: pointer;
       font-weight: 900;
       list-style: none;
-    }
-    details > summary::-webkit-details-marker{ display:none; }
-    #scheduleDetails > summary{
-      border: 1px solid rgba(37,99,235,0.30);
-      background: rgba(37,99,235,0.10);
-      color: var(--blue2);
-      border-radius: 14px;
-      padding: 12px 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px 12px;
+      background: #fff;
       display:flex;
       align-items:center;
       justify-content: space-between;
       gap: 10px;
     }
-    #scheduleDetails > summary::after{
-      content: "▶";
+    details > summary::-webkit-details-marker{ display:none; }
+    details > summary::after{
+      content: "▼";
+      font-size: 12px;
+      color: rgba(17,24,39,0.55);
       font-weight: 900;
-      opacity: 0.8;
     }
-    #scheduleDetails[open] > summary::after{ content:"▼"; }
+    details[open] > summary::after{ content:"▲"; }
 
-    /* 危険操作 */
     .dangerZone{
       border: 2px solid rgba(239,68,68,0.65);
       background: var(--danger_bg);
@@ -299,7 +316,7 @@
     }
     .boardItem .left{ flex: 1; min-width: 0; }
     .boardItem .line1{ font-weight: 900; font-size: 13px; margin-bottom: 4px; }
-    .boardItem .line2{ font-size: 12px; color: #374151; word-break: break-word; font-weight: 800; }
+    .boardItem .line2{ font-size: 12px; color: #374151; word-break: break-word; }
     .tag{
       display:inline-block;
       font-size: 11px;
@@ -412,6 +429,7 @@
       padding: 10px;
       background:#fff;
     }
+    .schedLine .row{ margin-top:6px; }
     .schedListBlock{
       border: 1px solid var(--line);
       border-radius: 14px;
@@ -437,47 +455,11 @@
       font-weight: 900;
       font-size: 13px;
     }
-
-    /* まとめ入力 */
-    .bulkBox{
-      border: 1px solid rgba(239,68,68,0.25);
-      background: rgba(239,68,68,0.06);
-      border-radius: 14px;
-      padding: 10px;
-      margin-top: 10px;
-    }
-    .bulkBox .title{
-      font-weight: 900;
-      color: #7f1d1d;
-      margin-bottom: 6px;
-    }
-    .bulkBtnRow{
-      display:flex;
-      gap:8px;
-      margin-top: 10px;
-    }
-    .bulkBtnRow button{
-      flex: 1;
-      font-weight: 900;
-      border-radius: 12px;
-      padding: 12px 10px;
-    }
-    .bulkBtnRow .setOn{
-      border-color: rgba(239,68,68,0.45);
-      background: var(--danger);
-      color:#fff;
-    }
-    .bulkBtnRow .setOff{
-      border-color: rgba(17,24,39,0.15);
-      background: #fff;
-      color: #111827;
-    }
   </style>
 </head>
-
 <body>
 <header>
-  <h1>リペア進捗管理 v1.1-S1b</h1>
+  <h1>リペア進捗管理 v1.1-S1</h1>
   <div class="row">
     <select id="siteSelect"></select>
     <button id="newSiteBtn" class="primary">現場を追加</button>
@@ -521,7 +503,7 @@
     <details style="margin-top:12px;" id="scheduleDetails">
       <summary>検査・内覧スケジュール（タップで表示）</summary>
 
-      <div class="help" style="margin-top:10px;">
+      <div class="help" style="margin-top:8px;">
         ここは <b>入力（編集）</b> と <b>一覧表示</b> を切り替えできます。検査日は <b>期間（開始〜終了）</b> に対応。
       </div>
 
@@ -564,7 +546,15 @@
   <!-- ①集計 -->
   <div class="panel" id="statsPanel">
     <h2 style="margin-bottom:6px;">集計</h2>
+
     <div class="row">
+      <button class="small" id="pendingAllBtn">未完了部屋を全件表示：OFF</button>
+    </div>
+    <div class="help" id="pendingAllHint" style="margin-top:6px;">
+      ONにすると「どの段階でも、未完のダメ帳が残っている部屋」だけを表示します（階ごと）。
+    </div>
+
+    <div class="row" style="margin-top:10px;">
       <button class="small" id="scopeAllBtn">全体</button>
       <input id="scopeFrom" class="small" placeholder="開始階（例 2）" inputmode="numeric" />
       <input id="scopeTo" class="small" placeholder="終了階（例 6）" inputmode="numeric" />
@@ -575,6 +565,9 @@
       <button class="small" id="dameOnlyBtn">ダメ帳ありのみ：OFF</button>
     </div>
     <div class="stats" id="stats"></div>
+    <div class="help" id="pendingAllExplain" style="margin-top:6px; display:none;">
+      ※「未完了部屋を全件表示」ON中は、進捗フィルタ（未着手/途中/完了）はOFF扱いになります。
+    </div>
   </div>
 
   <!-- ②特記事項掲示板 -->
@@ -593,57 +586,40 @@
     </details>
   </div>
 
-  <!-- ③ボタン2つ（この順番で一番下寄り） -->
+  <!-- ③ボタン2つのパネル -->
   <div class="panel">
-    <button id="dameModeBtn" class="bigAction">
-      <span>① ダメ帳がある部屋を登録</span>
-      <span class="onPill">ON</span>
-    </button>
-    <div class="help" id="dameModeDesc" style="margin-top:8px;">
-      階数、部屋別登録ができます。<br/>
-      このボタンがONの時は各部屋をタップしても登録できます。
-    </div>
+    <div class="bigBtnWrap">
+      <div>
+        <button id="dameModeBtn" class="redBig">
+          ① ダメ帳がある部屋を登録
+          <span class="onTag">ON</span>
+        </button>
+        <div class="btnHelp">
+          階数、部屋別登録ができます。<br/>
+          このボタンがONの時は各部屋をタップしても登録できます。
+        </div>
+      </div>
 
-    <div class="bulkBox" id="bulkBox" style="display:none;">
-      <div class="title">ダメ帳まとめ入力（この段階）</div>
-      <div class="row">
-        <input id="bulkFrom" class="small" placeholder="開始階（例 2）" inputmode="numeric" />
-        <input id="bulkTo" class="small" placeholder="終了階（例 6）" inputmode="numeric" />
+      <div>
+        <button id="workModeBtn" class="redBig">
+          ② 作業日・特記事項・メモを入力
+          <span class="onTag">ON</span>
+        </button>
+        <div class="btnHelp">
+          途中部屋と完了部屋に、日付、残工事などの特記事項、メモを記入できます。<br/>
+          このボタンがONの時は各部屋をタップしても登録できます。
+        </div>
       </div>
-      <div class="row" style="margin-top:8px;">
-        <input id="bulkRooms" class="small" placeholder="部屋番号（例：201,202,305 または 201-205）※任意" />
-      </div>
-      <div class="help">
-        使い方例：<br/>
-        ・<b>2〜6階</b>をまとめて → 開始階=2 / 終了階=6（部屋番号は空）<br/>
-        ・<b>部屋番号だけ</b>指定 → 部屋番号に 201,203,305 など（階は空でもOK）<br/>
-        ・<b>範囲指定</b> → 201-205（同一階内の連番想定。混在はカンマで）
-      </div>
-      <div class="bulkBtnRow">
-        <button id="bulkSetOn" class="setOn">ダメ帳：あり にする</button>
-        <button id="bulkSetOff" class="setOff">ダメ帳：なし にする</button>
-      </div>
-    </div>
-
-    <div style="height:12px;"></div>
-
-    <button id="workModeBtn" class="bigAction">
-      <span>② 作業日・特記事項・メモを入力</span>
-      <span class="onPill">ON</span>
-    </button>
-    <div class="help" id="workModeDesc" style="margin-top:8px;">
-      途中部屋と完了部屋に、日付、残工事などの特記事項、メモを記入できます。<br/>
-      このボタンがONの時は各部屋をタップしても登録できます。
     </div>
   </div>
 
   <!-- フィルタ＆ジャンプ -->
   <div class="panel">
     <div class="row">
-      <button class="small" data-filter="all">全件</button>
-      <button class="small" data-filter="todo">未着手</button>
-      <button class="small" data-filter="doing">途中</button>
-      <button class="small" data-filter="done">完了</button>
+      <button class="small" data-filter="all" id="filterAllBtn">全件</button>
+      <button class="small" data-filter="todo" id="filterTodoBtn">未着手</button>
+      <button class="small" data-filter="doing" id="filterDoingBtn">途中</button>
+      <button class="small" data-filter="done" id="filterDoneBtn">完了</button>
     </div>
 
     <div class="row" style="margin-top:10px;">
@@ -657,24 +633,25 @@
 
   <div class="help" style="padding: 10px 2px;">
     通常：部屋タップで「未着手 → 途中 → 完了 → 未着手」<br/>
-    ①ON：部屋タップで「ダメ帳：あり/なし」を切替（進捗は変えません）<br/>
-    ②ON：部屋タップで「作業日／作業者／特記事項／メモ」を編集
+    ①ON：部屋タップで「ダメ帳あり/なし」を切り替え（この段階）<br/>
+    ②ON：部屋タップで「作業日／作業者／特記事項」を編集（この段階）<br/>
+    未完了部屋を全件表示ON：部屋タップで「その部屋の未完ダメ帳（全段階）をまとめて完了」にできます
   </div>
 
-  <!-- 危険操作（いちばん下） -->
+  <!-- 危険操作 -->
   <div class="panel">
     <div class="dangerZone">
       <h3>危険操作（注意）</h3>
       <p>
         「部屋を再生成」は、部屋一覧を作り直します。<br/>
-        進捗・ダメ帳・作業日・作業者・特記事項・メモ（この現場の全部）が初期化されます。
+        進捗・ダメ帳・作業日・作業者・特記事項（この現場の全部）が初期化されます。
       </p>
       <button id="regenStepBtn" class="step1">部屋を再生成（1/2）</button>
     </div>
   </div>
 </main>
 
-<!-- 編集シート（②用） -->
+<!-- 編集シート -->
 <div class="sheetBackdrop" id="sheetBackdrop"></div>
 <div class="sheet" id="sheet">
   <div class="sheetTitle" id="sheetTitle">部屋：</div>
@@ -683,7 +660,6 @@
     <div class="field" style="flex:1;min-width:220px;">
       <label>ダメ帳</label>
       <button id="sheetDameBtn" class="small">ダメ帳：なし</button>
-      <div class="help" style="margin-top:6px;">※②の編集シートからも変更できます（必要なら）</div>
     </div>
   </div>
 
@@ -700,13 +676,6 @@
 
   <div class="sheetRow">
     <div class="field">
-      <label>メモ（自由）</label>
-      <textarea id="sheetMemo" placeholder="例：本日途中まで。残：枠の再補修"></textarea>
-    </div>
-  </div>
-
-  <div class="sheetRow">
-    <div class="field">
       <label>特記事項（後日対応など）</label>
       <textarea id="sheetNoteText" placeholder="例：材料待ち。枠の再補修が必要"></textarea>
       <div class="row" style="margin-top:8px;">
@@ -718,7 +687,7 @@
 
   <div class="resetBox">
     <button id="resetWorkBtn">リセット</button>
-    <div class="resetHelp">入力した作業日・作業者・メモを削除します（進捗・ダメ帳・特記事項は変わりません）</div>
+    <div class="resetHelp">入力した日付、作業者情報をすべて削除します（進捗・ダメ帳・特記事項は変わりません）</div>
   </div>
 
   <div class="btnRow">
@@ -729,10 +698,11 @@
 
 <script>
 (() => {
-  const STORAGE_KEY = "repair_progress_v1_1_S1b_final";
+  const STORAGE_KEY = "repair_progress_v1_1_S1";
   const uid = () => Math.random().toString(36).slice(2, 10) + "-" + Date.now().toString(36);
   const now = () => Date.now();
 
+  /** 検査段階（表示用） */
   const DEFAULT_STAGES = [
     { id:"jishu", name:"自主検査", tone:"blue" },
     { id:"shanin", name:"社内検査", tone:"sky" },
@@ -742,6 +712,7 @@
     { id:"renairan", name:"再内覧", tone:"yellow" },
   ];
 
+  /** スケジュール */
   const SCHED_TYPES = [
     { key:"shanin", label:"社内検査" },
     { key:"nushi", label:"施主検査" },
@@ -763,7 +734,6 @@
   const saveMemoBtn = $("saveMemoBtn");
   const siteMeta = $("siteMeta");
 
-  const scheduleDetails = $("scheduleDetails");
   const schedTabInput = $("schedTabInput");
   const schedTabList = $("schedTabList");
   const schedViewInput = $("schedViewInput");
@@ -776,15 +746,8 @@
   const stageHeader = $("stageHeader");
   const stageHeaderName = $("stageHeaderName");
 
-  // 2モード
-  const dameModeBtn = $("dameModeBtn");
-  const workModeBtn = $("workModeBtn");
-  const bulkBox = $("bulkBox");
-  const bulkFrom = $("bulkFrom");
-  const bulkTo = $("bulkTo");
-  const bulkRooms = $("bulkRooms");
-  const bulkSetOn = $("bulkSetOn");
-  const bulkSetOff = $("bulkSetOff");
+  const pendingAllBtn = $("pendingAllBtn");
+  const pendingAllExplain = $("pendingAllExplain");
 
   const scopeAllBtn = $("scopeAllBtn");
   const scopeFrom = $("scopeFrom");
@@ -793,16 +756,22 @@
   const scopeClearBtn = $("scopeClearBtn");
   const dameOnlyBtn = $("dameOnlyBtn");
 
+  const dameModeBtn = $("dameModeBtn");
+  const workModeBtn = $("workModeBtn");
+
   const statsEl = $("stats");
   const boardCounts = $("boardCounts");
   const boardOpen = $("boardOpen");
   const boardDone = $("boardDone");
-  const boardDoneDetails = $("boardDoneDetails");
 
   const roomGrid = $("roomGrid");
   const jumpInput = $("jumpInput");
   const jumpBtn = $("jumpBtn");
   const clearJumpBtn = $("clearJumpBtn");
+
+  const filterTodoBtn = $("filterTodoBtn");
+  const filterDoingBtn = $("filterDoingBtn");
+  const filterDoneBtn = $("filterDoneBtn");
 
   const regenStepBtn = $("regenStepBtn");
 
@@ -813,7 +782,6 @@
   const sheetDameBtn = $("sheetDameBtn");
   const sheetWorkDate = $("sheetWorkDate");
   const sheetWorker = $("sheetWorker");
-  const sheetMemo = $("sheetMemo");
   const sheetNoteText = $("sheetNoteText");
   const addNoteBtn = $("addNoteBtn");
   const noteList = $("noteList");
@@ -821,6 +789,7 @@
   const closeSheetBtn = $("closeSheetBtn");
   const saveSheetBtn = $("saveSheetBtn");
 
+  /** Load/Save */
   function loadState() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
@@ -830,10 +799,9 @@
       return s;
     } catch { return null; }
   }
-  function saveState() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  }
+  function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
 
+  /** Floor spec parsing */
   function parseFloorSpec(spec) {
     const s = (spec || "").trim();
     if (!s) return [];
@@ -868,14 +836,13 @@
     if (!room.perStage) room.perStage = {};
     for (const st of DEFAULT_STAGES) {
       if (!room.perStage[st.id]) {
-        room.perStage[st.id] = { status:"todo", dame:false, workDate:"", worker:"", memo:"", notes:[] };
+        room.perStage[st.id] = { status:"todo", dame:false, workDate:"", worker:"", notes:[] };
       } else {
         const x = room.perStage[st.id];
         if (!x.status) x.status = "todo";
         if (typeof x.dame !== "boolean") x.dame = false;
         if (!x.workDate) x.workDate = "";
         if (!x.worker) x.worker = "";
-        if (!("memo" in x)) x.memo = "";
         if (!Array.isArray(x.notes)) x.notes = [];
       }
     }
@@ -898,14 +865,14 @@
     return rooms;
   }
 
+  /** スケジュールの新形式 */
   function defaultScheduleV2(){
     const out = {};
-    for (const t of SCHED_TYPES) {
-      out[t.key] = { lines: [], corr: { start:"", end:"" } };
-    }
+    for (const t of SCHED_TYPES) out[t.key] = { lines: [], corr: { start:"", end:"" } };
     return out;
   }
 
+  /** State init */
   let state = loadState();
   if (!state) {
     state = {
@@ -919,9 +886,9 @@
         dameOnly: false,
         regenArmed: false,
         schedTab: "input",
-        // 2モード
+        pendingAll: false,
         dameMode: false,
-        workMode: false,
+        workMode: false
       }
     };
   }
@@ -989,6 +956,30 @@
     return d.notes.length > 0;
   }
 
+  // 全段階横断：未完ダメ帳
+  function isPendingAnyStage(room){
+    for (const st of DEFAULT_STAGES) {
+      const d = roomStageData(room, st.id);
+      if (d.dame && d.status !== "done") return true;
+    }
+    return false;
+  }
+  function getPendingStageNames(room){
+    const names = [];
+    for (const st of DEFAULT_STAGES) {
+      const d = roomStageData(room, st.id);
+      if (d.dame && d.status !== "done") names.push(st.name);
+    }
+    return names;
+  }
+  function completeAllPendingDameForRoom(room){
+    for (const st of DEFAULT_STAGES) {
+      const d = roomStageData(room, st.id);
+      if (d.dame && d.status !== "done") d.status = "done";
+    }
+  }
+
+  /** 日付表示 */
   function fmtYMD(s){
     if (!s) return "";
     const [y,m,d] = s.split("-").map(n => Number(n));
@@ -1009,29 +1000,7 @@
     }catch{ return yyyy_mm_dd; }
   }
 
-  function renderSiteSelect() {
-    siteSelect.innerHTML = "";
-    for (const s of state.sites) {
-      const opt = document.createElement("option");
-      opt.value = s.id;
-      opt.textContent = s.building ? `${s.name}（${s.building}）` : s.name;
-      siteSelect.appendChild(opt);
-    }
-    if (state.currentSiteId) siteSelect.value = state.currentSiteId;
-  }
-
-  function renderSiteForm() {
-    const site = getCurrentSite();
-    if (!site) return;
-    siteName.value = site.name || "";
-    genconName.value = site.gencon || "";
-    buildingName.value = site.building || "";
-    floorSpec.value = site.floorSpec || "";
-    siteMemo.value = site.memo || "";
-    const updated = new Date(site.updatedAt).toLocaleString("ja-JP");
-    siteMeta.textContent = `部屋数: ${site.rooms.length} / 最終更新: ${updated}`;
-  }
-
+  /** スケジュール */
   function ensureScheduleV2(site){
     if (!site.scheduleV2) site.scheduleV2 = defaultScheduleV2();
     for (const t of SCHED_TYPES) {
@@ -1061,6 +1030,7 @@
     const site = getCurrentSite();
     if (!site) return;
     ensureScheduleV2(site);
+
     schedEditor.innerHTML = "";
 
     for (const t of SCHED_TYPES) {
@@ -1068,11 +1038,6 @@
 
       const box = document.createElement("div");
       box.className = "schedBox";
-
-      const titleWrap = document.createElement("div");
-      titleWrap.className = "schedTypeTitle";
-      const left = document.createElement("div");
-      left.textContent = t.label;
 
       const addBtn = document.createElement("button");
       addBtn.className = "small";
@@ -1084,8 +1049,13 @@
         renderScheduleEditor();
       });
 
+      const titleWrap = document.createElement("div");
+      titleWrap.className = "schedTypeTitle";
+      const left = document.createElement("div");
+      left.textContent = t.label;
       titleWrap.appendChild(left);
       titleWrap.appendChild(addBtn);
+
       box.appendChild(titleWrap);
 
       const linesWrap = document.createElement("div");
@@ -1159,33 +1129,28 @@
 
       box.appendChild(linesWrap);
 
+      // corr
       const corr = document.createElement("div");
       corr.style.marginTop = "10px";
       corr.innerHTML = `<div style="font-weight:900; margin-bottom:6px;">是正期間</div>`;
-
       const corrRow = document.createElement("div");
       corrRow.className = "row";
-
       const cs = document.createElement("input");
       cs.type = "date";
       cs.value = data.corr.start || "";
-
       const ce = document.createElement("input");
       ce.type = "date";
       ce.value = data.corr.end || "";
-
       corrRow.appendChild(cs);
       const sep2 = document.createElement("span");
       sep2.className = "meta";
       sep2.textContent = "〜";
       corrRow.appendChild(sep2);
       corrRow.appendChild(ce);
-
       cs.addEventListener("input", () => data.corr.start = cs.value);
       ce.addEventListener("input", () => data.corr.end = ce.value);
 
       corr.appendChild(corrRow);
-
       const corrHelp = document.createElement("div");
       corrHelp.className = "help";
       corrHelp.style.marginTop = "6px";
@@ -1203,7 +1168,6 @@
     ensureScheduleV2(site);
 
     schedList.innerHTML = "";
-
     for (const t of SCHED_TYPES) {
       const data = site.scheduleV2[t.key];
 
@@ -1252,6 +1216,30 @@
     schedList.appendChild(tip);
   }
 
+  /** Rendering */
+  function renderSiteSelect() {
+    siteSelect.innerHTML = "";
+    for (const s of state.sites) {
+      const opt = document.createElement("option");
+      opt.value = s.id;
+      opt.textContent = s.building ? `${s.name}（${s.building}）` : s.name;
+      siteSelect.appendChild(opt);
+    }
+    if (state.currentSiteId) siteSelect.value = state.currentSiteId;
+  }
+
+  function renderSiteForm() {
+    const site = getCurrentSite();
+    if (!site) return;
+    siteName.value = site.name || "";
+    genconName.value = site.gencon || "";
+    buildingName.value = site.building || "";
+    floorSpec.value = site.floorSpec || "";
+    siteMemo.value = site.memo || "";
+    const updated = new Date(site.updatedAt).toLocaleString("ja-JP");
+    siteMeta.textContent = `部屋数: ${site.rooms.length} / 最終更新: ${updated}`;
+  }
+
   function renderStages(){
     stageRow.innerHTML = "";
     for (const st of DEFAULT_STAGES) {
@@ -1280,18 +1268,6 @@
 
     stageHeader.style.background = bg;
     stageHeader.style.borderColor = bd;
-  }
-
-  function renderModes(){
-    // ON表示＋赤
-    if (state.ui.dameMode) dameModeBtn.classList.add("on");
-    else dameModeBtn.classList.remove("on");
-
-    if (state.ui.workMode) workModeBtn.classList.add("on");
-    else workModeBtn.classList.remove("on");
-
-    // まとめ入力はダメ帳モードの時だけ表示
-    bulkBox.style.display = state.ui.dameMode ? "block" : "none";
   }
 
   function computeStats(site){
@@ -1333,6 +1309,7 @@
   function renderBoard(){
     const site = getCurrentSite();
     if (!site) return;
+
     const stageId = state.ui.currentStageId;
 
     const openItems = [];
@@ -1423,111 +1400,21 @@
     }
   }
 
-  function renderRooms(){
-    const site = getCurrentSite();
-    if (!site) return;
-    const stageId = state.ui.currentStageId;
-    const filter = state.ui.filter;
+  function renderPendingAllBtn(){
+    pendingAllBtn.textContent = `未完了部屋を全件表示：${state.ui.pendingAll ? "ON" : "OFF"}`;
+    pendingAllBtn.style.borderColor = state.ui.pendingAll ? "rgba(239,68,68,0.45)" : "var(--line)";
+    pendingAllBtn.style.color = state.ui.pendingAll ? "#991b1b" : "var(--text)";
+    pendingAllBtn.style.background = state.ui.pendingAll ? "rgba(239,68,68,0.08)" : "#fff";
+    pendingAllExplain.style.display = state.ui.pendingAll ? "block" : "none";
 
-    let rooms = site.rooms.slice();
-    if (state.ui.dameOnly) rooms = rooms.filter(r => roomStageData(r, stageId).dame);
-    if (filter !== "all") rooms = rooms.filter(r => roomStageData(r, stageId).status === filter);
-    rooms.sort((a,b) => a.floor - b.floor || a.idx - b.idx);
+    const dis = state.ui.pendingAll;
+    filterTodoBtn.disabled = dis;
+    filterDoingBtn.disabled = dis;
+    filterDoneBtn.disabled = dis;
 
-    roomGrid.innerHTML = "";
-    let lastFloor = null;
-
-    for (const r of rooms) {
-      if (lastFloor !== r.floor) {
-        const header = document.createElement("div");
-        header.className = "floorHeader";
-        header.textContent = `${r.floor}階（現在の段階：${stageById(stageId).name}）`;
-        roomGrid.appendChild(header);
-        lastFloor = r.floor;
-      }
-
-      const d = roomStageData(r, stageId);
-
-      const card = document.createElement("div");
-      card.className = `room ${d.status}`;
-      card.dataset.roomId = r.id;
-      if (state.ui.highlightedRoomId === r.id) card.classList.add("highlight");
-
-      // 特記事項マーク（🔴/🟢）
-      if (hasAnyNotes(r, stageId)) {
-        const mk = document.createElement("div");
-        mk.className = "noteMark " + (hasOpenNotes(r, stageId) ? "red" : "green");
-        mk.textContent = hasOpenNotes(r, stageId) ? "🔴" : "🟢";
-        card.appendChild(mk);
-      }
-
-      const num = document.createElement("div");
-      num.className = "num";
-      num.textContent = r.label;
-      card.appendChild(num);
-
-      // ダメ帳あり（部屋番号の下）
-      if (d.dame) {
-        const dame = document.createElement("div");
-        dame.className = "badge dame";
-        dame.textContent = "ダメ帳あり";
-        card.appendChild(dame);
-      }
-
-      const st = document.createElement("div");
-      st.className = "st";
-      st.textContent = statusLabel(d.status);
-      card.appendChild(st);
-
-      // 途中/完了のとき：作業日＋作業者
-      if ((d.status === "doing" || d.status === "done") && (d.workDate || d.worker)) {
-        const sub = document.createElement("div");
-        sub.className = "subline";
-        const dateText = d.workDate ? fmtDateShort(d.workDate) : "";
-        const workerText = d.worker ? d.worker : "";
-        sub.textContent = [dateText, workerText].filter(Boolean).join("　");
-        card.appendChild(sub);
-      }
-
-      // メモがあるとき：短く表示（進捗に関係なく）
-      if ((d.memo || "").trim()) {
-        const m = document.createElement("div");
-        m.className = "subline";
-        const t = (d.memo || "").trim();
-        m.textContent = t.length > 14 ? (t.slice(0,14) + "…") : t;
-        card.appendChild(m);
-      }
-
-      card.addEventListener("click", () => {
-        const site2 = getCurrentSite();
-        if (!site2) return;
-        const room = site2.rooms.find(x => x.id === r.id);
-        if (!room) return;
-        const dd = roomStageData(room, stageId);
-
-        // ①ダメ帳登録モード
-        if (state.ui.dameMode) {
-          dd.dame = !dd.dame;
-          site2.updatedAt = now();
-          saveState();
-          renderAll();
-          return;
-        }
-
-        // ②作業日・特記事項・メモモード
-        if (state.ui.workMode) {
-          openSheet(room.id);
-          return;
-        }
-
-        // 通常：進捗
-        dd.status = nextStatus(dd.status);
-        site2.updatedAt = now();
-        saveState();
-        renderAll();
-      });
-
-      roomGrid.appendChild(card);
+    if (dis && state.ui.filter !== "all") {
+      state.ui.filter = "all";
+      saveState();
     }
   }
 
@@ -1536,6 +1423,17 @@
     dameOnlyBtn.style.borderColor = state.ui.dameOnly ? "rgba(239,68,68,0.45)" : "var(--line)";
     dameOnlyBtn.style.color = state.ui.dameOnly ? "#991b1b" : "var(--text)";
     dameOnlyBtn.style.background = state.ui.dameOnly ? "rgba(239,68,68,0.08)" : "#fff";
+  }
+
+  function renderModeButtons(){
+    // pendingAll中は、誤操作防止でモードボタンはOFFに寄せる（見た目だけ）
+    const lock = state.ui.pendingAll;
+
+    dameModeBtn.classList.toggle("on", !!state.ui.dameMode && !lock);
+    workModeBtn.classList.toggle("on", !!state.ui.workMode && !lock);
+
+    dameModeBtn.querySelector(".onTag").style.display = (state.ui.dameMode && !lock) ? "inline-block" : "none";
+    workModeBtn.querySelector(".onTag").style.display = (state.ui.workMode && !lock) ? "inline-block" : "none";
   }
 
   function renderRegenBtn(){
@@ -1548,6 +1446,131 @@
     }
   }
 
+  function renderRooms(){
+    const site = getCurrentSite();
+    if (!site) return;
+    const stageId = state.ui.currentStageId;
+    const filter = state.ui.filter;
+
+    let rooms = site.rooms.slice();
+
+    if (state.ui.pendingAll) {
+      rooms = rooms.filter(r => isPendingAnyStage(r));
+    } else {
+      if (state.ui.dameOnly) rooms = rooms.filter(r => roomStageData(r, stageId).dame);
+      if (filter !== "all") rooms = rooms.filter(r => roomStageData(r, stageId).status === filter);
+    }
+
+    rooms.sort((a,b) => a.floor - b.floor || a.idx - b.idx);
+
+    roomGrid.innerHTML = "";
+    let lastFloor = null;
+
+    for (const r of rooms) {
+      if (lastFloor !== r.floor) {
+        const header = document.createElement("div");
+        header.className = "floorHeader";
+        header.textContent = state.ui.pendingAll
+          ? `${r.floor}階（未完了：全段階）`
+          : `${r.floor}階（現在の段階：${stageById(stageId).name}）`;
+        roomGrid.appendChild(header);
+        lastFloor = r.floor;
+      }
+
+      const d = roomStageData(r, stageId);
+
+      const card = document.createElement("div");
+      card.className = `room ${d.status}`;
+      card.dataset.roomId = r.id;
+      if (state.ui.highlightedRoomId === r.id) card.classList.add("highlight");
+
+      // 特記事項マーク（🔴/🟢）※この段階
+      if (hasAnyNotes(r, stageId)) {
+        const mk = document.createElement("div");
+        mk.className = "noteMark " + (hasOpenNotes(r, stageId) ? "red" : "green");
+        mk.textContent = hasOpenNotes(r, stageId) ? "🔴" : "🟢";
+        card.appendChild(mk);
+      }
+
+      const num = document.createElement("div");
+      num.className = "num";
+      num.textContent = r.label;
+      card.appendChild(num);
+
+      // ダメ帳バッジ：未完は赤、完了は緑（この段階）
+      if (d.dame) {
+        const dame = document.createElement("div");
+        const isDone = (d.status === "done");
+        dame.className = "badge " + (isDone ? "dameGreen" : "dameRed");
+        dame.textContent = isDone ? "ダメ帳あり（完了）" : "ダメ帳あり";
+        card.appendChild(dame);
+      }
+
+      const st = document.createElement("div");
+      st.className = "st";
+      st.textContent = statusLabel(d.status);
+      card.appendChild(st);
+
+      if (state.ui.pendingAll) {
+        const names = getPendingStageNames(r);
+        const sub = document.createElement("div");
+        sub.className = "subline";
+        sub.textContent = `未完：${names.join(" / ")}`;
+        card.appendChild(sub);
+      } else {
+        if ((d.status === "doing" || d.status === "done") && (d.workDate || d.worker)) {
+          const sub = document.createElement("div");
+          sub.className = "subline";
+          const dateText = d.workDate ? fmtDateShort(d.workDate) : "";
+          const workerText = d.worker ? d.worker : "";
+          sub.textContent = [dateText, workerText].filter(Boolean).join("　");
+          card.appendChild(sub);
+        }
+      }
+
+      card.addEventListener("click", () => {
+        const site2 = getCurrentSite();
+        if (!site2) return;
+        const room = site2.rooms.find(x => x.id === r.id);
+        if (!room) return;
+
+        // 1) 未完全件表示ON：まとめて完了
+        if (state.ui.pendingAll) {
+          const names = getPendingStageNames(room);
+          const ok = confirm(`部屋${room.label}の未完ダメ帳をまとめて完了にしますか？\n対象：${names.join(" / ")}`);
+          if (!ok) return;
+          completeAllPendingDameForRoom(room);
+          site2.updatedAt = now();
+          saveState();
+          renderAll();
+          return;
+        }
+
+        // 2) ①ダメ帳登録モード：この段階のdameを切り替え
+        if (state.ui.dameMode) {
+          const dd = roomStageData(room, stageId);
+          dd.dame = !dd.dame;
+          site2.updatedAt = now();
+          saveState();
+          renderAll();
+          return;
+        }
+
+        // 3) ②作業/特記事項モード：シートを開く
+        if (state.ui.workMode) { openSheet(room.id); return; }
+
+        // 4) 通常：進捗を回す
+        const dd = roomStageData(room, stageId);
+        dd.status = nextStatus(dd.status);
+        site2.updatedAt = now();
+        saveState();
+        renderAll();
+      });
+
+      roomGrid.appendChild(card);
+    }
+  }
+
   function renderAll(){
     renderSiteSelect();
     renderSiteForm();
@@ -1557,14 +1580,18 @@
     renderScheduleList();
 
     renderStages();
-    renderModes();
+
+    renderPendingAllBtn();
     renderStats();
     renderBoard();
+
+    renderModeButtons();
     renderRooms();
     renderDameOnlyBtn();
     renderRegenBtn();
   }
 
+  /** Jump */
   function jumpToRoom(label){
     const site = getCurrentSite();
     if (!site) return;
@@ -1580,7 +1607,7 @@
     });
   }
 
-  // Sheet state
+  /** Sheet state */
   let sheetRoomId = null;
   function openSheet(roomId){
     const site = getCurrentSite();
@@ -1599,7 +1626,6 @@
 
     sheetWorkDate.value = d.workDate || "";
     sheetWorker.value = d.worker || "";
-    sheetMemo.value = d.memo || "";
     sheetNoteText.value = "";
     renderNoteList(room);
 
@@ -1668,74 +1694,6 @@
     }
   }
 
-  // Bulk helper: parse rooms text "201,202,305" or "201-205"
-  function parseRoomsInput(text){
-    const t = (text || "").trim();
-    if (!t) return [];
-    const out = new Set();
-
-    const parts = t.split(",").map(x => x.trim()).filter(Boolean);
-    for (const p of parts) {
-      if (p.includes("-")) {
-        const [a,b] = p.split("-").map(x => Number(x.trim()));
-        if (!Number.isInteger(a) || !Number.isInteger(b)) continue;
-        const from = Math.min(a,b), to = Math.max(a,b);
-        for (let v = from; v <= to; v++) out.add(String(v));
-      } else {
-        const v = Number(p);
-        if (!Number.isInteger(v)) continue;
-        out.add(String(v));
-      }
-    }
-    return Array.from(out);
-  }
-
-  function applyBulkDame(setTo){
-    const site = getCurrentSite();
-    if (!site) return;
-    const stageId = state.ui.currentStageId;
-
-    const roomsByLabel = new Map(site.rooms.map(r => [r.label, r]));
-    const labels = parseRoomsInput(bulkRooms.value);
-
-    const fromF = Number((bulkFrom.value||"").trim());
-    const toF = Number((bulkTo.value||"").trim());
-    const hasFloorRange = Number.isFinite(fromF) && Number.isFinite(toF);
-
-    let changed = 0;
-
-    // 部屋番号指定があれば優先的に適用
-    for (const lb of labels) {
-      const r = roomsByLabel.get(String(lb));
-      if (!r) continue;
-      const d = roomStageData(r, stageId);
-      if (d.dame !== setTo) {
-        d.dame = setTo;
-        changed++;
-      }
-    }
-
-    // 階範囲指定もあれば適用（部屋番号指定と併用OK）
-    if (hasFloorRange) {
-      const a = Math.min(fromF,toF), b = Math.max(fromF,toF);
-      for (const r of site.rooms) {
-        if (r.floor < a || r.floor > b) continue;
-        const d = roomStageData(r, stageId);
-        if (d.dame !== setTo) {
-          d.dame = setTo;
-          changed++;
-        }
-      }
-    }
-
-    if (changed > 0) {
-      site.updatedAt = now();
-      saveState();
-      renderAll();
-    }
-    alert(`ダメ帳を「${setTo ? "あり":"なし"}」に更新しました（変更: ${changed}件）`);
-  }
-
   /** Events */
   siteSelect.addEventListener("change", () => {
     state.currentSiteId = siteSelect.value;
@@ -1767,6 +1725,7 @@
     renderAll();
   });
 
+  // ★抜けてた「現場削除」を復活
   deleteSiteBtn.addEventListener("click", () => {
     const site = getCurrentSite();
     if (!site) return;
@@ -1834,27 +1793,26 @@
     alert("スケジュールを保存しました。");
   });
 
-  // 2モード：排他（片方ONにしたら片方OFF）
-  dameModeBtn.addEventListener("click", () => {
-    state.ui.dameMode = !state.ui.dameMode;
-    if (state.ui.dameMode) state.ui.workMode = false;
-    saveState();
-    renderAll();
-  });
-  workModeBtn.addEventListener("click", () => {
-    state.ui.workMode = !state.ui.workMode;
-    if (state.ui.workMode) state.ui.dameMode = false;
-    saveState();
-    renderAll();
-  });
+  // 未完全件表示
+  pendingAllBtn.addEventListener("click", () => {
+    state.ui.pendingAll = !state.ui.pendingAll;
+    state.ui.filter = "all";
+    state.ui.highlightedRoomId = null;
 
-  // bulk buttons
-  bulkSetOn.addEventListener("click", () => applyBulkDame(true));
-  bulkSetOff.addEventListener("click", () => applyBulkDame(false));
+    // pendingAll ONにした時は、誤操作防止でモードは一旦OFF
+    if (state.ui.pendingAll) {
+      state.ui.dameMode = false;
+      state.ui.workMode = false;
+    }
+
+    saveState();
+    renderAll();
+  });
 
   // filter buttons
   document.querySelectorAll("[data-filter]").forEach(btn => {
     btn.addEventListener("click", () => {
+      if (state.ui.pendingAll) return;
       const f = btn.getAttribute("data-filter");
       if (f === "all" || f === "todo" || f === "doing" || f === "done") {
         state.ui.filter = f;
@@ -1891,8 +1849,10 @@
 
   // dameOnly toggle
   dameOnlyBtn.addEventListener("click", () => {
+    if (state.ui.pendingAll) return;
     state.ui.dameOnly = !state.ui.dameOnly;
     saveState();
+    renderDameOnlyBtn();
     renderAll();
   });
 
@@ -1929,7 +1889,7 @@
       return;
     }
 
-    const ok = confirm("部屋を再生成します。進捗・ダメ帳・作業日・作業者・特記事項・メモが初期化されます。よろしいですか？");
+    const ok = confirm("部屋を再生成します。進捗・ダメ帳・作業日・作業者・特記事項が初期化されます。よろしいですか？");
     if (!ok) {
       state.ui.regenArmed = false;
       saveState();
@@ -1942,6 +1902,7 @@
       site.updatedAt = now();
       state.ui.regenArmed = false;
       saveState();
+      renderRegenBtn();
       renderAll();
       alert("部屋を再生成しました。");
     }catch(e){
@@ -1950,6 +1911,23 @@
       saveState();
       renderRegenBtn();
     }
+  });
+
+  // モードボタン（排他にする）
+  dameModeBtn.addEventListener("click", () => {
+    if (state.ui.pendingAll) return;
+    state.ui.dameMode = !state.ui.dameMode;
+    if (state.ui.dameMode) state.ui.workMode = false;
+    saveState();
+    renderAll();
+  });
+
+  workModeBtn.addEventListener("click", () => {
+    if (state.ui.pendingAll) return;
+    state.ui.workMode = !state.ui.workMode;
+    if (state.ui.workMode) state.ui.dameMode = false;
+    saveState();
+    renderAll();
   });
 
   // sheet
@@ -1984,7 +1962,7 @@
   resetWorkBtn.addEventListener("click", () => {
     const site = getCurrentSite();
     if (!site || !sheetRoomId) return;
-    const ok = confirm("リセットします。\n作業日・作業者・メモを削除します。\n（進捗・ダメ帳・特記事項は変わりません）\nよろしいですか？");
+    const ok = confirm("リセットします。\n入力した日付、作業者情報をすべて削除します。\n（進捗・ダメ帳・特記事項は変わりません）\nよろしいですか？");
     if (!ok) return;
 
     const room = site.rooms.find(r => r.id === sheetRoomId);
@@ -1992,7 +1970,6 @@
     const d = roomStageData(room, state.ui.currentStageId);
     d.workDate = "";
     d.worker = "";
-    d.memo = "";
     site.updatedAt = now();
     saveState();
     renderAll();
@@ -2006,10 +1983,10 @@
     if (!room) return;
 
     const d = roomStageData(room, state.ui.currentStageId);
+
     d.dame = (sheetDameBtn.dataset.value === "1");
     d.workDate = (sheetWorkDate.value || "").trim();
     d.worker = (sheetWorker.value || "").trim();
-    d.memo = (sheetMemo.value || "").trim();
 
     site.updatedAt = now();
     saveState();
@@ -2017,6 +1994,7 @@
     closeSheet();
   });
 
+  /** Boot + migrate */
   function migrate(){
     ensureInitialSite();
     for (const site of state.sites) {
@@ -2033,6 +2011,7 @@
     if (typeof state.ui.dameOnly !== "boolean") state.ui.dameOnly = false;
     if (typeof state.ui.regenArmed !== "boolean") state.ui.regenArmed = false;
     if (!state.ui.schedTab) state.ui.schedTab = "input";
+    if (typeof state.ui.pendingAll !== "boolean") state.ui.pendingAll = false;
     if (typeof state.ui.dameMode !== "boolean") state.ui.dameMode = false;
     if (typeof state.ui.workMode !== "boolean") state.ui.workMode = false;
     saveState();
