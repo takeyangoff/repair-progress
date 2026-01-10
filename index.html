@@ -42,47 +42,23 @@
     .row { display:flex; gap:8px; flex-wrap: wrap; align-items: center; }
     select, input, button, textarea { font-size: 14px; padding: 10px; }
     input, textarea { flex: 1; min-width: 180px; border:1px solid var(--line); border-radius: 10px; background:#fff; }
-    textarea{ min-height: 68px; resize: vertical; }
+    textarea{ min-height: 88px; resize: vertical; }
     button { border: 1px solid #ddd; background:#fff; border-radius: 10px; }
     button.primary { background: #111827; color: white; border-color: #111827; }
     button.danger { border-color: var(--danger); color: var(--danger); background:#fff; }
-
-    button.blueBig{
-      width: 100%;
-      background: rgba(37,99,235,0.12);
-      color: var(--blue2);
-      border: 1px solid rgba(37,99,235,0.35);
-      font-weight: 900;
-      border-radius: 14px;
-      padding: 14px 12px;
-      text-align: left;
-    }
-    button.blueBig.on{
-      background: var(--danger);
-      color:#fff;
-      border-color: var(--danger);
-    }
-
-    .btnSub{
-      display:block;
-      font-size: 12px;
-      font-weight: 800;
-      opacity: 0.9;
-      margin-top: 6px;
-      line-height: 1.25;
-    }
 
     .meta { font-size: 12px; color: var(--muted); margin-top: 6px; }
     main { padding: 12px; }
     .panel { background:white; border:1px solid var(--line); border-radius: 14px; padding: 12px; margin-bottom: 12px; }
     .panel h2 { font-size: 14px; margin:0 0 8px; }
-    .help { font-size: 12px; color:var(--muted); line-height: 1.5; }
+    .help { font-size: 12px; color:var(--muted); line-height: 1.5; font-weight: 700; }
     .split { display:flex; gap:8px; flex-wrap: wrap; }
     .split > * { flex: 1; min-width: 220px; }
-    .small { font-size: 12px; padding: 8px 10px; border-radius: 12px; }
+    .small { font-size: 12px; padding: 8px 10px; border-radius: 12px; font-weight: 900; }
     .small:disabled{ opacity: 0.5; }
     .stats { display:flex; gap:8px; flex-wrap: wrap; margin-bottom: 10px; }
     .pill { background:white; border:1px solid var(--line); border-radius: 999px; padding: 6px 10px; font-size: 13px; font-weight: 800; }
+
     .grid { display:grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap:8px; }
     @media (max-width: 480px) { .grid { grid-template-columns: repeat(4, minmax(0,1fr)); } }
 
@@ -207,48 +183,102 @@
       box-shadow: 0 0 0 3px rgba(37,99,235,0.14);
     }
 
+    /* スケジュール：ボタンっぽいsummary */
     details > summary{
       cursor: pointer;
       font-weight: 900;
       list-style: none;
+      border: 1px solid rgba(37,99,235,0.35);
+      background: rgba(37,99,235,0.10);
+      color: var(--blue2);
+      padding: 12px 12px;
+      border-radius: 14px;
+    }
+    details[open] > summary{
+      background: rgba(37,99,235,0.14);
+      border-color: rgba(37,99,235,0.45);
     }
     details > summary::-webkit-details-marker{ display:none; }
 
-    .dangerZone{
-      border: 2px solid rgba(239,68,68,0.65);
-      background: var(--danger_bg);
-      border-radius: 14px;
-      padding: 12px;
-    }
-    .dangerZone h3{
-      margin: 0 0 8px;
-      font-size: 13px;
+    /* トグル大ボタン（赤ON） */
+    .toggleBig{
+      width: 100%;
+      background: rgba(239,68,68,0.10);
       color: #991b1b;
+      border: 1px solid rgba(239,68,68,0.35);
+      font-weight: 900;
+      border-radius: 14px;
+      padding: 14px 12px;
+      text-align: left;
+      display:flex;
+      align-items:flex-start;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .toggleBig .left{
+      display:flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 0;
+    }
+    .toggleBig .title{
+      font-size: 15px;
+      line-height: 1.2;
       font-weight: 900;
     }
-    .dangerZone p{
-      margin: 0 0 10px;
+    .toggleBig .desc{
       font-size: 12px;
-      color:#7f1d1d;
-      line-height: 1.5;
-      font-weight: 700;
+      font-weight: 800;
+      color: rgba(153,27,27,0.85);
     }
-    .dangerZone button{
-      width:100%;
-      border-radius: 12px;
-      padding: 12px 10px;
+    .toggleBig .state{
+      flex: 0 0 auto;
+      font-size: 12px;
       font-weight: 900;
-    }
-    .dangerZone button.step1{
-      border-color: rgba(239,68,68,0.45);
-      color:#991b1b;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(153,27,27,0.35);
       background:#fff;
+      color:#991b1b;
+      white-space: nowrap;
+      align-self: center;
     }
-    .dangerZone button.step2{
-      border-color: var(--danger);
+    .toggleBig.on{
       background: var(--danger);
       color:#fff;
+      border-color: var(--danger);
     }
+    .toggleBig.on .desc{ color: rgba(255,255,255,0.88); }
+    .toggleBig.on .state{
+      border-color: rgba(255,255,255,0.35);
+      background: rgba(255,255,255,0.16);
+      color:#fff;
+    }
+
+    .subPanel{
+      margin-top: 10px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px;
+      background:#fff;
+    }
+    .subPanel .h{
+      font-weight: 900;
+      margin-bottom: 6px;
+    }
+    .subPanel .box{
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px;
+      background:#fff;
+      margin-top: 10px;
+    }
+    .subPanel .box .h2{
+      font-weight: 900;
+      margin-bottom: 6px;
+      font-size: 13px;
+    }
+    .subPanel .box .help{ margin-bottom: 8px; }
 
     /* 掲示板 */
     .boardTitle{
@@ -301,7 +331,7 @@
       font-weight: 900;
     }
 
-    /* 編集シート */
+    /* 編集シート（※今回は未使用：将来用に残し） */
     .sheetBackdrop{
       position: fixed;
       inset: 0;
@@ -322,39 +352,6 @@
       overflow:auto;
       display:none;
       z-index: 60;
-    }
-    .sheet .sheetTitle{ font-weight: 900; font-size: 14px; margin-bottom: 10px; }
-    .sheet .sheetRow{ display:flex; gap:8px; flex-wrap: wrap; align-items:center; margin-bottom: 8px; }
-    .sheet label{ font-size: 12px; color: var(--muted); font-weight: 900; display:block; margin-bottom: 4px; }
-    .sheet .field{ width:100%; }
-    .sheet .field input, .sheet .field textarea{ width:100%; box-sizing: border-box; }
-    .sheet .btnRow{ display:flex; gap:8px; margin-top: 10px; }
-    .sheet .btnRow button{ flex:1; font-weight: 900; border-radius: 12px; padding: 12px 10px; }
-    .sheet .btnRow .save{ background: var(--blue); color:#fff; border-color: var(--blue); }
-    .sheet .btnRow .close{ background:#fff; border-color: var(--line); }
-
-    .sheet .resetBox{
-      margin-top: 8px;
-      border: 1px solid rgba(239,68,68,0.35);
-      background: var(--danger_bg);
-      border-radius: 12px;
-      padding: 10px;
-    }
-    .sheet .resetBox button{
-      width:100%;
-      border-radius: 12px;
-      padding: 10px;
-      font-weight: 900;
-      border-color: rgba(239,68,68,0.45);
-      color: #991b1b;
-      background:#fff;
-    }
-    .sheet .resetHelp{
-      font-size: 12px;
-      color:#7f1d1d;
-      margin-top: 6px;
-      line-height: 1.4;
-      font-weight: 700;
     }
 
     /* スケジュール：タブ */
@@ -419,6 +416,43 @@
       font-weight: 900;
       font-size: 13px;
     }
+
+    /* 危険操作 */
+    .dangerZone{
+      border: 2px solid rgba(239,68,68,0.65);
+      background: var(--danger_bg);
+      border-radius: 14px;
+      padding: 12px;
+    }
+    .dangerZone h3{
+      margin: 0 0 8px;
+      font-size: 13px;
+      color: #991b1b;
+      font-weight: 900;
+    }
+    .dangerZone p{
+      margin: 0 0 10px;
+      font-size: 12px;
+      color:#7f1d1d;
+      line-height: 1.5;
+      font-weight: 700;
+    }
+    .dangerZone button{
+      width:100%;
+      border-radius: 12px;
+      padding: 12px 10px;
+      font-weight: 900;
+    }
+    .dangerZone button.step1{
+      border-color: rgba(239,68,68,0.45);
+      color:#991b1b;
+      background:#fff;
+    }
+    .dangerZone button.step2{
+      border-color: var(--danger);
+      background: var(--danger);
+      color:#fff;
+    }
   </style>
 </head>
 <body>
@@ -463,9 +497,9 @@
       <button id="saveSiteBtn" class="primary">設定を保存</button>
     </div>
 
-    <!-- スケジュール：入力/一覧タブ -->
+    <!-- スケジュール -->
     <details style="margin-top:12px;" id="scheduleDetails">
-      <summary>検査・内覧スケジュール（最初は閉じる）</summary>
+      <summary>検査・内覧スケジュール（タップで表示）</summary>
 
       <div class="help" style="margin-top:8px;">
         ここは <b>入力（編集）</b> と <b>一覧</b> を切り替えできます。検査日は <b>期間（開始〜終了）</b> に対応。
@@ -525,9 +559,11 @@
       <button class="small" id="scopeApplyBtn">範囲で集計</button>
       <button class="small" id="scopeClearBtn">解除</button>
     </div>
+
     <div class="row" style="margin-top:8px;">
       <button class="small" id="dameOnlyBtn">ダメ帳ありのみ：OFF</button>
     </div>
+
     <div class="stats" id="stats"></div>
     <div class="help" id="pendingAllExplain" style="margin-top:6px; display:none;">
       ※「未完了部屋を全件表示」ON中は、進捗フィルタ（未着手/途中/完了）はOFF扱いになります。
@@ -550,49 +586,48 @@
     </details>
   </div>
 
-  <!-- 操作パネル（確定仕様） -->
+  <!-- ダメ帳登録ボタン（ONで展開） -->
   <div class="panel">
-    <!-- ①ダメ帳登録 -->
-    <button id="dameModeBtn" class="blueBig">
-      ダメ帳登録
-      <span class="btnSub">階数、部屋別登録ができます／ON中は部屋タップでも登録</span>
+    <button id="dameRegBtn" class="toggleBig">
+      <div class="left">
+        <div class="title">ダメ帳登録</div>
+        <div class="desc" id="dameRegDesc">ON中は部屋を個別タップでも登録可能</div>
+      </div>
+      <div class="state" id="dameRegState">OFF</div>
     </button>
 
-    <!-- ①のONで出る：まとめ登録 -->
-    <div id="dameBulkPanel" class="panel" style="margin-top:10px; display:none;">
-      <h2>まとめ登録</h2>
-      <div class="help">現在の段階に対してまとめて登録します。</div>
+    <div class="subPanel" id="dameRegPanel" style="display:none;">
+      <div class="h">まとめて登録</div>
+      <div class="help">※対象は「現在の段階（上の段階ボタンで選択中）」です</div>
 
-      <div class="row" style="margin-top:10px;">
-        <input id="bulkFromFloor" class="small" placeholder="○階から" inputmode="numeric" />
-        <input id="bulkToFloor" class="small" placeholder="○階まで" inputmode="numeric" />
-        <button id="bulkPreviewRangeBtn" class="small">範囲プレビュー</button>
+      <!-- 範囲で登録 -->
+      <div class="box">
+        <div class="h2">まとめて登録（階数範囲）</div>
+        <div class="help">階を2つ入れて、その範囲の部屋をまとめて登録します</div>
+
+        <div class="row" style="margin-top:6px;">
+          <input id="bulkFloorFrom" class="small" placeholder="開始階（例 2）" inputmode="numeric" />
+          <input id="bulkFloorTo" class="small" placeholder="終了階（例 6）" inputmode="numeric" />
+        </div>
+
+        <div class="row" style="margin-top:8px;">
+          <button id="bulkRangeOnBtn" class="small">この範囲を「ダメ帳あり」</button>
+          <button id="bulkRangeOffBtn" class="small">この範囲を「ダメ帳なし」</button>
+        </div>
       </div>
 
-      <div class="row" style="margin-top:10px;">
-        <textarea id="bulkRoomsText" placeholder="部屋番号を手入力（例：301,302,305 / 改行でもOK）"></textarea>
+      <!-- 部屋番号を個別入力 -->
+      <div class="box">
+        <div class="h2">部屋番号を個別入力</div>
+        <div class="help">改行区切りで複数登録できます（例：301↵302↵305）</div>
+
+        <textarea id="bulkRoomsText" placeholder="部屋番号を改行で入力（例：301&#10;302&#10;305）"></textarea>
+
+        <div class="row" style="margin-top:8px;">
+          <button id="bulkRoomsOnBtn" class="small">入力した部屋を「ダメ帳あり」</button>
+          <button id="bulkRoomsOffBtn" class="small">入力した部屋を「ダメ帳なし」</button>
+        </div>
       </div>
-      <div class="row" style="margin-top:8px;">
-        <button id="bulkPreviewRoomsBtn" class="small">手入力プレビュー</button>
-      </div>
-
-      <div class="row" style="margin-top:10px;">
-        <button id="bulkSetDameBtn" class="small" style="font-weight:900;">ダメ帳ありをまとめて登録</button>
-        <button id="bulkUnsetDameBtn" class="small danger" style="font-weight:900;">ダメ帳なしに戻す</button>
-      </div>
-
-      <div class="help" id="bulkPreviewText" style="margin-top:10px;">プレビュー：まだありません</div>
-    </div>
-
-    <div style="height:10px;"></div>
-
-    <!-- ②作業日・作業者（今はON表示のみ。次で中身整理） -->
-    <button id="workModeBtn" class="blueBig">
-      作業日・作業者登録
-      <span class="btnSub">途中部屋と完了部屋に、日付、残工事などの特記事項、メモを記入できます／ON中は部屋タップでも登録</span>
-    </button>
-    <div class="help" id="workModeHint" style="margin-top:8px; display:none;">
-      編集中：部屋をタップすると「作業日／作業者／特記事項」を編集できます
     </div>
   </div>
 
@@ -616,8 +651,7 @@
 
   <div class="help" style="padding: 10px 2px;">
     通常：部屋タップで「未着手 → 途中 → 完了 → 未着手」<br/>
-    ダメ帳登録ON：部屋タップで「ダメ帳あり/なし」を切り替え（ありにしたら未着手に戻る）<br/>
-    作業日・作業者ON：部屋タップで編集シートを開く<br/>
+    ダメ帳登録ON：部屋タップで「ダメ帳あり ↔ なし」（確認なし）<br/>
     未完了部屋を全件表示ON：部屋タップで「その部屋の未完ダメ帳（全段階）をまとめて完了」にできます
   </div>
 
@@ -633,51 +667,6 @@
     </div>
   </div>
 </main>
-
-<!-- 編集シート -->
-<div class="sheetBackdrop" id="sheetBackdrop"></div>
-<div class="sheet" id="sheet">
-  <div class="sheetTitle" id="sheetTitle">部屋：</div>
-
-  <div class="sheetRow">
-    <div class="field" style="flex:1;min-width:220px;">
-      <label>ダメ帳</label>
-      <button id="sheetDameBtn" class="small">ダメ帳：なし</button>
-    </div>
-  </div>
-
-  <div class="sheetRow">
-    <div class="field" style="flex:1;min-width:220px;">
-      <label>作業日</label>
-      <input id="sheetWorkDate" type="date" />
-    </div>
-    <div class="field" style="flex:1;min-width:220px;">
-      <label>作業者（頭文字でもOK）</label>
-      <input id="sheetWorker" placeholder="例：山田" />
-    </div>
-  </div>
-
-  <div class="sheetRow">
-    <div class="field">
-      <label>特記事項（後日対応など）</label>
-      <textarea id="sheetNoteText" placeholder="例：材料待ち。枠の再補修が必要"></textarea>
-      <div class="row" style="margin-top:8px;">
-        <button id="addNoteBtn" class="small">特記事項を追加</button>
-      </div>
-      <div class="noteList" id="noteList"></div>
-    </div>
-  </div>
-
-  <div class="resetBox">
-    <button id="resetWorkBtn">リセット</button>
-    <div class="resetHelp">入力した日付、作業者情報をすべて削除します（進捗・ダメ帳・特記事項は変わりません）</div>
-  </div>
-
-  <div class="btnRow">
-    <button class="close" id="closeSheetBtn">閉じる</button>
-    <button class="save" id="saveSheetBtn">保存</button>
-  </div>
-</div>
 
 <script>
 (() => {
@@ -717,7 +706,6 @@
   const saveMemoBtn = $("saveMemoBtn");
   const siteMeta = $("siteMeta");
 
-  const scheduleDetails = $("scheduleDetails");
   const schedTabInput = $("schedTabInput");
   const schedTabList = $("schedTabList");
   const schedViewInput = $("schedViewInput");
@@ -729,22 +717,6 @@
   const stageRow = $("stageRow");
   const stageHeader = $("stageHeader");
   const stageHeaderName = $("stageHeaderName");
-
-  // Mode buttons
-  const dameModeBtn = $("dameModeBtn");
-  const workModeBtn = $("workModeBtn");
-  const workModeHint = $("workModeHint");
-
-  // Bulk panel
-  const dameBulkPanel = $("dameBulkPanel");
-  const bulkFromFloor = $("bulkFromFloor");
-  const bulkToFloor = $("bulkToFloor");
-  const bulkRoomsText = $("bulkRoomsText");
-  const bulkPreviewRangeBtn = $("bulkPreviewRangeBtn");
-  const bulkPreviewRoomsBtn = $("bulkPreviewRoomsBtn");
-  const bulkSetDameBtn = $("bulkSetDameBtn");
-  const bulkUnsetDameBtn = $("bulkUnsetDameBtn");
-  const bulkPreviewText = $("bulkPreviewText");
 
   const pendingAllBtn = $("pendingAllBtn");
   const pendingAllExplain = $("pendingAllExplain");
@@ -767,26 +739,25 @@
   const jumpBtn = $("jumpBtn");
   const clearJumpBtn = $("clearJumpBtn");
 
-  const filterAllBtn = $("filterAllBtn");
   const filterTodoBtn = $("filterTodoBtn");
   const filterDoingBtn = $("filterDoingBtn");
   const filterDoneBtn = $("filterDoneBtn");
 
   const regenStepBtn = $("regenStepBtn");
 
-  // Sheet
-  const sheetBackdrop = $("sheetBackdrop");
-  const sheet = $("sheet");
-  const sheetTitle = $("sheetTitle");
-  const sheetDameBtn = $("sheetDameBtn");
-  const sheetWorkDate = $("sheetWorkDate");
-  const sheetWorker = $("sheetWorker");
-  const sheetNoteText = $("sheetNoteText");
-  const addNoteBtn = $("addNoteBtn");
-  const noteList = $("noteList");
-  const resetWorkBtn = $("resetWorkBtn");
-  const closeSheetBtn = $("closeSheetBtn");
-  const saveSheetBtn = $("saveSheetBtn");
+  // ダメ帳登録モード
+  const dameRegBtn = $("dameRegBtn");
+  const dameRegPanel = $("dameRegPanel");
+  const dameRegState = $("dameRegState");
+
+  const bulkFloorFrom = $("bulkFloorFrom");
+  const bulkFloorTo = $("bulkFloorTo");
+  const bulkRangeOnBtn = $("bulkRangeOnBtn");
+  const bulkRangeOffBtn = $("bulkRangeOffBtn");
+
+  const bulkRoomsText = $("bulkRoomsText");
+  const bulkRoomsOnBtn = $("bulkRoomsOnBtn");
+  const bulkRoomsOffBtn = $("bulkRoomsOffBtn");
 
   /** Load/Save */
   function loadState() {
@@ -886,11 +857,7 @@
         regenArmed: false,
         schedTab: "input",
         pendingAll: false,
-
-        // ★追加
-        dameMode: false,
-        workMode: false,
-        dameBulkOpen: false
+        dameRegMode: false, // ★追加：ダメ帳登録モード
       }
     };
   }
@@ -981,29 +948,6 @@
     }
   }
 
-  /** まとめ登録ユーティリティ */
-  function parseRoomNumbers(text){
-    const s = (text || "").trim();
-    if (!s) return [];
-    return s.split(/[\s,、]+/g).map(x => x.trim()).filter(Boolean);
-  }
-  function getRoomsByFloorRange(site, fromF, toF){
-    const a = Number(fromF), b = Number(toF);
-    if (!Number.isFinite(a) || !Number.isFinite(b)) return [];
-    const lo = Math.min(a,b), hi = Math.max(a,b);
-    return site.rooms.filter(r => r.floor >= lo && r.floor <= hi);
-  }
-  function getRoomsByLabels(site, labels){
-    const set = new Set(labels.map(String));
-    return site.rooms.filter(r => set.has(String(r.label)));
-  }
-  let bulkTargets = [];
-  function setBulkPreview(rooms){
-    bulkTargets = rooms;
-    const uniq = [...new Set(rooms.map(r => r.label))];
-    bulkPreviewText.textContent = `プレビュー：${uniq.length}件（例：${uniq.slice(0,8).join(", ")}${uniq.length>8 ? "…" : ""}）`;
-  }
-
   /** 日付表示 */
   function fmtYMD(s){
     if (!s) return "";
@@ -1049,6 +993,7 @@
     siteMeta.textContent = `部屋数: ${site.rooms.length} / 最終更新: ${updated}`;
   }
 
+  /** スケジュール */
   function ensureScheduleV2(site){
     if (!site.scheduleV2) site.scheduleV2 = defaultScheduleV2();
     for (const t of SCHED_TYPES) {
@@ -1294,30 +1239,6 @@
     stageHeader.style.borderColor = bd;
   }
 
-  function renderModes(){
-    // ①ダメ帳登録
-    if (state.ui.dameMode){
-      dameModeBtn.classList.add("on");
-      dameModeBtn.innerHTML = `ダメ帳登録　ON<span class="btnSub">階数、部屋別登録ができます／ON中は部屋タップでも登録</span>`;
-      dameBulkPanel.style.display = state.ui.dameBulkOpen ? "block" : "none";
-    } else {
-      dameModeBtn.classList.remove("on");
-      dameModeBtn.innerHTML = `ダメ帳登録<span class="btnSub">階数、部屋別登録ができます／ON中は部屋タップでも登録</span>`;
-      dameBulkPanel.style.display = "none";
-    }
-
-    // ②作業日・作業者
-    if (state.ui.workMode){
-      workModeBtn.classList.add("on");
-      workModeBtn.innerHTML = `作業日・作業者登録　ON<span class="btnSub">途中部屋と完了部屋に、日付、残工事などの特記事項、メモを記入できます／ON中は部屋タップでも登録</span>`;
-      workModeHint.style.display = "block";
-    } else {
-      workModeBtn.classList.remove("on");
-      workModeBtn.innerHTML = `作業日・作業者登録<span class="btnSub">途中部屋と完了部屋に、日付、残工事などの特記事項、メモを記入できます／ON中は部屋タップでも登録</span>`;
-      workModeHint.style.display = "none";
-    }
-  }
-
   function computeStats(site){
     const stageId = state.ui.currentStageId;
     let total=0, todo=0, doing=0, done=0, dame=0;
@@ -1534,6 +1455,7 @@
         const room = site2.rooms.find(x => x.id === r.id);
         if (!room) return;
 
+        // 未完全件表示ON：まとめて完了
         if (state.ui.pendingAll) {
           const names = getPendingStageNames(room);
           const ok = confirm(`部屋${room.label}の未完ダメ帳をまとめて完了にしますか？\n対象：${names.join(" / ")}`);
@@ -1547,23 +1469,18 @@
 
         const dd = roomStageData(room, stageId);
 
-        // ★ダメ帳登録ON：タップで あり/なし
-        if (state.ui.dameMode){
+        // ★ダメ帳登録モード：確認なしで dame を切替
+        if (state.ui.dameRegMode) {
           dd.dame = !dd.dame;
-          if (dd.dame) dd.status = "todo";
+          // まとめ登録と同じ思想：新規ダメ帳が来たなら「未着手」に戻す（完了だった場合）
+          if (dd.dame && dd.status === "done") dd.status = "todo";
           site2.updatedAt = now();
           saveState();
           renderAll();
           return;
         }
 
-        // ★作業日・作業者ON：シート
-        if (state.ui.workMode){
-          openSheet(room.id);
-          return;
-        }
-
-        // 通常：進捗トグル
+        // 通常：進捗サイクル
         dd.status = nextStatus(dd.status);
         site2.updatedAt = now();
         saveState();
@@ -1609,6 +1526,18 @@
     }
   }
 
+  function renderDameReg(){
+    if (state.ui.dameRegMode){
+      dameRegBtn.classList.add("on");
+      dameRegState.textContent = "ON";
+      dameRegPanel.style.display = "block";
+    } else {
+      dameRegBtn.classList.remove("on");
+      dameRegState.textContent = "OFF";
+      dameRegPanel.style.display = "none";
+    }
+  }
+
   function renderAll(){
     renderSiteSelect();
     renderSiteForm();
@@ -1618,13 +1547,13 @@
     renderScheduleList();
 
     renderStages();
-    renderModes();
 
     renderPendingAllBtn();
     renderStats();
     renderBoard();
-    renderRooms();
     renderDameOnlyBtn();
+    renderDameReg();
+    renderRooms();
     renderRegenBtn();
   }
 
@@ -1644,91 +1573,46 @@
     });
   }
 
-  /** Sheet state */
-  let sheetRoomId = null;
-  function openSheet(roomId){
-    const site = getCurrentSite();
-    if (!site) return;
-    const room = site.rooms.find(r => r.id === roomId);
-    if (!room) return;
+  /** まとめ登録：ユーティリティ */
+  function setDameForRooms(site, stageId, roomLabels, value){
+    let hit = 0;
+    for (const r of site.rooms) {
+      if (!roomLabels.has(r.label)) continue;
+      const d = roomStageData(r, stageId);
+      const was = d.dame;
+      d.dame = value;
 
-    sheetRoomId = roomId;
-    const stageId = state.ui.currentStageId;
-    const d = roomStageData(room, stageId);
-
-    sheetTitle.textContent = `部屋：${room.label}（${stageById(stageId).name}）`;
-
-    sheetDameBtn.textContent = d.dame ? "ダメ帳：あり" : "ダメ帳：なし";
-    sheetDameBtn.dataset.value = d.dame ? "1" : "0";
-
-    sheetWorkDate.value = d.workDate || "";
-    sheetWorker.value = d.worker || "";
-    sheetNoteText.value = "";
-    renderNoteList(room);
-
-    sheetBackdrop.style.display = "block";
-    sheet.style.display = "block";
-  }
-  function closeSheet(){
-    sheetRoomId = null;
-    sheetBackdrop.style.display = "none";
-    sheet.style.display = "none";
+      if (value === true) {
+        // 新規ダメ帳が来た＝未着手から
+        if (d.status === "done") d.status = "todo";
+      }
+      if (was !== d.dame) hit++;
+    }
+    return hit;
   }
 
-  function renderNoteList(room){
-    const stageId = state.ui.currentStageId;
-    const d = roomStageData(room, stageId);
-    const notes = d.notes.slice().sort((a,b) => (a.done - b.done) || (a.createdAt - b.createdAt));
-
-    noteList.innerHTML = "";
-    if (notes.length === 0) {
-      const empty = document.createElement("div");
-      empty.className = "help";
-      empty.textContent = "特記事項はまだありません。";
-      noteList.appendChild(empty);
-      return;
+  function labelsFromFloorRange(site, fromFloor, toFloor){
+    const a = Math.min(fromFloor, toFloor);
+    const b = Math.max(fromFloor, toFloor);
+    const set = new Set();
+    for (const r of site.rooms) {
+      if (r.floor >= a && r.floor <= b) set.add(r.label);
     }
+    return set;
+  }
 
-    for (const n of notes) {
-      const box = document.createElement("div");
-      box.className = "schedLine";
+  function parseRoomLines(text){
+    const lines = (text || "")
+      .split(/\r?\n/)
+      .map(s => s.trim())
+      .filter(Boolean);
 
-      const top = document.createElement("div");
-      top.className = "row";
-      top.style.justifyContent = "space-between";
-
-      const tag = document.createElement("span");
-      tag.className = `tag ${n.done ? "done":"open"}`;
-      tag.textContent = n.done ? "完了" : "未完";
-
-      const btn = document.createElement("button");
-      btn.className = "small";
-      btn.textContent = n.done ? "未完に戻す" : "完了";
-      btn.addEventListener("click", () => {
-        n.done = !n.done;
-        n.doneAt = n.done ? now() : null;
-        const site2 = getCurrentSite();
-        if (!site2) return;
-        site2.updatedAt = now();
-        saveState();
-        renderAll();
-        const room2 = getCurrentSite().rooms.find(r => r.id === room.id);
-        renderNoteList(room2);
-      });
-
-      top.appendChild(tag);
-      top.appendChild(btn);
-
-      const text = document.createElement("div");
-      text.style.marginTop = "8px";
-      text.style.fontWeight = "900";
-      text.textContent = n.text;
-
-      box.appendChild(top);
-      box.appendChild(text);
-
-      noteList.appendChild(box);
+    const out = new Set();
+    for (const v of lines) {
+      const n = v.replace(/[^\d]/g,""); // 念のため数字以外を除去
+      if (n) out.add(n);
     }
+    return out;
   }
 
   /** Events */
@@ -1829,93 +1713,6 @@
     alert("スケジュールを保存しました。");
   });
 
-  // ①ダメ帳登録モード
-  dameModeBtn.addEventListener("click", () => {
-    state.ui.dameMode = !state.ui.dameMode;
-    if (state.ui.dameMode) state.ui.workMode = false;
-
-    state.ui.dameBulkOpen = state.ui.dameMode;
-
-    bulkTargets = [];
-    bulkPreviewText.textContent = "プレビュー：まだありません";
-
-    saveState();
-    renderAll();
-  });
-
-  // ②作業日・作業者モード
-  workModeBtn.addEventListener("click", () => {
-    state.ui.workMode = !state.ui.workMode;
-    if (state.ui.workMode) state.ui.dameMode = false;
-    state.ui.dameBulkOpen = false;
-    saveState();
-    renderAll();
-  });
-
-  // まとめ登録：プレビュー（範囲）
-  bulkPreviewRangeBtn.addEventListener("click", () => {
-    const site = getCurrentSite();
-    if (!site) return;
-    const rooms = getRoomsByFloorRange(site, bulkFromFloor.value, bulkToFloor.value);
-    setBulkPreview(rooms);
-  });
-
-  // まとめ登録：プレビュー（手入力）
-  bulkPreviewRoomsBtn.addEventListener("click", () => {
-    const site = getCurrentSite();
-    if (!site) return;
-    const labels = parseRoomNumbers(bulkRoomsText.value);
-    const rooms = getRoomsByLabels(site, labels);
-    setBulkPreview(rooms);
-  });
-
-  // まとめ登録：反映（あり）
-  bulkSetDameBtn.addEventListener("click", () => {
-    const site = getCurrentSite();
-    if (!site) return;
-    if (!bulkTargets || bulkTargets.length === 0){
-      alert("先にプレビューしてください。");
-      return;
-    }
-    const stageId = state.ui.currentStageId;
-    const uniq = [...new Set(bulkTargets.map(r => r.label))];
-    const ok = confirm(`【ダメ帳あり】をまとめて登録します。\n段階：${stageById(stageId).name}\n件数：${uniq.length}\n例：${uniq.slice(0,10).join(", ")}${uniq.length>10 ? "…" : ""}`);
-    if (!ok) return;
-
-    for (const r of bulkTargets){
-      const d = roomStageData(r, stageId);
-      d.dame = true;
-      d.status = "todo";
-    }
-    site.updatedAt = now();
-    saveState();
-    renderAll();
-    alert("まとめ登録しました。");
-  });
-
-  // まとめ登録：反映（なし）
-  bulkUnsetDameBtn.addEventListener("click", () => {
-    const site = getCurrentSite();
-    if (!site) return;
-    if (!bulkTargets || bulkTargets.length === 0){
-      alert("先にプレビューしてください。");
-      return;
-    }
-    const stageId = state.ui.currentStageId;
-    const uniq = [...new Set(bulkTargets.map(r => r.label))];
-    const ok = confirm(`【ダメ帳なし】に戻します。\n段階：${stageById(stageId).name}\n件数：${uniq.length}\n例：${uniq.slice(0,10).join(", ")}${uniq.length>10 ? "…" : ""}`);
-    if (!ok) return;
-
-    for (const r of bulkTargets){
-      const d = roomStageData(r, stageId);
-      d.dame = false;
-    }
-    site.updatedAt = now();
-    saveState();
-    renderAll();
-    alert("戻しました。");
-  });
-
   // 未完全件表示
   pendingAllBtn.addEventListener("click", () => {
     state.ui.pendingAll = !state.ui.pendingAll;
@@ -1992,7 +1789,7 @@
     renderRooms();
   });
 
-  // regen
+  // regen two-step
   regenStepBtn.addEventListener("click", () => {
     const site = getCurrentSite();
     if (!site) return;
@@ -2029,68 +1826,65 @@
     }
   });
 
-  // sheet
-  sheetBackdrop.addEventListener("click", closeSheet);
-  closeSheetBtn.addEventListener("click", closeSheet);
-
-  sheetDameBtn.addEventListener("click", () => {
-    const v = sheetDameBtn.dataset.value === "1";
-    const nv = !v;
-    sheetDameBtn.dataset.value = nv ? "1" : "0";
-    sheetDameBtn.textContent = nv ? "ダメ帳：あり" : "ダメ帳：なし";
+  // ★ダメ帳登録モード：トグル
+  dameRegBtn.addEventListener("click", () => {
+    state.ui.dameRegMode = !state.ui.dameRegMode;
+    saveState();
+    renderDameReg();
   });
 
-  addNoteBtn.addEventListener("click", () => {
+  // ★まとめ登録（階範囲）
+  bulkRangeOnBtn.addEventListener("click", () => {
     const site = getCurrentSite();
-    if (!site || !sheetRoomId) return;
-    const room = site.rooms.find(r => r.id === sheetRoomId);
-    if (!room) return;
-    const stageId = state.ui.currentStageId;
-    const d = roomStageData(room, stageId);
-
-    const t = (sheetNoteText.value || "").trim();
-    if (!t) { alert("特記事項を入力してください。"); return; }
-    d.notes.push({ id: uid(), text: t, done:false, createdAt: now(), doneAt: null });
-    sheetNoteText.value = "";
+    if (!site) return;
+    const a = Number((bulkFloorFrom.value||"").trim());
+    const b = Number((bulkFloorTo.value||"").trim());
+    if (!Number.isFinite(a) || !Number.isFinite(b)) { alert("開始階・終了階を入れてください"); return; }
+    const labels = labelsFromFloorRange(site, a, b);
+    const hit = setDameForRooms(site, state.ui.currentStageId, labels, true);
     site.updatedAt = now();
     saveState();
     renderAll();
-    renderNoteList(room);
+    alert(`ダメ帳ありにしました：${hit}部屋`);
   });
 
-  resetWorkBtn.addEventListener("click", () => {
+  bulkRangeOffBtn.addEventListener("click", () => {
     const site = getCurrentSite();
-    if (!site || !sheetRoomId) return;
-    const ok = confirm("リセットします。\n入力した日付、作業者情報をすべて削除します。\n（進捗・ダメ帳・特記事項は変わりません）\nよろしいですか？");
-    if (!ok) return;
-
-    const room = site.rooms.find(r => r.id === sheetRoomId);
-    if (!room) return;
-    const d = roomStageData(room, state.ui.currentStageId);
-    d.workDate = "";
-    d.worker = "";
+    if (!site) return;
+    const a = Number((bulkFloorFrom.value||"").trim());
+    const b = Number((bulkFloorTo.value||"").trim());
+    if (!Number.isFinite(a) || !Number.isFinite(b)) { alert("開始階・終了階を入れてください"); return; }
+    const labels = labelsFromFloorRange(site, a, b);
+    const hit = setDameForRooms(site, state.ui.currentStageId, labels, false);
     site.updatedAt = now();
     saveState();
     renderAll();
-    openSheet(room.id);
+    alert(`ダメ帳なしにしました：${hit}部屋`);
   });
 
-  saveSheetBtn.addEventListener("click", () => {
+  // ★まとめ登録（部屋番号：改行）
+  bulkRoomsOnBtn.addEventListener("click", () => {
     const site = getCurrentSite();
-    if (!site || !sheetRoomId) return;
-    const room = site.rooms.find(r => r.id === sheetRoomId);
-    if (!room) return;
-
-    const d = roomStageData(room, state.ui.currentStageId);
-
-    d.dame = (sheetDameBtn.dataset.value === "1");
-    d.workDate = (sheetWorkDate.value || "").trim();
-    d.worker = (sheetWorker.value || "").trim();
-
+    if (!site) return;
+    const labels = parseRoomLines(bulkRoomsText.value || "");
+    if (labels.size === 0) { alert("部屋番号を入力してください"); return; }
+    const hit = setDameForRooms(site, state.ui.currentStageId, labels, true);
     site.updatedAt = now();
     saveState();
     renderAll();
-    closeSheet();
+    alert(`ダメ帳ありにしました：${hit}部屋`);
+  });
+
+  bulkRoomsOffBtn.addEventListener("click", () => {
+    const site = getCurrentSite();
+    if (!site) return;
+    const labels = parseRoomLines(bulkRoomsText.value || "");
+    if (labels.size === 0) { alert("部屋番号を入力してください"); return; }
+    const hit = setDameForRooms(site, state.ui.currentStageId, labels, false);
+    site.updatedAt = now();
+    saveState();
+    renderAll();
+    alert(`ダメ帳なしにしました：${hit}部屋`);
   });
 
   /** Boot + migrate */
@@ -2111,12 +1905,7 @@
     if (typeof state.ui.regenArmed !== "boolean") state.ui.regenArmed = false;
     if (!state.ui.schedTab) state.ui.schedTab = "input";
     if (typeof state.ui.pendingAll !== "boolean") state.ui.pendingAll = false;
-
-    // ★追加
-    if (typeof state.ui.dameMode !== "boolean") state.ui.dameMode = false;
-    if (typeof state.ui.workMode !== "boolean") state.ui.workMode = false;
-    if (typeof state.ui.dameBulkOpen !== "boolean") state.ui.dameBulkOpen = false;
-
+    if (typeof state.ui.dameRegMode !== "boolean") state.ui.dameRegMode = false;
     saveState();
   }
 
