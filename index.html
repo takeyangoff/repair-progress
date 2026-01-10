@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>リペア進捗管理 v1.1-S2</title>
+  <title>リペア進捗管理 v1.1-S1</title>
   <style>
     :root{
       --bg:#f6f7f9;
@@ -47,14 +47,39 @@
     button.primary { background: #111827; color: white; border-color: #111827; }
     button.danger { border-color: var(--danger); color: var(--danger); background:#fff; }
 
+    button.blueBig{
+      width: 100%;
+      background: rgba(37,99,235,0.12);
+      color: var(--blue2);
+      border: 1px solid rgba(37,99,235,0.35);
+      font-weight: 900;
+      border-radius: 14px;
+      padding: 14px 12px;
+      text-align: left;
+    }
+    button.blueBig.on{
+      background: var(--danger);
+      color:#fff;
+      border-color: var(--danger);
+    }
+
+    .btnSub{
+      display:block;
+      font-size: 12px;
+      font-weight: 800;
+      opacity: 0.9;
+      margin-top: 6px;
+      line-height: 1.25;
+    }
+
     .meta { font-size: 12px; color: var(--muted); margin-top: 6px; }
     main { padding: 12px; }
     .panel { background:white; border:1px solid var(--line); border-radius: 14px; padding: 12px; margin-bottom: 12px; }
     .panel h2 { font-size: 14px; margin:0 0 8px; }
-    .help { font-size: 12px; color:var(--muted); line-height: 1.5; font-weight: 700; }
+    .help { font-size: 12px; color:var(--muted); line-height: 1.5; }
     .split { display:flex; gap:8px; flex-wrap: wrap; }
     .split > * { flex: 1; min-width: 220px; }
-    .small { font-size: 12px; padding: 8px 10px; border-radius: 12px; font-weight: 900; }
+    .small { font-size: 12px; padding: 8px 10px; border-radius: 12px; }
     .small:disabled{ opacity: 0.5; }
     .stats { display:flex; gap:8px; flex-wrap: wrap; margin-bottom: 10px; }
     .pill { background:white; border:1px solid var(--line); border-radius: 999px; padding: 6px 10px; font-size: 13px; font-weight: 800; }
@@ -189,145 +214,40 @@
     }
     details > summary::-webkit-details-marker{ display:none; }
 
-    /* モードボタン（赤ON） */
-    .modeGrid{
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
-    @media (max-width: 520px){
-      .modeGrid{ grid-template-columns: 1fr; }
-    }
-    .modeBtn{
-      width: 100%;
-      border-radius: 14px;
-      padding: 12px 12px;
-      border: 1px solid var(--line);
-      background:#fff;
-      text-align:left;
-      font-weight: 900;
-      position: relative;
-    }
-    .modeBtn .title{
-      display:flex;
-      align-items:center;
-      justify-content: space-between;
-      gap: 10px;
-      font-size: 14px;
-    }
-    .modeBtn .onTag{
-      font-size: 12px;
-      font-weight: 1000;
-      padding: 4px 10px;
-      border-radius: 999px;
-      border: 1px solid transparent;
-      display:none;
-    }
-    .modeBtn .desc{
-      margin-top: 6px;
-      font-size: 12px;
-      color: rgba(17,24,39,0.75);
-      line-height: 1.45;
-      font-weight: 800;
-    }
-    .modeBtn.on{
-      background: rgba(239,68,68,0.10);
-      border-color: rgba(239,68,68,0.35);
-      color:#991b1b;
-    }
-    .modeBtn.on .onTag{
-      display:inline-block;
-      background: rgba(239,68,68,0.14);
-      border-color: rgba(239,68,68,0.35);
-      color:#991b1b;
-    }
-
-    /* まとめ登録パネル */
-    .batchBox{
-      border: 1px solid rgba(239,68,68,0.25);
-      background: rgba(239,68,68,0.05);
+    .dangerZone{
+      border: 2px solid rgba(239,68,68,0.65);
+      background: var(--danger_bg);
       border-radius: 14px;
       padding: 12px;
-      margin-top: 10px;
     }
-    .batchBox .h{
-      font-weight: 1000;
-      margin-bottom: 6px;
-      color:#991b1b;
-    }
-    .batchBox textarea{
-      width: 100%;
-      box-sizing: border-box;
-      min-height: 92px;
-      font-weight: 800;
-    }
-    .chipRow{
-      display:flex;
-      gap:8px;
-      flex-wrap: wrap;
-      margin-top: 8px;
-    }
-    .chip{
-      font-size: 12px;
-      font-weight: 1000;
-      padding: 6px 10px;
-      border-radius: 999px;
-      border:1px solid rgba(17,24,39,0.12);
-      background:#fff;
-    }
-    .optRow{
-      display:flex;
-      gap:8px;
-      flex-wrap: wrap;
-      align-items:center;
-      margin-top: 8px;
-    }
-    .radioWrap{
-      display:flex;
-      gap:8px;
-      flex-wrap: wrap;
-      align-items:center;
-      font-size: 12px;
+    .dangerZone h3{
+      margin: 0 0 8px;
+      font-size: 13px;
+      color: #991b1b;
       font-weight: 900;
-      color:#111827;
     }
-    .radioWrap label{
-      display:flex;
-      gap:6px;
-      align-items:center;
-      padding: 6px 10px;
-      border-radius: 999px;
-      border: 1px solid rgba(17,24,39,0.12);
-      background:#fff;
+    .dangerZone p{
+      margin: 0 0 10px;
+      font-size: 12px;
+      color:#7f1d1d;
+      line-height: 1.5;
+      font-weight: 700;
     }
-    .radioWrap input{ flex:0 0 auto; min-width: unset; }
-    .batchBtns{
-      display:flex;
-      gap:8px;
-      margin-top: 10px;
-      flex-wrap: wrap;
-    }
-    .batchBtns button{
-      flex: 1;
-      min-width: 160px;
+    .dangerZone button{
+      width:100%;
       border-radius: 12px;
       padding: 12px 10px;
-      font-weight: 1000;
+      font-weight: 900;
     }
-    .batchBtns .apply{
-      background: var(--danger);
-      border-color: var(--danger);
-      color:#fff;
-    }
-    .batchBtns .clear{
-      background:#fff;
-      border-color: rgba(239,68,68,0.35);
+    .dangerZone button.step1{
+      border-color: rgba(239,68,68,0.45);
       color:#991b1b;
-    }
-    .batchBtns .reset{
       background:#fff;
-      border-color: var(--line);
-      color:#111827;
+    }
+    .dangerZone button.step2{
+      border-color: var(--danger);
+      background: var(--danger);
+      color:#fff;
     }
 
     /* 掲示板 */
@@ -499,48 +419,11 @@
       font-weight: 900;
       font-size: 13px;
     }
-
-    /* 危険操作 */
-    .dangerZone{
-      border: 2px solid rgba(239,68,68,0.65);
-      background: var(--danger_bg);
-      border-radius: 14px;
-      padding: 12px;
-    }
-    .dangerZone h3{
-      margin: 0 0 8px;
-      font-size: 13px;
-      color: #991b1b;
-      font-weight: 900;
-    }
-    .dangerZone p{
-      margin: 0 0 10px;
-      font-size: 12px;
-      color:#7f1d1d;
-      line-height: 1.5;
-      font-weight: 700;
-    }
-    .dangerZone button{
-      width:100%;
-      border-radius: 12px;
-      padding: 12px 10px;
-      font-weight: 900;
-    }
-    .dangerZone button.step1{
-      border-color: rgba(239,68,68,0.45);
-      color:#991b1b;
-      background:#fff;
-    }
-    .dangerZone button.step2{
-      border-color: var(--danger);
-      background: var(--danger);
-      color:#fff;
-    }
   </style>
 </head>
 <body>
 <header>
-  <h1>リペア進捗管理 v1.1-S2</h1>
+  <h1>リペア進捗管理 v1.1-S1</h1>
   <div class="row">
     <select id="siteSelect"></select>
     <button id="newSiteBtn" class="primary">現場を追加</button>
@@ -580,9 +463,9 @@
       <button id="saveSiteBtn" class="primary">設定を保存</button>
     </div>
 
-    <!-- スケジュール -->
+    <!-- スケジュール：入力/一覧タブ -->
     <details style="margin-top:12px;" id="scheduleDetails">
-      <summary id="scheduleSummary">検査・内覧スケジュール（タップで表示）</summary>
+      <summary>検査・内覧スケジュール（最初は閉じる）</summary>
 
       <div class="help" style="margin-top:8px;">
         ここは <b>入力（編集）</b> と <b>一覧</b> を切り替えできます。検査日は <b>期間（開始〜終了）</b> に対応。
@@ -631,7 +514,7 @@
     <div class="row">
       <button class="small" id="pendingAllBtn">未完了部屋を全件表示：OFF</button>
     </div>
-    <div class="help" style="margin-top:6px;">
+    <div class="help" id="pendingAllHint" style="margin-top:6px;">
       ONにすると「どの段階でも、未完のダメ帳が残っている部屋」だけを表示します（階ごと）。
     </div>
 
@@ -667,65 +550,49 @@
     </details>
   </div>
 
-  <!-- ボタン2つのパネル -->
-  <div class="panel" id="modePanel">
-    <div class="modeGrid">
-      <button id="modeDameBtn" class="modeBtn">
-        <div class="title">
-          <span>① ダメ帳がある部屋を登録</span>
-          <span class="onTag">ON</span>
-        </div>
-        <div class="desc">
-          階数、部屋別登録ができます。<br/>
-          このボタンがONの時は各部屋をタップしても登録できます。
-        </div>
-      </button>
+  <!-- 操作パネル（確定仕様） -->
+  <div class="panel">
+    <!-- ①ダメ帳登録 -->
+    <button id="dameModeBtn" class="blueBig">
+      ダメ帳登録
+      <span class="btnSub">階数、部屋別登録ができます／ON中は部屋タップでも登録</span>
+    </button>
 
-      <button id="modeMemoBtn" class="modeBtn">
-        <div class="title">
-          <span>② 作業日・特記事項・メモを入力</span>
-          <span class="onTag">ON</span>
-        </div>
-        <div class="desc">
-          途中部屋と完了部屋に、日付、残工事などの特記事項、メモを記入できます。<br/>
-          このボタンがONの時は各部屋をタップしても登録できます。
-        </div>
-      </button>
+    <!-- ①のONで出る：まとめ登録 -->
+    <div id="dameBulkPanel" class="panel" style="margin-top:10px; display:none;">
+      <h2>まとめ登録</h2>
+      <div class="help">現在の段階に対してまとめて登録します。</div>
+
+      <div class="row" style="margin-top:10px;">
+        <input id="bulkFromFloor" class="small" placeholder="○階から" inputmode="numeric" />
+        <input id="bulkToFloor" class="small" placeholder="○階まで" inputmode="numeric" />
+        <button id="bulkPreviewRangeBtn" class="small">範囲プレビュー</button>
+      </div>
+
+      <div class="row" style="margin-top:10px;">
+        <textarea id="bulkRoomsText" placeholder="部屋番号を手入力（例：301,302,305 / 改行でもOK）"></textarea>
+      </div>
+      <div class="row" style="margin-top:8px;">
+        <button id="bulkPreviewRoomsBtn" class="small">手入力プレビュー</button>
+      </div>
+
+      <div class="row" style="margin-top:10px;">
+        <button id="bulkSetDameBtn" class="small" style="font-weight:900;">ダメ帳ありをまとめて登録</button>
+        <button id="bulkUnsetDameBtn" class="small danger" style="font-weight:900;">ダメ帳なしに戻す</button>
+      </div>
+
+      <div class="help" id="bulkPreviewText" style="margin-top:10px;">プレビュー：まだありません</div>
     </div>
 
-    <!-- まとめ登録：①ONの時だけ -->
-    <div class="batchBox" id="batchBox" style="display:none;">
-      <div class="h">まとめ登録（①ONの時だけ）</div>
-      <div class="help">
-        例：<b>101,102,103</b> / <b>101-105</b> / <b>201〜605</b> / <b>2F</b> / <b>2-6F</b><br/>
-        改行・全角カンマ・「まで」などが混ざっても大丈夫。
-      </div>
+    <div style="height:10px;"></div>
 
-      <textarea id="batchInput" placeholder="ここに貼り付け（例：201〜605、701-705、2-6F）"></textarea>
-
-      <div class="chipRow" style="margin-top:8px;">
-        <span class="chip" id="batchCountChip">対象: 0</span>
-        <span class="chip" id="batchPreviewChip">プレビュー: -</span>
-      </div>
-
-      <div class="optRow">
-        <div class="help" style="flex:1; min-width:220px;">
-          まとめて「ダメ帳あり」にした時のステータス：
-        </div>
-        <div class="radioWrap" id="batchStatusRadio">
-          <label><input type="radio" name="batchStatusMode" value="todo" checked>未着手に戻す</label>
-          <label><input type="radio" name="batchStatusMode" value="doing">途中にする</label>
-          <label><input type="radio" name="batchStatusMode" value="keep">維持</label>
-        </div>
-      </div>
-
-      <div class="batchBtns">
-        <button id="batchApplyBtn" class="apply">まとめて「ダメ帳あり」にする</button>
-        <button id="batchClearBtn" class="clear">まとめて解除（ダメ帳なし）</button>
-        <button id="batchResetBtn" class="reset">入力クリア</button>
-      </div>
-
-      <div class="help" id="batchErrors" style="margin-top:10px; color:#991b1b;"></div>
+    <!-- ②作業日・作業者（今はON表示のみ。次で中身整理） -->
+    <button id="workModeBtn" class="blueBig">
+      作業日・作業者登録
+      <span class="btnSub">途中部屋と完了部屋に、日付、残工事などの特記事項、メモを記入できます／ON中は部屋タップでも登録</span>
+    </button>
+    <div class="help" id="workModeHint" style="margin-top:8px; display:none;">
+      編集中：部屋をタップすると「作業日／作業者／特記事項」を編集できます
     </div>
   </div>
 
@@ -749,8 +616,8 @@
 
   <div class="help" style="padding: 10px 2px;">
     通常：部屋タップで「未着手 → 途中 → 完了 → 未着手」<br/>
-    ①ON：部屋タップで「ダメ帳あり/なし」を切替（まとめ登録も可）<br/>
-    ②ON：部屋タップで「作業日・作業者・特記事項」を編集<br/>
+    ダメ帳登録ON：部屋タップで「ダメ帳あり/なし」を切り替え（ありにしたら未着手に戻る）<br/>
+    作業日・作業者ON：部屋タップで編集シートを開く<br/>
     未完了部屋を全件表示ON：部屋タップで「その部屋の未完ダメ帳（全段階）をまとめて完了」にできます
   </div>
 
@@ -814,7 +681,7 @@
 
 <script>
 (() => {
-  const STORAGE_KEY = "repair_progress_v1_1_S2";
+  const STORAGE_KEY = "repair_progress_v1_1_S1";
   const uid = () => Math.random().toString(36).slice(2, 10) + "-" + Date.now().toString(36);
   const now = () => Date.now();
 
@@ -828,7 +695,7 @@
     { id:"renairan", name:"再内覧", tone:"yellow" },
   ];
 
-  /** スケジュール（4種） */
+  /** スケジュール */
   const SCHED_TYPES = [
     { key:"shanin", label:"社内検査" },
     { key:"nushi", label:"施主検査" },
@@ -851,7 +718,6 @@
   const siteMeta = $("siteMeta");
 
   const scheduleDetails = $("scheduleDetails");
-  const scheduleSummary = $("scheduleSummary");
   const schedTabInput = $("schedTabInput");
   const schedTabList = $("schedTabList");
   const schedViewInput = $("schedViewInput");
@@ -863,6 +729,22 @@
   const stageRow = $("stageRow");
   const stageHeader = $("stageHeader");
   const stageHeaderName = $("stageHeaderName");
+
+  // Mode buttons
+  const dameModeBtn = $("dameModeBtn");
+  const workModeBtn = $("workModeBtn");
+  const workModeHint = $("workModeHint");
+
+  // Bulk panel
+  const dameBulkPanel = $("dameBulkPanel");
+  const bulkFromFloor = $("bulkFromFloor");
+  const bulkToFloor = $("bulkToFloor");
+  const bulkRoomsText = $("bulkRoomsText");
+  const bulkPreviewRangeBtn = $("bulkPreviewRangeBtn");
+  const bulkPreviewRoomsBtn = $("bulkPreviewRoomsBtn");
+  const bulkSetDameBtn = $("bulkSetDameBtn");
+  const bulkUnsetDameBtn = $("bulkUnsetDameBtn");
+  const bulkPreviewText = $("bulkPreviewText");
 
   const pendingAllBtn = $("pendingAllBtn");
   const pendingAllExplain = $("pendingAllExplain");
@@ -891,20 +773,6 @@
   const filterDoneBtn = $("filterDoneBtn");
 
   const regenStepBtn = $("regenStepBtn");
-
-  // modes
-  const modeDameBtn = $("modeDameBtn");
-  const modeMemoBtn = $("modeMemoBtn");
-
-  // batch
-  const batchBox = $("batchBox");
-  const batchInput = $("batchInput");
-  const batchCountChip = $("batchCountChip");
-  const batchPreviewChip = $("batchPreviewChip");
-  const batchApplyBtn = $("batchApplyBtn");
-  const batchClearBtn = $("batchClearBtn");
-  const batchResetBtn = $("batchResetBtn");
-  const batchErrors = $("batchErrors");
 
   // Sheet
   const sheetBackdrop = $("sheetBackdrop");
@@ -996,7 +864,7 @@
     return rooms;
   }
 
-  /** スケジュール */
+  /** スケジュールの新形式 */
   function defaultScheduleV2(){
     const out = {};
     for (const t of SCHED_TYPES) out[t.key] = { lines: [], corr: { start:"", end:"" } };
@@ -1012,14 +880,17 @@
       ui: {
         filter: "all",
         currentStageId: DEFAULT_STAGES[0].id,
-        mode: "none", // none | dame | memo
         highlightedRoomId: null,
         scope: { type:"all" },
         dameOnly: false,
         regenArmed: false,
         schedTab: "input",
         pendingAll: false,
-        batchInput: ""
+
+        // ★追加
+        dameMode: false,
+        workMode: false,
+        dameBulkOpen: false
       }
     };
   }
@@ -1087,7 +958,7 @@
     return d.notes.length > 0;
   }
 
-  // その部屋に「未完のダメ帳（全段階）」があるか
+  // ★全段階横断：未完ダメ帳
   function isPendingAnyStage(room){
     for (const st of DEFAULT_STAGES) {
       const d = roomStageData(room, st.id);
@@ -1110,6 +981,29 @@
     }
   }
 
+  /** まとめ登録ユーティリティ */
+  function parseRoomNumbers(text){
+    const s = (text || "").trim();
+    if (!s) return [];
+    return s.split(/[\s,、]+/g).map(x => x.trim()).filter(Boolean);
+  }
+  function getRoomsByFloorRange(site, fromF, toF){
+    const a = Number(fromF), b = Number(toF);
+    if (!Number.isFinite(a) || !Number.isFinite(b)) return [];
+    const lo = Math.min(a,b), hi = Math.max(a,b);
+    return site.rooms.filter(r => r.floor >= lo && r.floor <= hi);
+  }
+  function getRoomsByLabels(site, labels){
+    const set = new Set(labels.map(String));
+    return site.rooms.filter(r => set.has(String(r.label)));
+  }
+  let bulkTargets = [];
+  function setBulkPreview(rooms){
+    bulkTargets = rooms;
+    const uniq = [...new Set(rooms.map(r => r.label))];
+    bulkPreviewText.textContent = `プレビュー：${uniq.length}件（例：${uniq.slice(0,8).join(", ")}${uniq.length>8 ? "…" : ""}）`;
+  }
+
   /** 日付表示 */
   function fmtYMD(s){
     if (!s) return "";
@@ -1129,124 +1023,6 @@
       if (!y || !m || !d) return yyyy_mm_dd;
       return `${m}/${d}`;
     }catch{ return yyyy_mm_dd; }
-  }
-
-  /** ---- まとめ登録：入力パース ---- */
-  function normalizeBatchText(str){
-    return (str || "")
-      .replace(/[、，]/g, ",")
-      .replace(/[〜~]/g, "〜")
-      .replace(/\s+/g, " ")
-      .trim();
-  }
-
-  function tokenizeBatch(str){
-    const s = normalizeBatchText(str);
-    if (!s) return [];
-    // 改行/スペースも区切りにできるように
-    return s
-      .replace(/\n/g, ",")
-      .replace(/ /g, ",")
-      .split(",")
-      .map(x => x.trim())
-      .filter(Boolean);
-  }
-
-  function pickRoomsByNumberRange(site, aNum, bNum){
-    const min = Math.min(aNum, bNum);
-    const max = Math.max(aNum, bNum);
-    const set = new Set();
-    for (const r of site.rooms) {
-      const n = Number(r.label);
-      if (Number.isFinite(n) && n >= min && n <= max) set.add(r.id);
-    }
-    return set;
-  }
-
-  function pickRoomsByFloor(site, floor){
-    const set = new Set();
-    for (const r of site.rooms) if (r.floor === floor) set.add(r.id);
-    return set;
-  }
-
-  function pickRoomsByFloorRange(site, a, b){
-    const min = Math.min(a,b), max = Math.max(a,b);
-    const set = new Set();
-    for (const r of site.rooms) if (r.floor >= min && r.floor <= max) set.add(r.id);
-    return set;
-  }
-
-  function parseBatchInputToRoomIds(site, raw){
-    const tokens = tokenizeBatch(raw);
-    const allIds = new Set();
-    const errors = [];
-
-    for (let tok of tokens) {
-      // 日本語混在をざっくり除去
-      tok = tok
-        .replace(/号室|部屋|室/g, "")
-        .replace(/まで|から|～/g, "〜")
-        .trim();
-
-      // 2F / 2階
-      let m = tok.match(/^(\d{1,3})\s*(f|F|階)$/);
-      if (m) {
-        const fl = Number(m[1]);
-        if (!Number.isInteger(fl)) { errors.push(`不明: ${tok}`); continue; }
-        for (const id of pickRoomsByFloor(site, fl)) allIds.add(id);
-        continue;
-      }
-
-      // 2-6F / 2〜6階
-      m = tok.match(/^(\d{1,3})\s*[-〜]\s*(\d{1,3})\s*(f|F|階)?$/);
-      if (m && (tok.includes("F") || tok.includes("f") || tok.includes("階"))) {
-        const a = Number(m[1]), b = Number(m[2]);
-        if (!Number.isInteger(a) || !Number.isInteger(b)) { errors.push(`不明: ${tok}`); continue; }
-        for (const id of pickRoomsByFloorRange(site, a, b)) allIds.add(id);
-        continue;
-      }
-
-      // 101
-      m = tok.match(/^(\d{3,4})$/);
-      if (m) {
-        const label = m[1];
-        const room = site.rooms.find(r => r.label === String(label));
-        if (room) allIds.add(room.id);
-        else errors.push(`存在しない部屋: ${tok}`);
-        continue;
-      }
-
-      // 101-105 / 101〜105 / 201〜605
-      m = tok.match(/^(\d{3,4})\s*[-〜]\s*(\d{3,4})$/);
-      if (m) {
-        const aNum = Number(m[1]), bNum = Number(m[2]);
-        if (!Number.isFinite(aNum) || !Number.isFinite(bNum)) { errors.push(`不明: ${tok}`); continue; }
-        const set = pickRoomsByNumberRange(site, aNum, bNum);
-        if (set.size === 0) errors.push(`範囲に該当なし: ${tok}`);
-        for (const id of set) allIds.add(id);
-        continue;
-      }
-
-      // 2-6（階範囲っぽいがF/階がない場合）→ “階範囲”として扱う
-      m = tok.match(/^(\d{1,3})\s*[-〜]\s*(\d{1,3})$/);
-      if (m) {
-        const a = Number(m[1]), b = Number(m[2]);
-        if (!Number.isInteger(a) || !Number.isInteger(b)) { errors.push(`不明: ${tok}`); continue; }
-        const set = pickRoomsByFloorRange(site, a, b);
-        if (set.size === 0) errors.push(`階範囲に該当なし: ${tok}`);
-        for (const id of set) allIds.add(id);
-        continue;
-      }
-
-      errors.push(`不明: ${tok}`);
-    }
-
-    return { ids: allIds, errors };
-  }
-
-  function getBatchStatusMode(){
-    const el = document.querySelector('input[name="batchStatusMode"]:checked');
-    return el ? el.value : "todo";
   }
 
   /** Rendering */
@@ -1273,7 +1049,6 @@
     siteMeta.textContent = `部屋数: ${site.rooms.length} / 最終更新: ${updated}`;
   }
 
-  /** スケジュール */
   function ensureScheduleV2(site){
     if (!site.scheduleV2) site.scheduleV2 = defaultScheduleV2();
     for (const t of SCHED_TYPES) {
@@ -1519,6 +1294,30 @@
     stageHeader.style.borderColor = bd;
   }
 
+  function renderModes(){
+    // ①ダメ帳登録
+    if (state.ui.dameMode){
+      dameModeBtn.classList.add("on");
+      dameModeBtn.innerHTML = `ダメ帳登録　ON<span class="btnSub">階数、部屋別登録ができます／ON中は部屋タップでも登録</span>`;
+      dameBulkPanel.style.display = state.ui.dameBulkOpen ? "block" : "none";
+    } else {
+      dameModeBtn.classList.remove("on");
+      dameModeBtn.innerHTML = `ダメ帳登録<span class="btnSub">階数、部屋別登録ができます／ON中は部屋タップでも登録</span>`;
+      dameBulkPanel.style.display = "none";
+    }
+
+    // ②作業日・作業者
+    if (state.ui.workMode){
+      workModeBtn.classList.add("on");
+      workModeBtn.innerHTML = `作業日・作業者登録　ON<span class="btnSub">途中部屋と完了部屋に、日付、残工事などの特記事項、メモを記入できます／ON中は部屋タップでも登録</span>`;
+      workModeHint.style.display = "block";
+    } else {
+      workModeBtn.classList.remove("on");
+      workModeBtn.innerHTML = `作業日・作業者登録<span class="btnSub">途中部屋と完了部屋に、日付、残工事などの特記事項、メモを記入できます／ON中は部屋タップでも登録</span>`;
+      workModeHint.style.display = "none";
+    }
+  }
+
   function computeStats(site){
     const stageId = state.ui.currentStageId;
     let total=0, todo=0, doing=0, done=0, dame=0;
@@ -1735,7 +1534,6 @@
         const room = site2.rooms.find(x => x.id === r.id);
         if (!room) return;
 
-        // 未完全件表示ON：まとめて完了
         if (state.ui.pendingAll) {
           const names = getPendingStageNames(room);
           const ok = confirm(`部屋${room.label}の未完ダメ帳をまとめて完了にしますか？\n対象：${names.join(" / ")}`);
@@ -1747,30 +1545,25 @@
           return;
         }
 
-        // ①ON：ダメ帳トグル
-        if (state.ui.mode === "dame") {
-          const dd = roomStageData(room, stageId);
+        const dd = roomStageData(room, stageId);
+
+        // ★ダメ帳登録ON：タップで あり/なし
+        if (state.ui.dameMode){
           dd.dame = !dd.dame;
-          // ONにした時は、設定に従ってステータスも戻す（デフォ：未着手）
-          if (dd.dame) {
-            const mode = getBatchStatusMode(); // ラジオと同じルール
-            if (mode === "todo") dd.status = "todo";
-            else if (mode === "doing") dd.status = "doing";
-          }
+          if (dd.dame) dd.status = "todo";
           site2.updatedAt = now();
           saveState();
           renderAll();
           return;
         }
 
-        // ②ON：編集シート
-        if (state.ui.mode === "memo") {
+        // ★作業日・作業者ON：シート
+        if (state.ui.workMode){
           openSheet(room.id);
           return;
         }
 
         // 通常：進捗トグル
-        const dd = roomStageData(room, stageId);
         dd.status = nextStatus(dd.status);
         site2.updatedAt = now();
         saveState();
@@ -1816,46 +1609,6 @@
     }
   }
 
-  function renderModes(){
-    const m = state.ui.mode;
-
-    // 見た目
-    if (m === "dame") {
-      modeDameBtn.classList.add("on");
-      modeMemoBtn.classList.remove("on");
-      batchBox.style.display = "block";
-    } else if (m === "memo") {
-      modeDameBtn.classList.remove("on");
-      modeMemoBtn.classList.add("on");
-      batchBox.style.display = "none";
-    } else {
-      modeDameBtn.classList.remove("on");
-      modeMemoBtn.classList.remove("on");
-      batchBox.style.display = "none";
-    }
-
-    // batch input反映
-    batchInput.value = state.ui.batchInput || "";
-    renderBatchPreview();
-  }
-
-  function renderBatchPreview(){
-    const site = getCurrentSite();
-    if (!site) return;
-    if (state.ui.mode !== "dame") return;
-
-    const { ids, errors } = parseBatchInputToRoomIds(site, batchInput.value);
-    const rooms = site.rooms.filter(r => ids.has(r.id)).sort((a,b)=>a.floor-b.floor||a.idx-b.idx);
-    const labels = rooms.slice(0, 10).map(r => r.label);
-
-    batchCountChip.textContent = `対象: ${rooms.length}`;
-    batchPreviewChip.textContent = rooms.length
-      ? `プレビュー: ${labels.join(", ")}${rooms.length > 10 ? " ..." : ""}`
-      : `プレビュー: -`;
-
-    batchErrors.textContent = errors.length ? `⚠️ ${errors.join(" / ")}` : "";
-  }
-
   function renderAll(){
     renderSiteSelect();
     renderSiteForm();
@@ -1891,7 +1644,7 @@
     });
   }
 
-  /** Sheet */
+  /** Sheet state */
   let sheetRoomId = null;
   function openSheet(roomId){
     const site = getCurrentSite();
@@ -2051,7 +1804,7 @@
     alert("備考を保存しました。");
   });
 
-  // schedule tabs
+  // Schedule tabs
   schedTabInput.addEventListener("click", () => {
     state.ui.schedTab = "input";
     saveState();
@@ -2076,96 +1829,94 @@
     alert("スケジュールを保存しました。");
   });
 
-  // mode buttons
-  modeDameBtn.addEventListener("click", () => {
-    state.ui.mode = (state.ui.mode === "dame") ? "none" : "dame";
-    saveState();
-    renderAll();
-  });
-  modeMemoBtn.addEventListener("click", () => {
-    state.ui.mode = (state.ui.mode === "memo") ? "none" : "memo";
+  // ①ダメ帳登録モード
+  dameModeBtn.addEventListener("click", () => {
+    state.ui.dameMode = !state.ui.dameMode;
+    if (state.ui.dameMode) state.ui.workMode = false;
+
+    state.ui.dameBulkOpen = state.ui.dameMode;
+
+    bulkTargets = [];
+    bulkPreviewText.textContent = "プレビュー：まだありません";
+
     saveState();
     renderAll();
   });
 
-  // batch input realtime preview
-  batchInput.addEventListener("input", () => {
-    state.ui.batchInput = batchInput.value || "";
+  // ②作業日・作業者モード
+  workModeBtn.addEventListener("click", () => {
+    state.ui.workMode = !state.ui.workMode;
+    if (state.ui.workMode) state.ui.dameMode = false;
+    state.ui.dameBulkOpen = false;
     saveState();
-    renderBatchPreview();
+    renderAll();
   });
 
-  // batch apply
-  batchApplyBtn.addEventListener("click", () => {
+  // まとめ登録：プレビュー（範囲）
+  bulkPreviewRangeBtn.addEventListener("click", () => {
     const site = getCurrentSite();
     if (!site) return;
-    const { ids, errors } = parseBatchInputToRoomIds(site, batchInput.value);
-    const list = [...ids];
-    if (list.length === 0) {
-      alert("対象が0です。入力を確認してください。");
+    const rooms = getRoomsByFloorRange(site, bulkFromFloor.value, bulkToFloor.value);
+    setBulkPreview(rooms);
+  });
+
+  // まとめ登録：プレビュー（手入力）
+  bulkPreviewRoomsBtn.addEventListener("click", () => {
+    const site = getCurrentSite();
+    if (!site) return;
+    const labels = parseRoomNumbers(bulkRoomsText.value);
+    const rooms = getRoomsByLabels(site, labels);
+    setBulkPreview(rooms);
+  });
+
+  // まとめ登録：反映（あり）
+  bulkSetDameBtn.addEventListener("click", () => {
+    const site = getCurrentSite();
+    if (!site) return;
+    if (!bulkTargets || bulkTargets.length === 0){
+      alert("先にプレビューしてください。");
       return;
     }
-    if (errors.length) {
-      const ok = confirm(`一部に不明な入力があります。\n${errors.join(" / ")}\n\nそれでも実行しますか？`);
-      if (!ok) return;
-    }
+    const stageId = state.ui.currentStageId;
+    const uniq = [...new Set(bulkTargets.map(r => r.label))];
+    const ok = confirm(`【ダメ帳あり】をまとめて登録します。\n段階：${stageById(stageId).name}\n件数：${uniq.length}\n例：${uniq.slice(0,10).join(", ")}${uniq.length>10 ? "…" : ""}`);
+    if (!ok) return;
 
-    const mode = getBatchStatusMode();
-    for (const id of list) {
-      const room = site.rooms.find(r => r.id === id);
-      if (!room) continue;
-      const d = roomStageData(room, state.ui.currentStageId);
+    for (const r of bulkTargets){
+      const d = roomStageData(r, stageId);
       d.dame = true;
-      if (mode === "todo") d.status = "todo";
-      else if (mode === "doing") d.status = "doing";
-      // keep は何もしない
+      d.status = "todo";
     }
-
     site.updatedAt = now();
     saveState();
     renderAll();
-    alert(`まとめ登録しました（${list.length}件）。`);
+    alert("まとめ登録しました。");
   });
 
-  // batch clear
-  batchClearBtn.addEventListener("click", () => {
+  // まとめ登録：反映（なし）
+  bulkUnsetDameBtn.addEventListener("click", () => {
     const site = getCurrentSite();
     if (!site) return;
-    const { ids, errors } = parseBatchInputToRoomIds(site, batchInput.value);
-    const list = [...ids];
-    if (list.length === 0) {
-      alert("対象が0です。入力を確認してください。");
+    if (!bulkTargets || bulkTargets.length === 0){
+      alert("先にプレビューしてください。");
       return;
     }
-    if (errors.length) {
-      const ok = confirm(`一部に不明な入力があります。\n${errors.join(" / ")}\n\nそれでも実行しますか？`);
-      if (!ok) return;
-    }
-    const ok2 = confirm(`選択した部屋を「ダメ帳なし」に戻します（${list.length}件）。よろしいですか？`);
-    if (!ok2) return;
+    const stageId = state.ui.currentStageId;
+    const uniq = [...new Set(bulkTargets.map(r => r.label))];
+    const ok = confirm(`【ダメ帳なし】に戻します。\n段階：${stageById(stageId).name}\n件数：${uniq.length}\n例：${uniq.slice(0,10).join(", ")}${uniq.length>10 ? "…" : ""}`);
+    if (!ok) return;
 
-    for (const id of list) {
-      const room = site.rooms.find(r => r.id === id);
-      if (!room) continue;
-      const d = roomStageData(room, state.ui.currentStageId);
+    for (const r of bulkTargets){
+      const d = roomStageData(r, stageId);
       d.dame = false;
-      // ステータスは触らない（記録を壊さない）
     }
-
     site.updatedAt = now();
     saveState();
     renderAll();
-    alert(`解除しました（${list.length}件）。`);
+    alert("戻しました。");
   });
 
-  batchResetBtn.addEventListener("click", () => {
-    batchInput.value = "";
-    state.ui.batchInput = "";
-    saveState();
-    renderBatchPreview();
-  });
-
-  // pending all
+  // 未完全件表示
   pendingAllBtn.addEventListener("click", () => {
     state.ui.pendingAll = !state.ui.pendingAll;
     state.ui.filter = "all";
@@ -2174,7 +1925,7 @@
     renderAll();
   });
 
-  // filters
+  // filter buttons
   document.querySelectorAll("[data-filter]").forEach(btn => {
     btn.addEventListener("click", () => {
       if (state.ui.pendingAll) return;
@@ -2360,8 +2111,12 @@
     if (typeof state.ui.regenArmed !== "boolean") state.ui.regenArmed = false;
     if (!state.ui.schedTab) state.ui.schedTab = "input";
     if (typeof state.ui.pendingAll !== "boolean") state.ui.pendingAll = false;
-    if (!state.ui.mode) state.ui.mode = "none";
-    if (typeof state.ui.batchInput !== "string") state.ui.batchInput = "";
+
+    // ★追加
+    if (typeof state.ui.dameMode !== "boolean") state.ui.dameMode = false;
+    if (typeof state.ui.workMode !== "boolean") state.ui.workMode = false;
+    if (typeof state.ui.dameBulkOpen !== "boolean") state.ui.dameBulkOpen = false;
+
     saveState();
   }
 
