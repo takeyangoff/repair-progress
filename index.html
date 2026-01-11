@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>リペア進捗管理 v1.1-S1+Return</title>
+  <title>リペア進捗管理 v1.1-S2</title>
   <style>
     :root{
       --bg:#f6f7f9;
@@ -35,11 +35,11 @@
       --note_open:#ef4444;
       --note_done:#22c55e;
 
-      /* 追加：戻り（オレンジ） */
-      --orange:#f97316;
-      --orange_bg: rgba(249,115,22,0.14);
-      --orange_bd: rgba(249,115,22,0.35);
-      --orange_tx:#9a3412;
+      /* 戻り（オレンジ） */
+      --return:#f97316;         /* orange-500 */
+      --return_bg: rgba(249,115,22,0.14);
+      --return_tx:#9a3412;      /* orange-800 */
+      --return_bd: rgba(249,115,22,0.35);
     }
 
     body { font-family: -apple-system, system-ui, sans-serif; margin: 0; background:var(--bg); color:var(--text); }
@@ -113,13 +113,6 @@
       border-color: rgba(34,197,94,0.25);
     }
 
-    /* 追加：戻りバッジ */
-    .badge.returnOrange{
-      background: var(--orange_bg);
-      color: var(--orange_tx);
-      border-color: var(--orange_bd);
-    }
-
     .st{
       font-size: 12px;
       font-weight: 900;
@@ -140,25 +133,8 @@
       font-weight: 800;
     }
 
-    /* 追加：+0/2 などの数表示（戻りは下段固定に使う） */
-    .countLine{
-      font-size: 12px;
-      font-weight: 950;
-      letter-spacing: 0.2px;
-      margin: 0 auto;
-      display: inline-block;
-      padding: 3px 8px;
-      border-radius: 999px;
-      border: 1px solid rgba(17,24,39,0.10);
-      background: rgba(255,255,255,0.78);
-    }
-    .countLine.return{
-      border-color: var(--orange_bd);
-      background: rgba(249,115,22,0.10);
-      color: var(--orange_tx);
-    }
-
-    .noteMark{
+    /* 右上マーク（特記事項/戻り） */
+    .cornerMark{
       position:absolute;
       top:6px;
       right:6px;
@@ -175,8 +151,29 @@
       border: 1px solid rgba(17,24,39,0.12);
       pointer-events:none;
     }
-    .noteMark.red{ color: var(--note_open); }
-    .noteMark.green{ color: var(--note_done); }
+    .cornerMark.red{ color: var(--note_open); }
+    .cornerMark.green{ color: var(--note_done); }
+
+    /* 戻り🟠は右上に固定（特記事項マークがある時は少し左にずらす） */
+    .returnMark{
+      position:absolute;
+      top:6px;
+      right:6px;
+      width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size: 12px;
+      font-weight: 900;
+      line-height: 1;
+      background: rgba(255,255,255,0.90);
+      border: 1px solid var(--return_bd);
+      color: var(--return);
+      pointer-events:none;
+    }
+    .cornerOffset{ right: 28px; } /* 戻りがある時、特記事項マークを左にずらす */
 
     .highlight { outline: 3px solid #111827; outline-offset: 2px; }
 
@@ -231,7 +228,7 @@
     }
     details > summary::-webkit-details-marker{ display:none; }
 
-    /* トグル大ボタン */
+    /* トグル大ボタン（赤ON） */
     .toggleBig{
       width: 100%;
       background: rgba(239,68,68,0.10);
@@ -286,24 +283,56 @@
       color:#fff;
     }
 
-    /* 追加：戻り（オレンジ）トグル */
-    .toggleBig.orange{
-      background: rgba(249,115,22,0.10);
-      color: var(--orange_tx);
-      border: 1px solid var(--orange_bd);
+    /* トグル大ボタン（戻り：オレンジON） */
+    .toggleBigOrange{
+      width: 100%;
+      background: var(--return_bg);
+      color: var(--return_tx);
+      border: 1px solid var(--return_bd);
+      font-weight: 900;
+      border-radius: 14px;
+      padding: 14px 12px;
+      text-align: left;
+      display:flex;
+      align-items:flex-start;
+      justify-content: space-between;
+      gap: 10px;
     }
-    .toggleBig.orange .desc{ color: rgba(154,52,18,0.85); }
-    .toggleBig.orange .state{
-      border-color: rgba(154,52,18,0.35);
-      color: var(--orange_tx);
+    .toggleBigOrange .left{
+      display:flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 0;
     }
-    .toggleBig.orange.on{
-      background: var(--orange);
+    .toggleBigOrange .title{
+      font-size: 15px;
+      line-height: 1.2;
+      font-weight: 900;
+    }
+    .toggleBigOrange .desc{
+      font-size: 12px;
+      font-weight: 800;
+      color: rgba(154,52,18,0.90);
+    }
+    .toggleBigOrange .state{
+      flex: 0 0 auto;
+      font-size: 12px;
+      font-weight: 900;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--return_bd);
+      background:#fff;
+      color: var(--return_tx);
+      white-space: nowrap;
+      align-self: center;
+    }
+    .toggleBigOrange.on{
+      background: var(--return);
       color:#fff;
-      border-color: var(--orange);
+      border-color: var(--return);
     }
-    .toggleBig.orange.on .desc{ color: rgba(255,255,255,0.88); }
-    .toggleBig.orange.on .state{
+    .toggleBigOrange.on .desc{ color: rgba(255,255,255,0.92); }
+    .toggleBigOrange.on .state{
       border-color: rgba(255,255,255,0.35);
       background: rgba(255,255,255,0.16);
       color:#fff;
@@ -488,7 +517,7 @@
 </head>
 <body>
 <header>
-  <h1>リペア進捗管理 v1.1-S1+Return</h1>
+  <h1>リペア進捗管理 v1.1-S2</h1>
   <div class="row">
     <select id="siteSelect"></select>
     <button id="newSiteBtn" class="primary">現場を追加</button>
@@ -593,7 +622,6 @@
 
     <div class="row" style="margin-top:8px;">
       <button class="small" id="dameOnlyBtn">ダメ帳ありのみ：OFF</button>
-      <button class="small" id="returnOnlyBtn">戻り部屋のみ：OFF</button>
     </div>
 
     <div class="stats" id="stats"></div>
@@ -663,66 +691,17 @@
     </div>
   </div>
 
-  <!-- 追加：戻りダメ帳登録（オレンジ） -->
+  <!-- ★戻りダメ帳登録（新設） -->
   <div class="panel">
-    <button id="returnRegBtn" class="toggleBig orange">
+    <button id="returnRegBtn" class="toggleBigOrange">
       <div class="left">
         <div class="title">戻りダメ帳登録</div>
-        <div class="desc">完了後に出た戻り・追加のダメ帳を登録します（ON中は部屋をタップして登録）</div>
+        <div class="desc">完了後に出た戻り・追加のダメ帳を登録します（ON中は部屋をタップして登録できます）</div>
       </div>
       <div class="state" id="returnRegState">OFF</div>
     </button>
-
-    <div class="subPanel" id="returnRegPanel" style="display:none;">
-      <div class="h">まとめて登録（戻り）</div>
-      <div class="help">※対象は「現在の段階（上の段階ボタンで選択中）」です</div>
-
-      <div class="box">
-        <div class="h2">まとめて登録（階数範囲）</div>
-        <div class="help">階を2つ入れて、その範囲の部屋をまとめて「戻りあり」にします</div>
-        <div class="row" style="margin-top:6px;">
-          <input id="returnFloorFrom" class="small" placeholder="開始階（例 2）" inputmode="numeric" />
-          <input id="returnFloorTo" class="small" placeholder="終了階（例 6）" inputmode="numeric" />
-        </div>
-
-        <div class="row" style="margin-top:8px;">
-          <button id="returnRangeOnBtn" class="small">この範囲を「戻りあり」</button>
-          <button id="returnRangeOffBtn" class="small">この範囲の「戻り」を解除</button>
-        </div>
-
-        <div class="help" style="margin-top:8px;">
-          ※「解除」しても <b>履歴（+x/y）</b> は残ります（🟠バッジだけ消えます）
-        </div>
-      </div>
-
-      <div class="box">
-        <div class="h2">部屋番号を個別入力</div>
-        <div class="help">改行区切りで複数登録できます（例：301↵302↵305）</div>
-        <textarea id="returnRoomsText" placeholder="部屋番号を改行で入力（例：301&#10;302&#10;305）"></textarea>
-
-        <div class="row" style="margin-top:8px;">
-          <button id="returnRoomsOnBtn" class="small">入力した部屋を「戻りあり」</button>
-          <button id="returnRoomsOffBtn" class="small">入力した部屋の「戻り」を解除</button>
-        </div>
-      </div>
-
-      <div class="box">
-        <div class="h2">戻り項目数（+完了/総数）</div>
-        <div class="help">まず総数（分母）を入れて、完了（分子）を入れるだけ。カードに「+x/y」で残ります。</div>
-
-        <div class="row" style="margin-top:6px;">
-          <input id="returnEditRoom" class="small" placeholder="部屋番号（例 301）" inputmode="numeric" />
-        </div>
-        <div class="row" style="margin-top:6px;">
-          <input id="returnTotalInput" class="small" placeholder="総数（例 2）" inputmode="numeric" />
-          <input id="returnDoneInput" class="small" placeholder="完了（例 0）" inputmode="numeric" />
-          <button id="returnApplyCountBtn" class="small">この部屋に反映</button>
-        </div>
-        <div class="help" style="margin-top:6px;">
-          ※総数=0 にすると「+表示」は消えます（履歴は保持）。<br/>
-          ※完了≥総数 の時、🟠バッジは消えます（ただし +x/y は残る）。
-        </div>
-      </div>
+    <div class="help" style="margin-top:8px;">
+      ※対象は「現在の段階（上の段階ボタンで選択中）」です
     </div>
   </div>
 
@@ -746,8 +725,8 @@
 
   <div class="help" style="padding: 10px 2px;">
     通常：部屋タップで「未着手 → 途中 → 完了 → 未着手」<br/>
-    ダメ帳登録ON：部屋タップで「ダメ帳あり ↔ なし」（確認なし）<br/>
-    戻りダメ帳登録ON：部屋タップで「戻りあり ↔ 解除」（解除しても +履歴は残ります）<br/>
+    ダメ帳登録ON：部屋タップで「ダメ帳あり ↔ なし」<br/>
+    戻りダメ帳登録ON：部屋タップで「戻りあり ↔ 解除」<br/>
     未完了部屋を全件表示ON：部屋タップで「その部屋の未完ダメ帳（全段階）をまとめて完了」にできます
   </div>
 
@@ -766,7 +745,7 @@
 
 <script>
 (() => {
-  const STORAGE_KEY = "repair_progress_v1_1_S1_RETURN";
+  const STORAGE_KEY = "repair_progress_v1_1_S1"; // 既存キーを継続（S2でも同じデータを読み込む）
   const uid = () => Math.random().toString(36).slice(2, 10) + "-" + Date.now().toString(36);
   const now = () => Date.now();
 
@@ -823,12 +802,12 @@
   const scopeApplyBtn = $("scopeApplyBtn");
   const scopeClearBtn = $("scopeClearBtn");
   const dameOnlyBtn = $("dameOnlyBtn");
-  const returnOnlyBtn = $("returnOnlyBtn");
 
   const statsEl = $("stats");
   const boardCounts = $("boardCounts");
   const boardOpen = $("boardOpen");
   const boardDone = $("boardDone");
+  const boardDoneDetails = $("boardDoneDetails");
 
   const roomGrid = $("roomGrid");
   const jumpInput = $("jumpInput");
@@ -855,24 +834,9 @@
   const bulkRoomsOnBtn = $("bulkRoomsOnBtn");
   const bulkRoomsOffBtn = $("bulkRoomsOffBtn");
 
-  // 戻り登録モード
+  // ★戻り登録モード
   const returnRegBtn = $("returnRegBtn");
-  const returnRegPanel = $("returnRegPanel");
   const returnRegState = $("returnRegState");
-
-  const returnFloorFrom = $("returnFloorFrom");
-  const returnFloorTo = $("returnFloorTo");
-  const returnRangeOnBtn = $("returnRangeOnBtn");
-  const returnRangeOffBtn = $("returnRangeOffBtn");
-
-  const returnRoomsText = $("returnRoomsText");
-  const returnRoomsOnBtn = $("returnRoomsOnBtn");
-  const returnRoomsOffBtn = $("returnRoomsOffBtn");
-
-  const returnEditRoom = $("returnEditRoom");
-  const returnTotalInput = $("returnTotalInput");
-  const returnDoneInput = $("returnDoneInput");
-  const returnApplyCountBtn = $("returnApplyCountBtn");
 
   /** Load/Save */
   function loadState() {
@@ -917,24 +881,29 @@
     return out;
   }
 
+  // ★戻りデータの初期形
+  function ensureReturnObj(x){
+    if (!x.return) {
+      x.return = { active:false, total:0, done:0, historyTotal:0 };
+    } else {
+      if (typeof x.return.active !== "boolean") x.return.active = false;
+      if (!Number.isFinite(x.return.total)) x.return.total = 0;
+      if (!Number.isFinite(x.return.done)) x.return.done = 0;
+      if (!Number.isFinite(x.return.historyTotal)) x.return.historyTotal = 0;
+    }
+    // 安全：負数防止
+    x.return.total = Math.max(0, Math.floor(x.return.total));
+    x.return.done = Math.max(0, Math.floor(x.return.done));
+    x.return.historyTotal = Math.max(0, Math.floor(x.return.historyTotal));
+    // done が total 超えないように（将来UIで触る前提の保険）
+    if (x.return.done > x.return.total) x.return.done = x.return.total;
+  }
+
   function ensurePerStage(room) {
     if (!room.perStage) room.perStage = {};
     for (const st of DEFAULT_STAGES) {
       if (!room.perStage[st.id]) {
-        room.perStage[st.id] = {
-          status:"todo",
-          dame:false,
-          workDate:"",
-          worker:"",
-          notes:[],
-          // 追加：戻り
-          ret: {
-            active:false,     // 🟠バッジ（未完戻りがあるか）
-            total:0,          // 戻り総数（分母）
-            done:0,           // 戻り完了（分子）
-            historyMaxTotal:0 // 履歴用：一度でも入れた最大総数（表示に残すため）
-          }
-        };
+        room.perStage[st.id] = { status:"todo", dame:false, workDate:"", worker:"", notes:[], return:null };
       } else {
         const x = room.perStage[st.id];
         if (!x.status) x.status = "todo";
@@ -942,12 +911,8 @@
         if (!x.workDate) x.workDate = "";
         if (!x.worker) x.worker = "";
         if (!Array.isArray(x.notes)) x.notes = [];
-        if (!x.ret) x.ret = { active:false, total:0, done:0, historyMaxTotal:0 };
-        if (typeof x.ret.active !== "boolean") x.ret.active = false;
-        if (!Number.isFinite(x.ret.total)) x.ret.total = 0;
-        if (!Number.isFinite(x.ret.done)) x.ret.done = 0;
-        if (!Number.isFinite(x.ret.historyMaxTotal)) x.ret.historyMaxTotal = 0;
       }
+      ensureReturnObj(room.perStage[st.id]);
     }
   }
 
@@ -987,12 +952,11 @@
         highlightedRoomId: null,
         scope: { type:"all" },
         dameOnly: false,
-        returnOnly: false,
         regenArmed: false,
         schedTab: "input",
         pendingAll: false,
         dameRegMode: false,
-        returnRegMode: false,
+        returnRegMode: false, // ★追加
       }
     };
   }
@@ -1060,7 +1024,7 @@
     return d.notes.length > 0;
   }
 
-  // 全段階横断：未完ダメ帳
+  // ★全段階横断：未完ダメ帳
   function isPendingAnyStage(room){
     for (const st of DEFAULT_STAGES) {
       const d = roomStageData(room, st.id);
@@ -1083,23 +1047,6 @@
     }
   }
 
-  // 全段階横断：戻り（activeがある段階があるか）
-  function hasReturnAnyStage(room){
-    for (const st of DEFAULT_STAGES) {
-      const d = roomStageData(room, st.id);
-      if (d.ret && d.ret.active) return true;
-    }
-    return false;
-  }
-  function getReturnStageNames(room){
-    const names = [];
-    for (const st of DEFAULT_STAGES) {
-      const d = roomStageData(room, st.id);
-      if (d.ret && d.ret.active) names.push(st.name);
-    }
-    return names;
-  }
-
   /** 日付表示 */
   function fmtYMD(s){
     if (!s) return "";
@@ -1119,6 +1066,19 @@
       if (!y || !m || !d) return yyyy_mm_dd;
       return `${m}/${d}`;
     }catch{ return yyyy_mm_dd; }
+  }
+
+  // ★ワンクッション文面（確定版）
+  function confirmDameOverwrite(roomLabel){
+    const msg =
+`この部屋はすでに「完了」になっています。
+ダメ帳を登録すると 戻り・追加ダメ帳 として扱われ、
+ステータスは未完了に戻ります。
+
+（完了した項目数、作業者の記録は残ります）
+
+部屋 ${roomLabel} にダメ帳を登録しますか？`;
+    return confirm(msg);
   }
 
   /** Rendering */
@@ -1393,14 +1353,10 @@
 
   function computeStats(site){
     const stageId = state.ui.currentStageId;
-    let total=0, todo=0, doing=0, done=0, dame=0, retRooms=0, retOpen=0;
+    let total=0, todo=0, doing=0, done=0, dame=0;
 
     for (const r of site.rooms) {
       if (!withinScope(r)) continue;
-
-      // 戻りのみフィルタは全段階横断で「戻りあり」を出す
-      if (state.ui.returnOnly && !hasReturnAnyStage(r)) continue;
-
       const d = roomStageData(r, stageId);
       if (state.ui.dameOnly && !d.dame) continue;
 
@@ -1409,15 +1365,8 @@
       if (d.status === "todo") todo++;
       else if (d.status === "doing") doing++;
       else done++;
-
-      if (hasReturnAnyStage(r)) retRooms++;
-      // 未完戻り（active）の数
-      for (const st of DEFAULT_STAGES){
-        const x = roomStageData(r, st.id);
-        if (x.ret && x.ret.active) { retOpen++; break; }
-      }
     }
-    return { total, todo, doing, done, dame, retRooms, retOpen };
+    return { total, todo, doing, done, dame };
   }
 
   function renderStats(){
@@ -1436,8 +1385,6 @@
     statsEl.appendChild(mk("途中", st.doing));
     statsEl.appendChild(mk("完了", st.done));
     statsEl.appendChild(mk("ダメ帳あり", st.dame));
-    statsEl.appendChild(mk("戻り部屋", st.retRooms));
-    statsEl.appendChild(mk("未完戻り", st.retOpen));
   }
 
   function renderBoard(){
@@ -1534,6 +1481,15 @@
     }
   }
 
+  function returnLineText(d){
+    ensureReturnObj(d);
+    const hist = d.return.historyTotal || 0;
+    const showTotal = d.return.active ? d.return.total : hist; // active中は現在値、そうでなければ履歴を表示
+    if (showTotal <= 0 && !d.return.active) return ""; // 履歴なし＆activeでもないなら出さない
+    const done = d.return.active ? d.return.done : Math.min(hist, d.return.done);
+    return `戻り +${done}/${showTotal}`;
+  }
+
   function renderRooms(){
     const site = getCurrentSite();
     if (!site) return;
@@ -1542,15 +1498,7 @@
 
     let rooms = site.rooms.slice();
 
-    // 戻り専用フィルタは「戻りがあるなら全部出す」思想：全段階横断で抽出
-    if (state.ui.returnOnly) {
-      rooms = rooms.filter(r => hasReturnAnyStage(r));
-      // 戻り表示中は、未完了部屋全件表示の思想と同じで進捗フィルタは事実上all
-      if (state.ui.filter !== "all") {
-        state.ui.filter = "all";
-        saveState();
-      }
-    } else if (state.ui.pendingAll) {
+    if (state.ui.pendingAll) {
       rooms = rooms.filter(r => isPendingAnyStage(r));
     } else {
       if (state.ui.dameOnly) rooms = rooms.filter(r => roomStageData(r, stageId).dame);
@@ -1566,27 +1514,34 @@
       if (lastFloor !== r.floor) {
         const header = document.createElement("div");
         header.className = "floorHeader";
-        if (state.ui.returnOnly) {
-          header.textContent = `${r.floor}階（戻りあり：全段階）`;
-        } else if (state.ui.pendingAll) {
-          header.textContent = `${r.floor}階（未完了：全段階）`;
-        } else {
-          header.textContent = `${r.floor}階（現在の段階：${stageById(stageId).name}）`;
-        }
+        header.textContent = state.ui.pendingAll
+          ? `${r.floor}階（未完了：全段階）`
+          : `${r.floor}階（現在の段階：${stageById(stageId).name}）`;
         roomGrid.appendChild(header);
         lastFloor = r.floor;
       }
 
       const d = roomStageData(r, stageId);
+      ensureReturnObj(d);
 
       const card = document.createElement("div");
       card.className = `room ${d.status}`;
       card.dataset.roomId = r.id;
       if (state.ui.highlightedRoomId === r.id) card.classList.add("highlight");
 
+      // ★戻り🟠（右上）
+      if (d.return.active) {
+        const mk = document.createElement("div");
+        mk.className = "returnMark";
+        mk.textContent = "🟠";
+        card.appendChild(mk);
+      }
+
+      // 特記事項マーク（戻りがあるなら左にずらす）
       if (hasAnyNotes(r, stageId)) {
         const mk = document.createElement("div");
-        mk.className = "noteMark " + (hasOpenNotes(r, stageId) ? "red" : "green");
+        mk.className = "cornerMark " + (hasOpenNotes(r, stageId) ? "red" : "green");
+        if (d.return.active) mk.classList.add("cornerOffset");
         mk.textContent = hasOpenNotes(r, stageId) ? "🔴" : "🟢";
         card.appendChild(mk);
       }
@@ -1596,7 +1551,6 @@
       num.textContent = r.label;
       card.appendChild(num);
 
-      // ダメ帳バッジ
       if (d.dame) {
         const dame = document.createElement("div");
         const isDone = (d.status === "done");
@@ -1605,43 +1559,16 @@
         card.appendChild(dame);
       }
 
-      // 戻りバッジ（この段階に未完の戻りがある時だけ）
-      if (d.ret && d.ret.active) {
-        const rb = document.createElement("div");
-        rb.className = "badge returnOrange";
-        rb.textContent = "戻りあり";
-        card.appendChild(rb);
-      }
-
-      // ステータス
       const st = document.createElement("div");
       st.className = "st";
       st.textContent = statusLabel(d.status);
       card.appendChild(st);
-
-      // 戻りの履歴表示（+x/y）：完了しても残す（ただし y>0 の時だけ表示）
-      if (d.ret && (d.ret.historyMaxTotal || d.ret.total) > 0) {
-        const totalForView = (d.ret.historyMaxTotal || d.ret.total || 0);
-        if (totalForView > 0) {
-          const doneForView = Math.min(Math.max(0, Number(d.ret.done || 0)), totalForView);
-          const line = document.createElement("div");
-          line.className = "countLine return";
-          line.textContent = `+${doneForView}/${totalForView}`;
-          card.appendChild(line);
-        }
-      }
 
       if (state.ui.pendingAll) {
         const names = getPendingStageNames(r);
         const sub = document.createElement("div");
         sub.className = "subline";
         sub.textContent = `未完：${names.join(" / ")}`;
-        card.appendChild(sub);
-      } else if (state.ui.returnOnly) {
-        const names = getReturnStageNames(r);
-        const sub = document.createElement("div");
-        sub.className = "subline";
-        sub.textContent = `戻り：${names.join(" / ")}`;
         card.appendChild(sub);
       } else {
         if ((d.status === "doing" || d.status === "done") && (d.workDate || d.worker)) {
@@ -1654,11 +1581,28 @@
         }
       }
 
+      // ★戻りの履歴表示（いまは最低限：active中は+0/0でも出る）
+      const rt = returnLineText(d);
+      if (rt) {
+        const sub2 = document.createElement("div");
+        sub2.className = "subline";
+        sub2.textContent = rt;
+        card.appendChild(sub2);
+      } else if (d.return.active) {
+        const sub2 = document.createElement("div");
+        sub2.className = "subline";
+        sub2.textContent = "戻り +0/0";
+        card.appendChild(sub2);
+      }
+
       card.addEventListener("click", () => {
         const site2 = getCurrentSite();
         if (!site2) return;
         const room = site2.rooms.find(x => x.id === r.id);
         if (!room) return;
+
+        const dd = roomStageData(room, stageId);
+        ensureReturnObj(dd);
 
         // 未完全件表示ON：まとめて完了
         if (state.ui.pendingAll) {
@@ -1672,26 +1616,24 @@
           return;
         }
 
-        const dd = roomStageData(room, stageId);
-
-        // 戻り登録モード
+        // ★戻り登録モード：部屋タップで戻りON/OFF
         if (state.ui.returnRegMode) {
-          // トグル：active を切替（解除しても履歴は残す）
-          dd.ret.active = !dd.ret.active;
+          dd.return.active = !dd.return.active;
 
-          // ONにした時：完了ならワンクッション（戻り扱いにする思想）
-          if (dd.ret.active && dd.status === "done") {
-            const ok = confirm(
-              `この部屋はすでに「完了」になっています。\n戻りダメ帳として登録すると、ステータスは未完了に戻ります。\n（履歴 +x/y は残ります）\n\n続行しますか？`
-            );
-            if (!ok) {
-              dd.ret.active = false;
-              site2.updatedAt = now();
-              saveState();
-              renderAll();
-              return;
+          // ONにしたら、最低限バッジがつく（数は後で作業メモ側で入れる想定）
+          if (dd.return.active) {
+            // 履歴は残す前提：初回でも0スタートでOK
+            dd.return.total = Math.max(0, dd.return.total || 0);
+            dd.return.done = Math.max(0, dd.return.done || 0);
+          } else {
+            // OFFに戻す時：履歴が無い＆数も0なら完全に消える
+            const hasAny = (dd.return.historyTotal > 0) || (dd.return.total > 0) || (dd.return.done > 0);
+            if (!hasAny) {
+              dd.return.active = false;
+              dd.return.total = 0;
+              dd.return.done = 0;
+              dd.return.historyTotal = 0;
             }
-            dd.status = "todo";
           }
 
           site2.updatedAt = now();
@@ -1700,10 +1642,27 @@
           return;
         }
 
-        // ダメ帳登録モード：dame を切替
+        // ★ダメ帳登録モード：ダメ帳あり/なし切替（完了→戻り扱いのワンクッション）
         if (state.ui.dameRegMode) {
-          dd.dame = !dd.dame;
+          const next = !dd.dame;
+
+          // 完了部屋に「ダメ帳あり」を付ける＝戻り・追加扱い → 確認
+          if (next === true && dd.status === "done") {
+            const ok = confirmDameOverwrite(room.label);
+            if (!ok) return;
+
+            // 戻り扱い：ステータスを未着手へ戻す
+            dd.status = "todo";
+
+            // ★戻りフラグもON（いまの段階の戻りとして）
+            dd.return.active = true;
+          }
+
+          dd.dame = next;
+
+          // まとめ登録と同じ思想：新規ダメ帳が来たなら「未着手」に戻す（ただしdoneのみ）
           if (dd.dame && dd.status === "done") dd.status = "todo";
+
           site2.updatedAt = now();
           saveState();
           renderAll();
@@ -1744,14 +1703,6 @@
     dameOnlyBtn.style.borderColor = state.ui.dameOnly ? "rgba(239,68,68,0.45)" : "var(--line)";
     dameOnlyBtn.style.color = state.ui.dameOnly ? "#991b1b" : "var(--text)";
     dameOnlyBtn.style.background = state.ui.dameOnly ? "rgba(239,68,68,0.08)" : "#fff";
-    dameOnlyBtn.disabled = state.ui.pendingAll || state.ui.returnOnly;
-  }
-
-  function renderReturnOnlyBtn(){
-    returnOnlyBtn.textContent = `戻り部屋のみ：${state.ui.returnOnly ? "ON":"OFF"}`;
-    returnOnlyBtn.style.borderColor = state.ui.returnOnly ? "rgba(249,115,22,0.60)" : "var(--line)";
-    returnOnlyBtn.style.color = state.ui.returnOnly ? "var(--orange_tx)" : "var(--text)";
-    returnOnlyBtn.style.background = state.ui.returnOnly ? "rgba(249,115,22,0.10)" : "#fff";
   }
 
   function renderRegenBtn(){
@@ -1780,11 +1731,9 @@
     if (state.ui.returnRegMode){
       returnRegBtn.classList.add("on");
       returnRegState.textContent = "ON";
-      returnRegPanel.style.display = "block";
     } else {
       returnRegBtn.classList.remove("on");
       returnRegState.textContent = "OFF";
-      returnRegPanel.style.display = "none";
     }
   }
 
@@ -1799,11 +1748,9 @@
     renderStages();
 
     renderPendingAllBtn();
-    renderDameOnlyBtn();
-    renderReturnOnlyBtn();
-
     renderStats();
     renderBoard();
+    renderDameOnlyBtn();
     renderDameReg();
     renderReturnReg();
     renderRooms();
@@ -1829,29 +1776,44 @@
   /** まとめ登録：ユーティリティ */
   function setDameForRooms(site, stageId, roomLabels, value){
     let hit = 0;
+
+    // ★Step1：完了部屋に「ダメ帳あり」を付ける時のワンクッション（まとめ登録版）
+    if (value === true) {
+      const willTouch = [];
+      for (const r of site.rooms) {
+        if (!roomLabels.has(r.label)) continue;
+        const d = roomStageData(r, stageId);
+        if (d.status === "done" && d.dame !== true) willTouch.push(r.label);
+      }
+      if (willTouch.length > 0) {
+        const head = willTouch.slice(0, 6).join(", ");
+        const more = willTouch.length > 6 ? ` 他${willTouch.length - 6}部屋` : "";
+        const ok = confirm(
+`完了の部屋にダメ帳を登録しようとしています（${willTouch.length}部屋）。
+ダメ帳を登録すると 戻り・追加ダメ帳 として扱われ、ステータスは未完了に戻ります。
+
+対象：${head}${more}
+
+続行しますか？`
+        );
+        if (!ok) return 0;
+      }
+    }
+
     for (const r of site.rooms) {
       if (!roomLabels.has(r.label)) continue;
       const d = roomStageData(r, stageId);
       const was = d.dame;
       d.dame = value;
+
       if (value === true) {
-        if (d.status === "done") d.status = "todo";
+        if (d.status === "done") {
+          // ★Step1：個別と同じ思想（戻り扱い）
+          d.status = "todo";
+          d.return.active = true; // ★戻りフラグON（この段階）
+        }
       }
       if (was !== d.dame) hit++;
-    }
-    return hit;
-  }
-
-  function setReturnForRooms(site, stageId, roomLabels, value){
-    let hit = 0;
-    for (const r of site.rooms) {
-      if (!roomLabels.has(r.label)) continue;
-      const d = roomStageData(r, stageId);
-      const was = d.ret.active;
-      d.ret.active = value;
-      // ONにするなら、完了は未着手に戻す（戻り扱い）
-      if (value === true && d.status === "done") d.status = "todo";
-      if (was !== d.ret.active) hit++;
     }
     return hit;
   }
@@ -1874,32 +1836,10 @@
 
     const out = new Set();
     for (const v of lines) {
-      const n = v.replace(/[^\d]/g,"");
+      const n = v.replace(/[^\d]/g,""); // 念のため数字以外を除去
       if (n) out.add(n);
     }
     return out;
-  }
-
-  function applyReturnCounts(site, stageId, roomLabel, total, done){
-    const room = site.rooms.find(r => r.label === String(roomLabel));
-    if (!room) throw new Error(`部屋が見つかりません: ${roomLabel}`);
-    const d = roomStageData(room, stageId);
-
-    const t = Math.max(0, Math.floor(Number(total)));
-    const dn = Math.max(0, Math.floor(Number(done)));
-
-    d.ret.total = t;
-    d.ret.done = Math.min(dn, t);
-
-    // 履歴は最大総数を保持（+表示に残す用）
-    d.ret.historyMaxTotal = Math.max(d.ret.historyMaxTotal || 0, t);
-
-    // ルール：完了>=総数 ならバッジは消える（履歴は残る）
-    if (t > 0 && d.ret.done >= t) d.ret.active = false;
-
-    // t=0 は「+表示が消える」扱い。ただし active をどうするかはあなたの感覚に合わせて：
-    // ここでは t=0 の時は active をOFFにする（誤登録を消しやすくする）
-    if (t === 0) d.ret.active = false;
   }
 
   /** Events */
@@ -2002,9 +1942,6 @@
 
   // 未完全件表示
   pendingAllBtn.addEventListener("click", () => {
-    // 戻りフィルタと同時ONはややこしいので排他
-    if (!state.ui.pendingAll && state.ui.returnOnly) state.ui.returnOnly = false;
-
     state.ui.pendingAll = !state.ui.pendingAll;
     state.ui.filter = "all";
     state.ui.highlightedRoomId = null;
@@ -2015,7 +1952,7 @@
   // filter buttons
   document.querySelectorAll("[data-filter]").forEach(btn => {
     btn.addEventListener("click", () => {
-      if (state.ui.pendingAll || state.ui.returnOnly) return;
+      if (state.ui.pendingAll) return;
       const f = btn.getAttribute("data-filter");
       if (f === "all" || f === "todo" || f === "doing" || f === "done") {
         state.ui.filter = f;
@@ -2030,7 +1967,6 @@
     state.ui.scope = { type:"all" };
     saveState();
     renderStats();
-    renderRooms();
   });
   scopeApplyBtn.addEventListener("click", () => {
     const a = Number((scopeFrom.value||"").trim());
@@ -2042,7 +1978,6 @@
     state.ui.scope = { type:"range", from: a, to: b };
     saveState();
     renderStats();
-    renderRooms();
   });
   scopeClearBtn.addEventListener("click", () => {
     scopeFrom.value = "";
@@ -2050,28 +1985,14 @@
     state.ui.scope = { type:"all" };
     saveState();
     renderStats();
-    renderRooms();
   });
 
   // dameOnly toggle
   dameOnlyBtn.addEventListener("click", () => {
-    if (state.ui.pendingAll || state.ui.returnOnly) return;
+    if (state.ui.pendingAll) return;
     state.ui.dameOnly = !state.ui.dameOnly;
     saveState();
-    renderAll();
-  });
-
-  // returnOnly toggle
-  returnOnlyBtn.addEventListener("click", () => {
-    // pendingAll と排他
-    if (!state.ui.returnOnly && state.ui.pendingAll) state.ui.pendingAll = false;
-    // dameOnly とも排他（戻り表示は「とにかく全部出す」思想）
-    if (!state.ui.returnOnly && state.ui.dameOnly) state.ui.dameOnly = false;
-
-    state.ui.returnOnly = !state.ui.returnOnly;
-    state.ui.filter = "all";
-    state.ui.highlightedRoomId = null;
-    saveState();
+    renderDameOnlyBtn();
     renderAll();
   });
 
@@ -2108,7 +2029,7 @@
       return;
     }
 
-    const ok = confirm("部屋を再生成します。進捗・ダメ帳・作業日・作業者・特記事項・戻りが初期化されます。よろしいですか？");
+    const ok = confirm("部屋を再生成します。進捗・ダメ帳・作業日・作業者・特記事項が初期化されます。よろしいですか？");
     if (!ok) {
       state.ui.regenArmed = false;
       saveState();
@@ -2132,26 +2053,25 @@
     }
   });
 
-  // ダメ帳登録モード：トグル
+  // ★ダメ帳登録モード：トグル（戻り登録ONならOFFにして混乱防止）
   dameRegBtn.addEventListener("click", () => {
-    // 排他：戻り登録と同時ONはしない
-    if (!state.ui.dameRegMode && state.ui.returnRegMode) state.ui.returnRegMode = false;
-
     state.ui.dameRegMode = !state.ui.dameRegMode;
+    if (state.ui.dameRegMode) state.ui.returnRegMode = false;
     saveState();
-    renderAll();
+    renderDameReg();
+    renderReturnReg();
   });
 
-  // 戻り登録モード：トグル
+  // ★戻り登録モード：トグル（ダメ帳登録ONならOFFにして混乱防止）
   returnRegBtn.addEventListener("click", () => {
-    if (!state.ui.returnRegMode && state.ui.dameRegMode) state.ui.dameRegMode = false;
-
     state.ui.returnRegMode = !state.ui.returnRegMode;
+    if (state.ui.returnRegMode) state.ui.dameRegMode = false;
     saveState();
-    renderAll();
+    renderReturnReg();
+    renderDameReg();
   });
 
-  // まとめ登録（階範囲）ダメ帳
+  // ★まとめ登録（階範囲）
   bulkRangeOnBtn.addEventListener("click", () => {
     const site = getCurrentSite();
     if (!site) return;
@@ -2160,6 +2080,7 @@
     if (!Number.isFinite(a) || !Number.isFinite(b)) { alert("開始階・終了階を入れてください"); return; }
     const labels = labelsFromFloorRange(site, a, b);
     const hit = setDameForRooms(site, state.ui.currentStageId, labels, true);
+    if (hit === 0) return;
     site.updatedAt = now();
     saveState();
     renderAll();
@@ -2180,13 +2101,14 @@
     alert(`ダメ帳なしにしました：${hit}部屋`);
   });
 
-  // まとめ登録（部屋番号：改行）ダメ帳
+  // ★まとめ登録（部屋番号：改行）
   bulkRoomsOnBtn.addEventListener("click", () => {
     const site = getCurrentSite();
     if (!site) return;
     const labels = parseRoomLines(bulkRoomsText.value || "");
     if (labels.size === 0) { alert("部屋番号を入力してください"); return; }
     const hit = setDameForRooms(site, state.ui.currentStageId, labels, true);
+    if (hit === 0) return;
     site.updatedAt = now();
     saveState();
     renderAll();
@@ -2205,85 +2127,6 @@
     alert(`ダメ帳なしにしました：${hit}部屋`);
   });
 
-  // まとめ登録（階範囲）戻り
-  returnRangeOnBtn.addEventListener("click", () => {
-    const site = getCurrentSite();
-    if (!site) return;
-    const a = Number((returnFloorFrom.value||"").trim());
-    const b = Number((returnFloorTo.value||"").trim());
-    if (!Number.isFinite(a) || !Number.isFinite(b)) { alert("開始階・終了階を入れてください"); return; }
-    const labels = labelsFromFloorRange(site, a, b);
-    const hit = setReturnForRooms(site, state.ui.currentStageId, labels, true);
-    site.updatedAt = now();
-    saveState();
-    renderAll();
-    alert(`戻りありにしました：${hit}部屋`);
-  });
-
-  returnRangeOffBtn.addEventListener("click", () => {
-    const site = getCurrentSite();
-    if (!site) return;
-    const a = Number((returnFloorFrom.value||"").trim());
-    const b = Number((returnFloorTo.value||"").trim());
-    if (!Number.isFinite(a) || !Number.isFinite(b)) { alert("開始階・終了階を入れてください"); return; }
-    const labels = labelsFromFloorRange(site, a, b);
-    const hit = setReturnForRooms(site, state.ui.currentStageId, labels, false);
-    site.updatedAt = now();
-    saveState();
-    renderAll();
-    alert(`戻りを解除しました：${hit}部屋（履歴は残ります）`);
-  });
-
-  // まとめ登録（部屋番号：改行）戻り
-  returnRoomsOnBtn.addEventListener("click", () => {
-    const site = getCurrentSite();
-    if (!site) return;
-    const labels = parseRoomLines(returnRoomsText.value || "");
-    if (labels.size === 0) { alert("部屋番号を入力してください"); return; }
-    const hit = setReturnForRooms(site, state.ui.currentStageId, labels, true);
-    site.updatedAt = now();
-    saveState();
-    renderAll();
-    alert(`戻りありにしました：${hit}部屋`);
-  });
-
-  returnRoomsOffBtn.addEventListener("click", () => {
-    const site = getCurrentSite();
-    if (!site) return;
-    const labels = parseRoomLines(returnRoomsText.value || "");
-    if (labels.size === 0) { alert("部屋番号を入力してください"); return; }
-    const hit = setReturnForRooms(site, state.ui.currentStageId, labels, false);
-    site.updatedAt = now();
-    saveState();
-    renderAll();
-    alert(`戻りを解除しました：${hit}部屋（履歴は残ります）`);
-  });
-
-  // 戻り項目数を反映（+x/y）
-  returnApplyCountBtn.addEventListener("click", () => {
-    const site = getCurrentSite();
-    if (!site) return;
-
-    const roomLabel = (returnEditRoom.value || "").trim();
-    if (!roomLabel) { alert("部屋番号を入れてください"); return; }
-
-    const total = Number((returnTotalInput.value||"").trim());
-    const done = Number((returnDoneInput.value||"").trim());
-
-    if (!Number.isFinite(total) || total < 0) { alert("総数は0以上の数字にしてください"); return; }
-    if (!Number.isFinite(done) || done < 0) { alert("完了は0以上の数字にしてください"); return; }
-
-    try{
-      applyReturnCounts(site, state.ui.currentStageId, roomLabel, total, done);
-      site.updatedAt = now();
-      saveState();
-      renderAll();
-      alert("反映しました。");
-    }catch(e){
-      alert(e.message || String(e));
-    }
-  });
-
   /** Boot + migrate */
   function migrate(){
     ensureInitialSite();
@@ -2299,7 +2142,6 @@
     if (!state.ui.currentStageId) state.ui.currentStageId = DEFAULT_STAGES[0].id;
     if (!state.ui.scope) state.ui.scope = { type:"all" };
     if (typeof state.ui.dameOnly !== "boolean") state.ui.dameOnly = false;
-    if (typeof state.ui.returnOnly !== "boolean") state.ui.returnOnly = false;
     if (typeof state.ui.regenArmed !== "boolean") state.ui.regenArmed = false;
     if (!state.ui.schedTab) state.ui.schedTab = "input";
     if (typeof state.ui.pendingAll !== "boolean") state.ui.pendingAll = false;
