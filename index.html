@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>リペア進捗管理 v1.1-S2</title>
+  <title>リペア進捗管理 v1.1-S2（戻り対応）</title>
   <style>
     :root{
       --bg:#f6f7f9;
@@ -35,11 +35,10 @@
       --note_open:#ef4444;
       --note_done:#22c55e;
 
-      /* 戻り（オレンジ） */
-      --return:#f97316;         /* orange-500 */
-      --return_bg: rgba(249,115,22,0.14);
-      --return_tx:#9a3412;      /* orange-800 */
-      --return_bd: rgba(249,115,22,0.35);
+      --orange:#f97316;
+      --orange_tx:#9a3412;
+      --orange_bg: rgba(249,115,22,0.12);
+      --orange_bd: rgba(249,115,22,0.40);
     }
 
     body { font-family: -apple-system, system-ui, sans-serif; margin: 0; background:var(--bg); color:var(--text); }
@@ -133,47 +132,39 @@
       font-weight: 800;
     }
 
-    /* 右上マーク（特記事項/戻り） */
-    .cornerMark{
+    /* 右上バッジ（🔴/🟠など） */
+    .cornerBadge{
       position:absolute;
       top:6px;
       right:6px;
-      width: 18px;
-      height: 18px;
-      border-radius: 999px;
       display:flex;
       align-items:center;
       justify-content:center;
-      font-size: 12px;
-      font-weight: 900;
-      line-height: 1;
-      background: rgba(255,255,255,0.88);
-      border: 1px solid rgba(17,24,39,0.12);
-      pointer-events:none;
-    }
-    .cornerMark.red{ color: var(--note_open); }
-    .cornerMark.green{ color: var(--note_done); }
-
-    /* 戻り🟠は右上に固定（特記事項マークがある時は少し左にずらす） */
-    .returnMark{
-      position:absolute;
-      top:6px;
-      right:6px;
-      width: 18px;
-      height: 18px;
+      width: 20px;
+      height: 20px;
       border-radius: 999px;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      font-size: 12px;
-      font-weight: 900;
-      line-height: 1;
       background: rgba(255,255,255,0.90);
-      border: 1px solid var(--return_bd);
-      color: var(--return);
+      border: 1px solid rgba(17,24,39,0.12);
+      font-size: 12px;
+      font-weight: 900;
+      line-height: 1;
       pointer-events:none;
     }
-    .cornerOffset{ right: 28px; } /* 戻りがある時、特記事項マークを左にずらす */
+
+    /* 🔴が右上にある時に、🟠🟡🟣を右寄せで並べる枠（部屋番号の少し右寄せ） */
+    .underTopBadges{
+      display:flex;
+      justify-content:flex-end;
+      gap: 0px;           /* ←ギチギチ（隙間なし） */
+      margin-top:-2px;
+    }
+    .miniBadge{
+      font-size: 12px;
+      font-weight: 900;
+      line-height: 1;
+      padding: 0;
+      margin: 0;
+    }
 
     .highlight { outline: 3px solid #111827; outline-offset: 2px; }
 
@@ -283,56 +274,24 @@
       color:#fff;
     }
 
-    /* トグル大ボタン（戻り：オレンジON） */
-    .toggleBigOrange{
-      width: 100%;
-      background: var(--return_bg);
-      color: var(--return_tx);
-      border: 1px solid var(--return_bd);
-      font-weight: 900;
-      border-radius: 14px;
-      padding: 14px 12px;
-      text-align: left;
-      display:flex;
-      align-items:flex-start;
-      justify-content: space-between;
-      gap: 10px;
+    /* トグル大ボタン（🟠戻り用） */
+    .toggleBig.orange{
+      background: rgba(249,115,22,0.10);
+      color: var(--orange_tx);
+      border: 1px solid rgba(249,115,22,0.35);
     }
-    .toggleBigOrange .left{
-      display:flex;
-      flex-direction: column;
-      gap: 4px;
-      min-width: 0;
+    .toggleBig.orange .desc{ color: rgba(154,52,18,0.85); }
+    .toggleBig.orange .state{
+      border-color: rgba(249,115,22,0.35);
+      color: var(--orange_tx);
     }
-    .toggleBigOrange .title{
-      font-size: 15px;
-      line-height: 1.2;
-      font-weight: 900;
-    }
-    .toggleBigOrange .desc{
-      font-size: 12px;
-      font-weight: 800;
-      color: rgba(154,52,18,0.90);
-    }
-    .toggleBigOrange .state{
-      flex: 0 0 auto;
-      font-size: 12px;
-      font-weight: 900;
-      padding: 6px 10px;
-      border-radius: 999px;
-      border: 1px solid var(--return_bd);
-      background:#fff;
-      color: var(--return_tx);
-      white-space: nowrap;
-      align-self: center;
-    }
-    .toggleBigOrange.on{
-      background: var(--return);
+    .toggleBig.orange.on{
+      background: var(--orange);
       color:#fff;
-      border-color: var(--return);
+      border-color: var(--orange);
     }
-    .toggleBigOrange.on .desc{ color: rgba(255,255,255,0.92); }
-    .toggleBigOrange.on .state{
+    .toggleBig.orange.on .desc{ color: rgba(255,255,255,0.88); }
+    .toggleBig.orange.on .state{
       border-color: rgba(255,255,255,0.35);
       background: rgba(255,255,255,0.16);
       color:#fff;
@@ -513,11 +472,51 @@
       background: var(--danger);
       color:#fff;
     }
+
+    /* 戻り入力UI（＋−） */
+    .returnEditor{
+      display:flex;
+      justify-content:center;
+      gap: 6px;
+      margin-top: 2px;
+    }
+    .retBox{
+      border: 1px solid var(--orange_bd);
+      background: var(--orange_bg);
+      border-radius: 10px;
+      padding: 4px 6px;
+      display:flex;
+      align-items:center;
+      gap: 4px;
+    }
+    .retLabel{
+      font-size: 11px;
+      font-weight: 900;
+      color: var(--orange_tx);
+      margin-right: 2px;
+    }
+    .retBtn{
+      font-size: 12px;
+      font-weight: 900;
+      padding: 4px 7px;
+      border-radius: 10px;
+      border: 1px solid rgba(154,52,18,0.30);
+      background:#fff;
+      color: var(--orange_tx);
+      line-height: 1;
+    }
+    .retVal{
+      min-width: 24px;
+      text-align:center;
+      font-size: 12px;
+      font-weight: 900;
+      color: var(--orange_tx);
+    }
   </style>
 </head>
 <body>
 <header>
-  <h1>リペア進捗管理 v1.1-S2</h1>
+  <h1>リペア進捗管理 v1.1-S2（戻り対応）</h1>
   <div class="row">
     <select id="siteSelect"></select>
     <button id="newSiteBtn" class="primary">現場を追加</button>
@@ -636,7 +635,7 @@
       <div class="t">特記事項（この段階）</div>
       <div class="help" id="boardCounts"></div>
     </div>
-    <div class="help">🔴＝未完あり / 🟢＝全て完了（特記事項がある部屋のみ） ※行タップで部屋へジャンプ</div>
+    <div class="help">※行タップで部屋へジャンプ</div>
 
     <div class="boardList" id="boardOpen"></div>
 
@@ -691,17 +690,24 @@
     </div>
   </div>
 
-  <!-- ★戻りダメ帳登録（新設） -->
+  <!-- 🟠 戻りダメ帳登録（ONで部屋タップ） -->
   <div class="panel">
-    <button id="returnRegBtn" class="toggleBigOrange">
+    <button id="returnRegBtn" class="toggleBig orange">
       <div class="left">
         <div class="title">戻りダメ帳登録</div>
         <div class="desc">完了後に出た戻り・追加のダメ帳を登録します（ON中は部屋をタップして登録できます）</div>
       </div>
       <div class="state" id="returnRegState">OFF</div>
     </button>
-    <div class="help" style="margin-top:8px;">
-      ※対象は「現在の段階（上の段階ボタンで選択中）」です
+  </div>
+
+  <!-- 右上：戻り入力（＋−）モード -->
+  <div class="panel">
+    <div class="row" style="justify-content:flex-end;">
+      <button class="small" id="returnEditBtn">戻り入力：OFF</button>
+    </div>
+    <div class="help" id="returnEditHint" style="margin-top:6px; display:none;">
+      🟠が付いている部屋に「総数/完了」を＋−で入力できます（この段階の戻り）。
     </div>
   </div>
 
@@ -725,9 +731,9 @@
 
   <div class="help" style="padding: 10px 2px;">
     通常：部屋タップで「未着手 → 途中 → 完了 → 未着手」<br/>
-    ダメ帳登録ON：部屋タップで「ダメ帳あり ↔ なし」<br/>
-    戻りダメ帳登録ON：部屋タップで「戻りあり ↔ 解除」<br/>
-    未完了部屋を全件表示ON：部屋タップで「その部屋の未完ダメ帳（全段階）をまとめて完了」にできます
+    ダメ帳登録ON：部屋タップで「ダメ帳あり ↔ なし」（確認なし）<br/>
+    戻りダメ帳登録ON：部屋タップで「🟠戻り ↔ 解除」<br/>
+    戻り入力ON：🟠の部屋に「戻り 総数/完了」を＋−で入力（この段階）
   </div>
 
   <!-- 危険操作 -->
@@ -745,7 +751,7 @@
 
 <script>
 (() => {
-  const STORAGE_KEY = "repair_progress_v1_1_S1"; // 既存キーを継続（S2でも同じデータを読み込む）
+  const STORAGE_KEY = "repair_progress_v1_1_S2";
   const uid = () => Math.random().toString(36).slice(2, 10) + "-" + Date.now().toString(36);
   const now = () => Date.now();
 
@@ -834,9 +840,11 @@
   const bulkRoomsOnBtn = $("bulkRoomsOnBtn");
   const bulkRoomsOffBtn = $("bulkRoomsOffBtn");
 
-  // ★戻り登録モード
+  // 🟠戻り
   const returnRegBtn = $("returnRegBtn");
   const returnRegState = $("returnRegState");
+  const returnEditBtn = $("returnEditBtn");
+  const returnEditHint = $("returnEditHint");
 
   /** Load/Save */
   function loadState() {
@@ -881,29 +889,19 @@
     return out;
   }
 
-  // ★戻りデータの初期形
-  function ensureReturnObj(x){
-    if (!x.return) {
-      x.return = { active:false, total:0, done:0, historyTotal:0 };
-    } else {
-      if (typeof x.return.active !== "boolean") x.return.active = false;
-      if (!Number.isFinite(x.return.total)) x.return.total = 0;
-      if (!Number.isFinite(x.return.done)) x.return.done = 0;
-      if (!Number.isFinite(x.return.historyTotal)) x.return.historyTotal = 0;
-    }
-    // 安全：負数防止
-    x.return.total = Math.max(0, Math.floor(x.return.total));
-    x.return.done = Math.max(0, Math.floor(x.return.done));
-    x.return.historyTotal = Math.max(0, Math.floor(x.return.historyTotal));
-    // done が total 超えないように（将来UIで触る前提の保険）
-    if (x.return.done > x.return.total) x.return.done = x.return.total;
-  }
-
   function ensurePerStage(room) {
     if (!room.perStage) room.perStage = {};
     for (const st of DEFAULT_STAGES) {
       if (!room.perStage[st.id]) {
-        room.perStage[st.id] = { status:"todo", dame:false, workDate:"", worker:"", notes:[], return:null };
+        room.perStage[st.id] = {
+          status:"todo",
+          dame:false,
+          workDate:"",
+          worker:"",
+          notes:[],
+          // 🟠戻り情報（段階ごと）
+          returnInfo: { active:false, total:0, done:0, histTotal:0, histDone:0, updatedAt:null }
+        };
       } else {
         const x = room.perStage[st.id];
         if (!x.status) x.status = "todo";
@@ -911,8 +909,13 @@
         if (!x.workDate) x.workDate = "";
         if (!x.worker) x.worker = "";
         if (!Array.isArray(x.notes)) x.notes = [];
+        if (!x.returnInfo) x.returnInfo = { active:false, total:0, done:0, histTotal:0, histDone:0, updatedAt:null };
+        if (typeof x.returnInfo.active !== "boolean") x.returnInfo.active = false;
+        if (!Number.isFinite(x.returnInfo.total)) x.returnInfo.total = 0;
+        if (!Number.isFinite(x.returnInfo.done)) x.returnInfo.done = 0;
+        if (!Number.isFinite(x.returnInfo.histTotal)) x.returnInfo.histTotal = 0;
+        if (!Number.isFinite(x.returnInfo.histDone)) x.returnInfo.histDone = 0;
       }
-      ensureReturnObj(room.perStage[st.id]);
     }
   }
 
@@ -956,7 +959,10 @@
         schedTab: "input",
         pendingAll: false,
         dameRegMode: false,
-        returnRegMode: false, // ★追加
+
+        // 🟠戻り
+        returnRegMode: false,
+        returnEditMode: false,
       }
     };
   }
@@ -1015,10 +1021,6 @@
     return room.perStage[stageId];
   }
 
-  function hasOpenNotes(room, stageId){
-    const d = roomStageData(room, stageId);
-    return d.notes.some(n => !n.done);
-  }
   function hasAnyNotes(room, stageId){
     const d = roomStageData(room, stageId);
     return d.notes.length > 0;
@@ -1048,6 +1050,13 @@
   }
 
   /** 日付表示 */
+  function fmtDateShort(yyyy_mm_dd){
+    try{
+      const [y,m,d] = yyyy_mm_dd.split("-").map(Number);
+      if (!y || !m || !d) return yyyy_mm_dd;
+      return `${m}/${d}`;
+    }catch{ return yyyy_mm_dd; }
+  }
   function fmtYMD(s){
     if (!s) return "";
     const [y,m,d] = s.split("-").map(n => Number(n));
@@ -1059,26 +1068,6 @@
     if (start && (!end || end === start)) return fmtYMD(start);
     if (!start && end) return fmtYMD(end);
     return `${fmtYMD(start)}〜${fmtYMD(end)}`;
-  }
-  function fmtDateShort(yyyy_mm_dd){
-    try{
-      const [y,m,d] = yyyy_mm_dd.split("-").map(Number);
-      if (!y || !m || !d) return yyyy_mm_dd;
-      return `${m}/${d}`;
-    }catch{ return yyyy_mm_dd; }
-  }
-
-  // ★ワンクッション文面（確定版）
-  function confirmDameOverwrite(roomLabel){
-    const msg =
-`この部屋はすでに「完了」になっています。
-ダメ帳を登録すると 戻り・追加ダメ帳 として扱われ、
-ステータスは未完了に戻ります。
-
-（完了した項目数、作業者の記録は残ります）
-
-部屋 ${roomLabel} にダメ帳を登録しますか？`;
-    return confirm(msg);
   }
 
   /** Rendering */
@@ -1234,7 +1223,6 @@
 
       box.appendChild(linesWrap);
 
-      // corr
       const corr = document.createElement("div");
       corr.style.marginTop = "10px";
       corr.innerHTML = `<div style="font-weight:900; margin-bottom:6px;">是正期間</div>`;
@@ -1481,15 +1469,6 @@
     }
   }
 
-  function returnLineText(d){
-    ensureReturnObj(d);
-    const hist = d.return.historyTotal || 0;
-    const showTotal = d.return.active ? d.return.total : hist; // active中は現在値、そうでなければ履歴を表示
-    if (showTotal <= 0 && !d.return.active) return ""; // 履歴なし＆activeでもないなら出さない
-    const done = d.return.active ? d.return.done : Math.min(hist, d.return.done);
-    return `戻り +${done}/${showTotal}`;
-  }
-
   function renderRooms(){
     const site = getCurrentSite();
     if (!site) return;
@@ -1522,34 +1501,43 @@
       }
 
       const d = roomStageData(r, stageId);
-      ensureReturnObj(d);
 
       const card = document.createElement("div");
       card.className = `room ${d.status}`;
       card.dataset.roomId = r.id;
       if (state.ui.highlightedRoomId === r.id) card.classList.add("highlight");
 
-      // ★戻り🟠（右上）
-      if (d.return.active) {
-        const mk = document.createElement("div");
-        mk.className = "returnMark";
-        mk.textContent = "🟠";
-        card.appendChild(mk);
-      }
+      // 右上：優先表示（今回は最低限：🔴(未完ダメ帳) / 🟠(戻り)）
+      const hasRed = isPendingAnyStage(r) || (d.dame && d.status !== "done");
+      const hasOrange = !!(d.returnInfo && d.returnInfo.active);
 
-      // 特記事項マーク（戻りがあるなら左にずらす）
-      if (hasAnyNotes(r, stageId)) {
-        const mk = document.createElement("div");
-        mk.className = "cornerMark " + (hasOpenNotes(r, stageId) ? "red" : "green");
-        if (d.return.active) mk.classList.add("cornerOffset");
-        mk.textContent = hasOpenNotes(r, stageId) ? "🔴" : "🟢";
-        card.appendChild(mk);
+      if (hasRed) {
+        const cb = document.createElement("div");
+        cb.className = "cornerBadge";
+        cb.textContent = "🔴";
+        card.appendChild(cb);
+      } else if (hasOrange) {
+        const cb = document.createElement("div");
+        cb.className = "cornerBadge";
+        cb.textContent = "🟠";
+        card.appendChild(cb);
       }
 
       const num = document.createElement("div");
       num.className = "num";
       num.textContent = r.label;
       card.appendChild(num);
+
+      // 🔴が右上にある時だけ、🟠は部屋番号の下・右寄せで出す（あなた案）
+      if (hasRed && hasOrange) {
+        const under = document.createElement("div");
+        under.className = "underTopBadges";
+        const ob = document.createElement("span");
+        ob.className = "miniBadge";
+        ob.textContent = "🟠";
+        under.appendChild(ob);
+        card.appendChild(under);
+      }
 
       if (d.dame) {
         const dame = document.createElement("div");
@@ -1581,18 +1569,97 @@
         }
       }
 
-      // ★戻りの履歴表示（いまは最低限：active中は+0/0でも出る）
-      const rt = returnLineText(d);
-      if (rt) {
-        const sub2 = document.createElement("div");
-        sub2.className = "subline";
-        sub2.textContent = rt;
-        card.appendChild(sub2);
-      } else if (d.return.active) {
-        const sub2 = document.createElement("div");
-        sub2.className = "subline";
-        sub2.textContent = "戻り +0/0";
-        card.appendChild(sub2);
+      // ここから：戻り +0/2 表示（履歴残す）
+      if (d.returnInfo && (d.returnInfo.histTotal > 0 || d.returnInfo.active)) {
+        const ri = d.returnInfo;
+        const total = ri.active ? ri.total : ri.histTotal;
+        const done = ri.active ? ri.done : ri.histDone;
+
+        const ret = document.createElement("div");
+        ret.className = "subline";
+        ret.textContent = `戻り +${done}/${total}`;
+        ret.style.color = "rgba(154,52,18,0.95)";
+        ret.style.fontWeight = "900";
+        card.appendChild(ret);
+      }
+      // ここまで
+
+      // 戻り入力ON：🟠 active の部屋だけ、＋−UI表示（分母/分子 別）
+      if (state.ui.returnEditMode && d.returnInfo && d.returnInfo.active) {
+        const ri = d.returnInfo;
+
+        const editor = document.createElement("div");
+        editor.className = "returnEditor";
+
+        const mkBox = (labelText, getVal, setVal, min=0, max=9999) => {
+          const box = document.createElement("div");
+          box.className = "retBox";
+
+          const label = document.createElement("span");
+          label.className = "retLabel";
+          label.textContent = labelText;
+
+          const minus = document.createElement("button");
+          minus.className = "retBtn";
+          minus.textContent = "−";
+          minus.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const v = Math.max(min, getVal() - 1);
+            setVal(v);
+            saveState();
+            renderAll();
+          });
+
+          const val = document.createElement("span");
+          val.className = "retVal";
+          val.textContent = String(getVal());
+
+          const plus = document.createElement("button");
+          plus.className = "retBtn";
+          plus.textContent = "＋";
+          plus.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const v = Math.min(max, getVal() + 1);
+            setVal(v);
+            saveState();
+            renderAll();
+          });
+
+          box.appendChild(label);
+          box.appendChild(minus);
+          box.appendChild(val);
+          box.appendChild(plus);
+          return box;
+        };
+
+        // 総数（分母）
+        const totalBox = mkBox("総", () => ri.total, (v) => {
+          ri.total = Math.max(0, v);
+          if (ri.done > ri.total) ri.done = ri.total;
+
+          // 履歴は常に最大値で残す（完了しても残る）
+          ri.histTotal = Math.max(ri.histTotal, ri.total);
+          ri.histDone = Math.max(ri.histDone, ri.done);
+          ri.updatedAt = now();
+
+          // 総数0なら「間違いだった」で🟠解除（履歴は残す）
+          if (ri.total === 0) {
+            ri.active = false;
+            ri.done = 0;
+          }
+        }, 0, 999);
+
+        // 完了（分子）
+        const doneBox = mkBox("完", () => ri.done, (v) => {
+          ri.done = Math.max(0, Math.min(v, ri.total));
+          ri.histTotal = Math.max(ri.histTotal, ri.total);
+          ri.histDone = Math.max(ri.histDone, ri.done);
+          ri.updatedAt = now();
+        }, 0, 999);
+
+        editor.appendChild(totalBox);
+        editor.appendChild(doneBox);
+        card.appendChild(editor);
       }
 
       card.addEventListener("click", () => {
@@ -1600,11 +1667,9 @@
         if (!site2) return;
         const room = site2.rooms.find(x => x.id === r.id);
         if (!room) return;
-
         const dd = roomStageData(room, stageId);
-        ensureReturnObj(dd);
 
-        // 未完全件表示ON：まとめて完了
+        // 未完全件表示ON：まとめて完了（今回はそのまま）
         if (state.ui.pendingAll) {
           const names = getPendingStageNames(room);
           const ok = confirm(`部屋${room.label}の未完ダメ帳をまとめて完了にしますか？\n対象：${names.join(" / ")}`);
@@ -1616,24 +1681,22 @@
           return;
         }
 
-        // ★戻り登録モード：部屋タップで戻りON/OFF
+        // 🟠戻りダメ帳登録モード：部屋タップで active 付け外し
         if (state.ui.returnRegMode) {
-          dd.return.active = !dd.return.active;
+          const ri = dd.returnInfo;
+          const next = !ri.active;
 
-          // ONにしたら、最低限バッジがつく（数は後で作業メモ側で入れる想定）
-          if (dd.return.active) {
-            // 履歴は残す前提：初回でも0スタートでOK
-            dd.return.total = Math.max(0, dd.return.total || 0);
-            dd.return.done = Math.max(0, dd.return.done || 0);
+          ri.active = next;
+          ri.updatedAt = now();
+
+          if (ri.active) {
+            // 戻りが来た＝未完へ戻す（完了だったら）
+            if (dd.status === "done") dd.status = "todo";
+            // 初期値はそのまま（0/0）。あとで戻り入力で総数/完了を付ける。
           } else {
-            // OFFに戻す時：履歴が無い＆数も0なら完全に消える
-            const hasAny = (dd.return.historyTotal > 0) || (dd.return.total > 0) || (dd.return.done > 0);
-            if (!hasAny) {
-              dd.return.active = false;
-              dd.return.total = 0;
-              dd.return.done = 0;
-              dd.return.historyTotal = 0;
-            }
+            // 🟠解除：現時点の total/done は0に（履歴は残す）
+            ri.total = 0;
+            ri.done = 0;
           }
 
           site2.updatedAt = now();
@@ -1642,30 +1705,18 @@
           return;
         }
 
-        // ★ダメ帳登録モード：ダメ帳あり/なし切替（完了→戻り扱いのワンクッション）
+        // ダメ帳登録モード：確認なしで dame を切替
         if (state.ui.dameRegMode) {
-          const next = !dd.dame;
-
-          // 完了部屋に「ダメ帳あり」を付ける＝戻り・追加扱い → 確認
-          if (next === true && dd.status === "done") {
-            const ok = confirmDameOverwrite(room.label);
-            if (!ok) return;
-
-            // 戻り扱い：ステータスを未着手へ戻す
-            dd.status = "todo";
-
-            // ★戻りフラグもON（いまの段階の戻りとして）
-            dd.return.active = true;
-          }
-
-          dd.dame = next;
-
-          // まとめ登録と同じ思想：新規ダメ帳が来たなら「未着手」に戻す（ただしdoneのみ）
+          dd.dame = !dd.dame;
           if (dd.dame && dd.status === "done") dd.status = "todo";
-
           site2.updatedAt = now();
           saveState();
           renderAll();
+          return;
+        }
+
+        // 戻り入力モード中は、カードタップでは何もしない（＋−だけで操作）
+        if (state.ui.returnEditMode) {
           return;
         }
 
@@ -1737,6 +1788,14 @@
     }
   }
 
+  function renderReturnEditBtn(){
+    returnEditBtn.textContent = `戻り入力：${state.ui.returnEditMode ? "ON" : "OFF"}`;
+    returnEditBtn.style.borderColor = state.ui.returnEditMode ? "rgba(249,115,22,0.55)" : "var(--line)";
+    returnEditBtn.style.color = state.ui.returnEditMode ? "#9a3412" : "var(--text)";
+    returnEditBtn.style.background = state.ui.returnEditMode ? "rgba(249,115,22,0.10)" : "#fff";
+    returnEditHint.style.display = state.ui.returnEditMode ? "block" : "none";
+  }
+
   function renderAll(){
     renderSiteSelect();
     renderSiteForm();
@@ -1753,6 +1812,8 @@
     renderDameOnlyBtn();
     renderDameReg();
     renderReturnReg();
+    renderReturnEditBtn();
+
     renderRooms();
     renderRegenBtn();
   }
@@ -1776,30 +1837,6 @@
   /** まとめ登録：ユーティリティ */
   function setDameForRooms(site, stageId, roomLabels, value){
     let hit = 0;
-
-    // ★Step1：完了部屋に「ダメ帳あり」を付ける時のワンクッション（まとめ登録版）
-    if (value === true) {
-      const willTouch = [];
-      for (const r of site.rooms) {
-        if (!roomLabels.has(r.label)) continue;
-        const d = roomStageData(r, stageId);
-        if (d.status === "done" && d.dame !== true) willTouch.push(r.label);
-      }
-      if (willTouch.length > 0) {
-        const head = willTouch.slice(0, 6).join(", ");
-        const more = willTouch.length > 6 ? ` 他${willTouch.length - 6}部屋` : "";
-        const ok = confirm(
-`完了の部屋にダメ帳を登録しようとしています（${willTouch.length}部屋）。
-ダメ帳を登録すると 戻り・追加ダメ帳 として扱われ、ステータスは未完了に戻ります。
-
-対象：${head}${more}
-
-続行しますか？`
-        );
-        if (!ok) return 0;
-      }
-    }
-
     for (const r of site.rooms) {
       if (!roomLabels.has(r.label)) continue;
       const d = roomStageData(r, stageId);
@@ -1807,11 +1844,7 @@
       d.dame = value;
 
       if (value === true) {
-        if (d.status === "done") {
-          // ★Step1：個別と同じ思想（戻り扱い）
-          d.status = "todo";
-          d.return.active = true; // ★戻りフラグON（この段階）
-        }
+        if (d.status === "done") d.status = "todo";
       }
       if (was !== d.dame) hit++;
     }
@@ -1836,7 +1869,7 @@
 
     const out = new Set();
     for (const v of lines) {
-      const n = v.replace(/[^\d]/g,""); // 念のため数字以外を除去
+      const n = v.replace(/[^\d]/g,"");
       if (n) out.add(n);
     }
     return out;
@@ -1945,6 +1978,14 @@
     state.ui.pendingAll = !state.ui.pendingAll;
     state.ui.filter = "all";
     state.ui.highlightedRoomId = null;
+
+    // 誤操作防止：他モードOFF
+    if (state.ui.pendingAll){
+      state.ui.dameRegMode = false;
+      state.ui.returnRegMode = false;
+      state.ui.returnEditMode = false;
+    }
+
     saveState();
     renderAll();
   });
@@ -2037,9 +2078,10 @@
       return;
     }
 
+    const site2 = getCurrentSite();
     try{
-      site.rooms = generateRoomsFromSpec(site.floorSpec);
-      site.updatedAt = now();
+      site2.rooms = generateRoomsFromSpec(site2.floorSpec);
+      site2.updatedAt = now();
       state.ui.regenArmed = false;
       saveState();
       renderRegenBtn();
@@ -2053,25 +2095,50 @@
     }
   });
 
-  // ★ダメ帳登録モード：トグル（戻り登録ONならOFFにして混乱防止）
+  // ダメ帳登録モード：トグル
   dameRegBtn.addEventListener("click", () => {
     state.ui.dameRegMode = !state.ui.dameRegMode;
-    if (state.ui.dameRegMode) state.ui.returnRegMode = false;
+
+    // 誤操作防止：他モードOFF
+    if (state.ui.dameRegMode){
+      state.ui.returnRegMode = false;
+      state.ui.returnEditMode = false;
+      state.ui.pendingAll = false;
+    }
+
     saveState();
-    renderDameReg();
-    renderReturnReg();
+    renderAll();
   });
 
-  // ★戻り登録モード：トグル（ダメ帳登録ONならOFFにして混乱防止）
+  // 🟠戻り登録モード：トグル
   returnRegBtn.addEventListener("click", () => {
     state.ui.returnRegMode = !state.ui.returnRegMode;
-    if (state.ui.returnRegMode) state.ui.dameRegMode = false;
+
+    if (state.ui.returnRegMode){
+      state.ui.dameRegMode = false;
+      state.ui.returnEditMode = false;
+      state.ui.pendingAll = false;
+    }
+
     saveState();
-    renderReturnReg();
-    renderDameReg();
+    renderAll();
   });
 
-  // ★まとめ登録（階範囲）
+  // 🟠戻り入力モード（＋−）
+  returnEditBtn.addEventListener("click", () => {
+    state.ui.returnEditMode = !state.ui.returnEditMode;
+
+    if (state.ui.returnEditMode){
+      state.ui.dameRegMode = false;
+      state.ui.returnRegMode = false;
+      state.ui.pendingAll = false;
+    }
+
+    saveState();
+    renderAll();
+  });
+
+  // まとめ登録（階範囲）
   bulkRangeOnBtn.addEventListener("click", () => {
     const site = getCurrentSite();
     if (!site) return;
@@ -2080,7 +2147,6 @@
     if (!Number.isFinite(a) || !Number.isFinite(b)) { alert("開始階・終了階を入れてください"); return; }
     const labels = labelsFromFloorRange(site, a, b);
     const hit = setDameForRooms(site, state.ui.currentStageId, labels, true);
-    if (hit === 0) return;
     site.updatedAt = now();
     saveState();
     renderAll();
@@ -2101,14 +2167,13 @@
     alert(`ダメ帳なしにしました：${hit}部屋`);
   });
 
-  // ★まとめ登録（部屋番号：改行）
+  // まとめ登録（部屋番号：改行）
   bulkRoomsOnBtn.addEventListener("click", () => {
     const site = getCurrentSite();
     if (!site) return;
     const labels = parseRoomLines(bulkRoomsText.value || "");
     if (labels.size === 0) { alert("部屋番号を入力してください"); return; }
     const hit = setDameForRooms(site, state.ui.currentStageId, labels, true);
-    if (hit === 0) return;
     site.updatedAt = now();
     saveState();
     renderAll();
@@ -2146,7 +2211,10 @@
     if (!state.ui.schedTab) state.ui.schedTab = "input";
     if (typeof state.ui.pendingAll !== "boolean") state.ui.pendingAll = false;
     if (typeof state.ui.dameRegMode !== "boolean") state.ui.dameRegMode = false;
+
     if (typeof state.ui.returnRegMode !== "boolean") state.ui.returnRegMode = false;
+    if (typeof state.ui.returnEditMode !== "boolean") state.ui.returnEditMode = false;
+
     saveState();
   }
 
